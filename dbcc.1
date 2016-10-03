@@ -1,0 +1,67 @@
+.\" Manpage for dbcc
+.\" Contact howe.r.j.89@gmail.com to correct errors or typos.
+.TH dbcc 1 "10 May 2016" "0.1.0" "dbcc man page"
+.SH NAME
+dbcc \- Compile DBC files into C code
+.SH SYNOPSIS
+dbcc [-] [-h] [-v] file*
+.SH DESCRIPTION
+Given a DBC file containing descriptions of CAN messages this program will parse
+that file and generate C functions that can serialize and deserialize those
+messages.
+
+.SH OPTIONS
+
+.TP
+.B -
+Stop processing command line arguments
+
+.TP
+.B -h
+Print a help message to stderr(3) and exit the program unsuccessfully.
+
+.TP
+.B -v
+Increase the verbosity level of the program.
+
+.TP
+.B file
+
+.SH EXAMPLES
+
+.B
+	./dbcc file.dbc
+
+This will run the program on a DBC file called "file.dbc" and spit out
+the results to stdout(3).
+
+.SH COPYRIGHT
+
+The mpc parser combinator library belongs to Daniel Holden
+(contact@daniel-holden.com) licensed under BSD3, Copyright (c) 2013.
+
+The dbcc program is licensed under the MIT license, Copyright (c) 2016, Richard
+Howe.
+
+.SH EXIT STATUS
+
+This command returns zero on success and non zero on failure.
+
+.SH SEE ALSO
+
+For more information, see
+.B https://github.com/howerj/dbcc
+which contains the original program source, and
+.B https://github.com/orangeduck/mpc
+for the parser combinator used in this program.
+
+For information about the DBC files for CAN use
+.B http://vector.com/vi_candb_en.html
+And for what CAN is
+.B https://en.wikipedia.org/wiki/CAN_bus
+
+.SH BUGS
+The program is in alpha status and thus is unlikely to work or be complete.
+
+.SH AUTHOR
+Richard James Howe (howe.r.j.89@gmail.com)

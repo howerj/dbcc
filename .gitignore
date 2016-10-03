@@ -1,0 +1,10 @@
+dbcc
+*.dbc
+core
+vgcore.*
+*.o
+*.d
+*.log
+*.conf
+*.out
+*.htm
