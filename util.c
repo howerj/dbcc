@@ -47,7 +47,7 @@ static void logmsg(log_level_e ll, const char *prefix, const char *fmt, va_list 
 	} while(0);
 
 
-void fatal(const char *fmt, ...)
+void error(const char *fmt, ...)
 {
 	LOG_INTERAL(LOG_ERRORS, "error: ", fmt);
 	exit(EXIT_FAILURE);
@@ -74,7 +74,7 @@ FILE *fopen_or_die(const char *name, const char *mode)
 	errno = 0;
 	FILE *r = fopen(name, mode);
 	if(!r) {
-		fatal("open '%s' (mode '%s'): %s", name, mode, emsg());
+		error("open '%s' (mode '%s'): %s", name, mode, emsg());
 	}
 	return r;
 }
@@ -84,7 +84,7 @@ void *allocate(size_t sz)
 	errno = 0;
 	void *r = calloc(sz, 1);
 	if(!r)
-		fatal("allocate failed: %s", emsg());
+		error("allocate failed: %s", emsg());
 	return r;
 }
 
@@ -92,7 +92,7 @@ void *reallocator(void *p, size_t n)
 {
 	void *r = realloc(p, n); 
 	if(!r)
-		fatal("reallocator failed: %s", emsg());
+		error("reallocator failed: %s", emsg());
 	return r;
 }
 

@@ -1,6 +1,14 @@
+/**@note error checking is not done in this file, or if it is done it should be
+ * done with assertions, the parser does the validation and processing of the
+ * input, if a returned object is not checked it is because it *must* exist (or
+ * there is a bug in the grammar
+ * @note most values will be converted to doubles and then to integers, which
+ * is fine for 32 bit values, but fails for large integers. */
 #include "can.h"
 #include "util.h"
+#include <assert.h>
 #include <stdlib.h>
+#include <inttypes.h>
 
 signal_t *signal_new(void)
 {
@@ -14,6 +22,7 @@ void signal_delete(signal_t *signal)
 	for(size_t i = 0; i < signal->ecu_count; i++)
 		free(signal->ecus[i]);
 	free(signal->ecus);
+	free(signal->units);
 	free(signal);
 }
 
@@ -34,43 +43,136 @@ void can_msg_delete(can_msg_t *msg)
 	free(msg);
 }
 
+numeric_t string2numeric(const char *s)
+{
+	assert(s);
+	numeric_t n;
+	if(strpbrk(s, ".eNnIifF")) { /* is-floating? Contains 'e', '.' or f, or is "Inf", "Nan"*/
+		n.type = numeric_floating_e;
+		int r = sscanf(s, "%lf", &n.data.floating);
+		/**@todo extract fractional part and attempt reconversion*/
+		assert(r == 1);
+		return n;
+	}
+	if(strchr(s, '-')) {
+		n.type = numeric_signed_e;
+		int r = sscanf(s, "%"SCNd64, &n.data.integer);
+		assert(r == 1);
+		return n;
+	}
+
+	n.type = numeric_unsigned_e;
+	int r = sscanf(s, "%"SCNu64, &n.data.uinteger);
+	assert(r == 1);
+	return n;
+}
+
+static void y_mx_c(mpc_ast_t *ast, signal_t *sig)
+{
+	int r;
+	assert(ast && sig);
+	mpc_ast_t *scalar = ast->children[1];
+	mpc_ast_t *offset = ast->children[3];
+	r = sscanf(scalar->contents, "%lf", &sig->scaling);
+	assert(r == 1);
+	r = sscanf(offset->contents, "%lf", &sig->offset);
+	assert(r == 1);
+}
+
+static void range(mpc_ast_t *ast, signal_t *sig)
+{
+	int r;
+	assert(ast && sig);
+	mpc_ast_t *min = ast->children[1];
+	mpc_ast_t *max = ast->children[3];
+	r = sscanf(min->contents, "%lf", &sig->minimum);
+	assert(r == 1);
+	r = sscanf(max->contents, "%lf", &sig->maximum);
+	assert(r == 1);
+}
+
+/**@todo implement nodes function
+
+static void nodes(mpc_ast_t *ast, signal_t *sig)
+{
+	assert(ast && sig);
+}
+*/
+
+static void units(mpc_ast_t *ast, signal_t *sig)
+{
+	assert(ast && sig);
+	mpc_ast_t *unit = mpc_ast_get_child(ast, "regex");
+	sig->units = duplicate(unit->contents);
+}
+
 signal_t *ast2signal(mpc_ast_t *ast)
 {
+	int r;
+	assert(ast);
 	signal_t *sig = signal_new();
-	note("signal %s", ast->contents);
+	mpc_ast_t *name   = mpc_ast_get_child(ast, "name|ident|regex");
+	mpc_ast_t *start  = mpc_ast_get_child(ast, "startbit|integer|regex");
+	mpc_ast_t *length = mpc_ast_get_child(ast, "length|regex");
+	mpc_ast_t *endianess = mpc_ast_get_child(ast, "endianess|char");
+	mpc_ast_t *sign   = mpc_ast_get_child(ast, "sign|char");
+	sig->name = duplicate(name->contents);
+	r = sscanf(start->contents, "%u", &sig->start_bit);
+	assert(r == 1 && sig->start_bit <= 64);
+	r = sscanf(length->contents, "%u", &sig->bit_length);
+	assert(r == 1 && sig->bit_length <= 64);
+	char endchar = endianess->contents[0];
+	assert(endchar == '0' || endchar == '1');
+	sig->endianess = endchar == '0' ?
+		endianess_motorola_e :
+		endianess_intel_e ;
+	char signchar = sign->contents[0];
+	assert(signchar == '+' || signchar == '-');
+	sig->is_signed = signchar == '-';
+
+	y_mx_c(mpc_ast_get_child(ast, "y_mx_c|>"), sig);
+	range(mpc_ast_get_child(ast, "range|>"), sig);
+	units(mpc_ast_get_child(ast, "unit|string|>"), sig);
+	/*nodes(mpc_ast_get_child(ast, "nodes|node|ident|regex|>"), sig);*/
+
+	debug("\tname => %s; start %u length %u %s %s %s",
+			sig->name, sig->start_bit, sig->bit_length, sig->units,
+			sig->endianess ? "intel" : "motorola", 
+			sig->is_signed ? "signed " : "unsigned");
 	return sig;
 }
 
 can_msg_t *ast2msg(mpc_ast_t *ast)
 {
-	/**@todo clean this up so magic numbers are not used */
+	int r;
 	can_msg_t *c = can_msg_new();
-	mpc_ast_t *name  = mpc_ast_get_child_lb(ast, "name|ident|regex", 0);
-	mpc_ast_t *ecu  = mpc_ast_get_child_lb(ast, "ecu|ident|regex", 0);
-	mpc_ast_t *dlc = mpc_ast_get_child_lb(ast, "dlc|integer|regex", 0);
-	mpc_ast_t *id  = mpc_ast_get_child_lb(ast, "id|integer|regex", 0);
+	mpc_ast_t *name = mpc_ast_get_child(ast, "name|ident|regex");
+	mpc_ast_t *ecu  = mpc_ast_get_child(ast, "ecu|ident|regex");
+	mpc_ast_t *dlc  = mpc_ast_get_child(ast, "dlc|integer|regex");
+	mpc_ast_t *id   = mpc_ast_get_child(ast, "id|integer|regex");
 	c->name = duplicate(name->contents);
 	c->ecu  = duplicate(ecu->contents);
-	sscanf(dlc->contents, "%u", &c->dlc);
-	sscanf(id->contents,  "%u", &c->id);
+	r = sscanf(dlc->contents, "%u", &c->dlc);
+	assert(r == 1);
+	r = sscanf(id->contents,  "%u", &c->id);
+	assert(r == 1);
 
-	signal_t **signals = allocate(sizeof(*signals[0]));
-	size_t len = 1;
+	/**@todo make test cases with no signals, and the like*/
+	signal_t **signals = allocate(sizeof(*signals));
+	size_t len = 1, j = 0;
 	for(int i = 0; i >= 0;) {
 		i = mpc_ast_get_index_lb(ast, "signal|>", i);
 		if(i >= 0) {
 			mpc_ast_t *sig_ast = mpc_ast_get_child_lb(ast, "signal|>", i);
-			len++;
-			signals = realloc(signals, sizeof(*signals[0])*len);
-			signals[i] = ast2signal(sig_ast);
+			signals = reallocator(signals, sizeof(*signals)*++len);
+			signals[j++] = ast2signal(sig_ast);
 			i++;
 		}
 	}
 	c->signals = signals;
-	c->signal_count = len;
+	c->signal_count = j;
 
-	note("%s id:%u dlc:%u signals:%zu ecu:%s", c->name, c->id, c->dlc, c->signal_count, c->ecu);
-
+	debug("%s id:%u dlc:%u signals:%zu ecu:%s", c->name, c->id, c->dlc, c->signal_count, c->ecu);
 	return c;
 }
 

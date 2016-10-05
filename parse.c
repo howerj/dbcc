@@ -94,7 +94,7 @@ static mpc_ast_t *_parse_dbc_string(const char *file_name, const char *string)
 			" s         : /[ \\t]/ ; "
 			" n         : '\\n' ; "
 			" sign      : '+' | '-' ; "
-			" float     : <sign>? /[0-9]+(\\.[0-9]+)?([eE][-+]?[0-9]+)?/ ; "
+			" float     : /[-+]?[0-9]+(\\.[0-9]+)?([eE][-+]?[0-9]+)?/ ; "
 			" ident     : /[a-zA-Z_][a-zA-Z0-9_]*/ ;"
 			" integer   : <sign>? /[0-9]+/ ; "
 			" factor    : <float> | <integer> ; "

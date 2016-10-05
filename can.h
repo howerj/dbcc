@@ -11,31 +11,44 @@ typedef enum {
 	endianess_intel_e = 1,
 } endianess_e;
 
+typedef enum {
+	numeric_unsigned_e,
+	numeric_signed_e,
+	numeric_floating_e,
+} numeric_e;
+
 typedef struct {
+	numeric_e type;
+	union {
+		uint64_t uinteger;
+		int64_t integer;
+		double floating;
+	} data;
+} numeric_t;
+
+typedef struct {
+	size_t ecu_count;    /**< ECU count */
+	char *units;         /**< units used */
+	char **ecus;         /**< ECUs sending/receiving */
 	char *name;          /**< name of the signal */
+	double scaling;   /**< scaling */
+	double offset;    /**< offset */
+	double minimum;   /**< minimum value */
+	double maximum;   /**< maximum value */
 	unsigned bit_length; /**< bit length in message buffer */
 	unsigned start_bit;  /**< starting bit position in message */
 	endianess_e endianess; /**< endianess of message */
 	bool is_signed;      /**< if true, value is signed */
-	double scaling;      /**< scaling */
-	double offset;       /**< offset */
-	size_t ecu_count;    /**< ECU count */
-	char **ecus;         /**< ECUs sending/receiving */
-	union { /**< not used, but would contain the data */
-		int64_t integer;
-		uint64_t uinteger;
-		double floating;
-	} data;
 } signal_t;
 
 typedef struct {
 	char *name;    /**< can message name */
 	char *ecu;     /**< name of ECU @todo check this makes sense */
-	unsigned dlc;  /**< length of CAN message 0-8 bytes */
-	unsigned id;   /**< identifier, 11 or 29 bit */
+	signal_t **signals; /**< signals that can decode/encode this message*/
 	uint64_t data; /**< data, up to eight bytes, not used for generation */
 	size_t signal_count; /**< number of signals */
-	signal_t **signals; /**< signals that can decode/encode this message*/
+	unsigned dlc;  /**< length of CAN message 0-8 bytes */
+	unsigned id;   /**< identifier, 11 or 29 bit */
 } can_msg_t;
 
 typedef struct {

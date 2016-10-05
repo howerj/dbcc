@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#define UNUSED(X) ((void)(X))
+
 typedef enum {
 	LOG_NO_MESSAGES,
 	LOG_ERRORS,
@@ -17,7 +19,7 @@ bool verbose(log_level_e level);
 void set_log_level(log_level_e level);
 log_level_e get_log_level(void);
 const char *emsg(void);
-void fatal(const char *fmt, ...);
+void error(const char *fmt, ...);
 void warning(const char *fmt, ...);
 void note(const char *fmt, ...);
 void debug(const char *fmt, ...);

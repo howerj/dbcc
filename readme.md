@@ -34,6 +34,8 @@ program.
   (see <https://github.com/orangeduck/mpc>)
 * Turn a DBC file into an XML representation of the DBC file (with XSD schema)
   (see <http://www.msweet.org/projects.php?Z3>)
+* Offer a template mechanism so arbitrary code can be populated with messages
+  and signal lists.
 * Allow the merging of multiple DBC files
 * Write unit tests to cover the converter and the generated code.
 
