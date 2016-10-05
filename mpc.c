@@ -1,9 +1,11 @@
+/**@file mpc.c 
+ * @brief See the header for licensing, and https://github.com/orangeduck/mpc for
+ * the original source, this file has been taken from commit 
+ * "37c12b1d43605c2b897b4bacd6d45c450920aea4" and subsequently modified 
+ * @todo cleanup file; formatting, API changes. */
+
 #include "mpc.h"
 #include <assert.h>
-
-/* See the header for licensing, and https://github.com/orangeduck/mpc for
- * the original source, this file has been taken from commit 
- * "37c12b1d43605c2b897b4bacd6d45c450920aea4" and subsequently modified */
 
 static const char *emsg(void)
 {
@@ -35,7 +37,7 @@ static void *reallocate(void *p, size_t n)
   /**@bug something is not allocating enough memory, the +1 fixes the Valgrind issues*/
   void *r = realloc(p, n+1); 
   if(!r)
-    fatal("reallocateate failed: %s", emsg());
+    fatal("reallocate failed: %s", emsg());
   return r;
 }
 

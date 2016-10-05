@@ -63,5 +63,12 @@ And for what CAN is
 .SH BUGS
 The program is in alpha status and thus is unlikely to work or be complete.
 
+This program only works with ASCII, which is not a problem as the comments are
+not used for anything, but the parser will break if it encounters non-ASCII
+characters. As a work around, use iconv(1) on any input DBC that has non-ASCII 
+characters in it, or is not in ASCII encoded, like so:
+
+.B iconv -t -c utf8.dbc > ascii.dbc
+
 .SH AUTHOR
 Richard James Howe (howe.r.j.89@gmail.com)
