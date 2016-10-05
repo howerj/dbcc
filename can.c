@@ -43,30 +43,6 @@ void can_msg_delete(can_msg_t *msg)
 	free(msg);
 }
 
-numeric_t string2numeric(const char *s)
-{
-	assert(s);
-	numeric_t n;
-	if(strpbrk(s, ".eNnIifF")) { /* is-floating? Contains 'e', '.' or f, or is "Inf", "Nan"*/
-		n.type = numeric_floating_e;
-		int r = sscanf(s, "%lf", &n.data.floating);
-		/**@todo extract fractional part and attempt reconversion*/
-		assert(r == 1);
-		return n;
-	}
-	if(strchr(s, '-')) {
-		n.type = numeric_signed_e;
-		int r = sscanf(s, "%"SCNd64, &n.data.integer);
-		assert(r == 1);
-		return n;
-	}
-
-	n.type = numeric_unsigned_e;
-	int r = sscanf(s, "%"SCNu64, &n.data.uinteger);
-	assert(r == 1);
-	return n;
-}
-
 static void y_mx_c(mpc_ast_t *ast, signal_t *sig)
 {
 	int r;
@@ -207,15 +183,16 @@ dbc_t *ast2dbc(mpc_ast_t *ast)
 
 	dbc_t *d = dbc_new();
 	can_msg_t **r = allocate(sizeof(*r) * (n+1));
+	int j = 0;
 	for(int i = 0; i >= 0;) {
 		i = mpc_ast_get_index_lb(msgs_ast, "message|>", i);
 		if(i >= 0) {
 			mpc_ast_t *msg_ast = mpc_ast_get_child_lb(msgs_ast, "message|>", i);
-			r[i] = ast2msg(msg_ast);
+			r[j++] = ast2msg(msg_ast);
 			i++;
 		}
 	}
-	d->message_count = n;
+	d->message_count = j;
 	d->messages = r;
 	return d;
 }

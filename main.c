@@ -84,7 +84,7 @@ done:
 		int r = 0;
 		switch(convert) {
 		case convert_to_c:
-			r = dbc2c(dbc, stdout);
+			r = dbc2c(dbc, stdout, stdout);
 			break;
 		case convert_to_xml:
 			r = dbc2xml(dbc, stdout);

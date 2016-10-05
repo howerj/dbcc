@@ -18,15 +18,6 @@ typedef enum {
 } numeric_e;
 
 typedef struct {
-	numeric_e type;
-	union {
-		uint64_t uinteger;
-		int64_t integer;
-		double floating;
-	} data;
-} numeric_t;
-
-typedef struct {
 	size_t ecu_count;    /**< ECU count */
 	char *units;         /**< units used */
 	char **ecus;         /**< ECUs sending/receiving */
@@ -39,6 +30,8 @@ typedef struct {
 	unsigned start_bit;  /**< starting bit position in message */
 	endianess_e endianess; /**< endianess of message */
 	bool is_signed;      /**< if true, value is signed */
+	/**@todo fill in is_floating*/
+	bool is_floating;    /**< if true, value is a floating point number*/
 } signal_t;
 
 typedef struct {

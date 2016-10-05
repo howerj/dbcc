@@ -1,11 +1,195 @@
+/**@todo Multiplexed signals are not handled */
 #include "2c.h"
 #include "util.h"
+#include <time.h>
+#include <inttypes.h>
 
-int dbc2c(dbc_t *dbc, FILE *output)
+#define MAX_NAME_LENGTH (512u)
+
+static int signal2deserializer(signal_t *sig, FILE *o)
 {
-	UNUSED(dbc);
-	UNUSED(output);
-	warning("dbc2c => not implement yet");
+	bool motorola = sig->endianess == endianess_motorola_e;
+	int start = sig->start_bit;
+	if(motorola)
+		start = (8 * (7 - (start / 8))) + (start % 8);
+	uint64_t mask = sig->bit_length == 64 ?
+		0xFFFFFFFFFFFFFFFFuLL :
+		(1uLL << sig->bit_length) - 1uLL;
+
+	if(start)
+		fprintf(o, "\tx = (%c >> %d) & 0x%"PRIx64";\n", motorola ? 'm' : 'i', start, mask);
+	else
+		fprintf(o, "\tx = %c & 0x%"PRIx64";\n", motorola ? 'm' : 'i',  mask);
+
+	if(sig->is_floating) {
+		/**@todo floating point values*/
+	} else if(sig->is_signed) {
+		uint64_t top = (1uL << (sig->bit_length - 1));
+		uint64_t negative = ~mask;
+		if(sig->bit_length <= 32)
+			negative &= 0xFFFFFFFF;
+		if(sig->bit_length <= 16)
+			negative &= 0xFFFF;
+		if(sig->bit_length <= 8)
+			negative &= 0xFF;
+		if(negative)
+			fprintf(o, "\tx = x & 0x%"PRIx64" ? x | 0x%"PRIx64" : x; \n", top, negative);
+		fprintf(o, "\tunpack->%s = x;\n", sig->name);
+	} else {
+		fprintf(o, "\tunpack->%s = x;\n", sig->name);
+	}
+
+	return 0;
+}
+
+static int signal2serializer(signal_t *sig, FILE *o)
+{
+	bool motorola = sig->endianess == endianess_motorola_e;
+	int start = sig->start_bit;
+	if(motorola)
+		start = (8 * (7 - (start / 8))) + (start % 8);
+	uint64_t mask = sig->bit_length == 64 ?
+		0xFFFFFFFFFFFFFFFFuLL :
+		(1uLL << sig->bit_length) - 1uLL;
+	fprintf(o, "\tx = (*(uint64_t*)(&pack->%s)) & 0x%"PRIx64";\n", sig->name, mask);
+	if(start)
+		fprintf(o, "\tx = x << %u; \n", start);
+	fprintf(o, "\t%c |= x;\n", motorola ? 'm' : 'i');
+	return 0;
+}
+
+static int signal2type(signal_t *sig, FILE *o)
+{
+	char *type;
+	type = sig->is_signed ? " int64_t" : "uint64_t"; 
+	/**@note bit fields could be used as instead of normal C types*/
+	if(sig->bit_length <= 32)
+		type = sig->is_signed ? " int32_t" : "uint32_t"; 
+	if(sig->bit_length <= 16)
+		type = sig->is_signed ? " int16_t" : "uint16_t"; 
+	if(sig->bit_length <= 8)
+		type = sig->is_signed ? " int8_t" : "uint8_t "; 
+	/**@note bool could be added for bit_length == 1, potentially */
+	if(sig->bit_length == 0) {
+		warning("signal %s has bit length of 0 (fix the dbc file)");
+		return -1;
+	}
+
+	if(sig->is_floating) {
+		if(sig->bit_length != 32 || sig->bit_length != 64) {
+			warning("signal %s is floating point number but has length %u (fix the dbc file)", sig->name, sig->bit_length);
+			return -1;
+		}
+		type = sig->bit_length == 64 ? "double" : "float";
+	}
+
+	int r = fprintf(o, "\t%s %s; \n", type, sig->name);
+	return r;
+}
+
+static int print_function_name(FILE *out, const char *prefix, const char *name, const char *postfix, bool in)
+{
+	return fprintf(out, "int %s_%s(%s_t *restrict %s, uint64_t %sdata)%s", 
+			prefix, name, name, prefix, in ? "" : "*restrict ", postfix);
+}
+
+static int msg2c(can_msg_t *msg, FILE *c)
+{
+	char name[MAX_NAME_LENGTH] = {0};
+	snprintf(name, MAX_NAME_LENGTH-1, "CANMsg_0x%03x_%s", msg->id, msg->name);
+
+	print_function_name(c, "pack", name, "\n{\n", false);
+	fprintf(c, "\tregister uint64_t x = 0, m = 0, i = 0;\n");
+	for(size_t i = 0; i < msg->signal_count; i++)
+		if(signal2serializer(msg->signals[i], c) < 0)
+			return -1;
+	fprintf(c, "\t*data = reverse_byte_order(m) | i;\n");
+	fprintf(c, "\treturn 0;\n}\n\n");
+
+	print_function_name(c, "unpack", name, "\n{\n", true);
+	fprintf(c, "\tregister uint64_t x, m = reverse_byte_order(data), i = 0;\n");
+	for(size_t i = 0; i < msg->signal_count; i++)
+		if(signal2deserializer(msg->signals[i], c) < 0)
+			return -1;
+	fprintf(c, "\treturn 0;\n}\n\n");
+	return 0;
+}
+
+static int msg2h(can_msg_t *msg, FILE *h)
+{
+	char name[MAX_NAME_LENGTH] = {0};
+	snprintf(name, MAX_NAME_LENGTH-1, "CANMsg_0x%03x_%s", msg->id, msg->name);
+
+	/**@todo print structure in optimal order (sort for size of signal
+	 * before printing structure out) */
+	fprintf(h, "typedef struct {\n" );
+	for(size_t i = 0; i < msg->signal_count; i++)
+		if(signal2type(msg->signals[i], h) < 0)
+			return -1;
+	fprintf(h, "} %s_t;\n\n", name);
+
+	print_function_name(h, "pack", name, ";\n", false);
+	print_function_name(h, "unpack", name, ";\n\n", true);
+
+	return 0;
+}
+
+static const char *cfunctions = 
+"static uint64_t inline reverse_byte_order(uint64_t x)\n" 
+"{\n"
+"\tx = (x & 0x00000000FFFFFFFF) << 32 | (x & 0xFFFFFFFF00000000) >> 32;\n"
+"\tx = (x & 0x0000FFFF0000FFFF) << 16 | (x & 0xFFFF0000FFFF0000) >> 16;\n"
+"\tx = (x & 0x00FF00FF00FF00FF) << 8  | (x & 0xFF00FF00FF00FF00) >> 8;\n"
+"\treturn x;\n"
+"}\n\n";
+
+
+int dbc2c(dbc_t *dbc, FILE *c, FILE *h)
+{
+	/**@todo print out ECU node information */
+
+	time_t rawtime;
+	struct tm * timeinfo;
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+
+	const char *file_guard = "CAN_CODEC";
+	const char *file_name = "can_codec";
+
+	/* header file (begin) */
+	fprintf(h,
+		"/** @brief CAN message encoder/decoder: automatically generated - do not edit\n"
+		"  * @note  Generated on %s"
+		"  * @note  Generated by dbcc: See https://github.com/howerj/dbcc\n"
+		"  */\n\n"
+		"#ifndef %s_H\n"
+		"#define %s_H\n\n"
+		"#include <stdint.h>\n\n"
+		"#ifdef __cplusplus\n"
+		"#define restrict\n"
+		"extern \"C\" { \n"
+		"#endif\n\n",
+		asctime(timeinfo),
+		file_guard, file_guard);
+
+	for(int i = 0; i < dbc->message_count; i++)
+		if(msg2h(dbc->messages[i], h) < 0)
+			return -1;
+	fputs(
+		"#ifdef __cplusplus\n"
+		"} \n"
+		"#endif\n\n"
+		"#endif\n",
+		h);
+	/* header file (end) */
+
+
+	/* C FILE */
+	fprintf(c, "#include \"%s.h\"\n\n", file_name);
+	fprintf(c, "%s\n", cfunctions);
+	for(int i = 0; i < dbc->message_count; i++)
+		if(msg2c(dbc->messages[i], c) < 0)
+			return -1;
 	return 0;
 }
 
