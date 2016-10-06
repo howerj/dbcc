@@ -1,4 +1,5 @@
-/**@todo Multiplexed signals are not handled */
+/**@todo Multiplexed signals are not handled
+ * @todo DLC processing */
 #include "2c.h"
 #include "util.h"
 #include <time.h>
