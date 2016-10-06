@@ -3,6 +3,6 @@
 
 #include "can.h"
 
-int dbc2c(dbc_t *dbc, FILE *c, FILE *h);
+int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name);
 
 #endif

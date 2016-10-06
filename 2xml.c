@@ -1,6 +1,7 @@
 #include "2xml.h"
 #include "util.h"
 /**@todo neaten up producing the XML, perhaps with a make tag vprintf wrapper */
+/**@todo units needs escaping*/
 
 static int signal2xml(signal_t *sig, FILE *o)
 {
@@ -25,7 +26,7 @@ static int msg2xml(can_msg_t *msg, FILE *o)
 {
 	fprintf(o, "\t<message>\n");
 	fprintf(o, "\t\t<name>%s</name>\n", msg->name);
-	fprintf(o, "\t\t<id>%x</id>\n", msg->id);
+	fprintf(o, "\t\t<id>0x%x</id>\n", msg->id);
 	fprintf(o, "\t\t<dlc>%u</dlc>\n", msg->dlc);
 
 	for(size_t i = 0; i < msg->signal_count; i++)

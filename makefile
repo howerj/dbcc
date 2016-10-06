@@ -1,15 +1,21 @@
-LDFLAGS  = 
+LDFLAGS  = -lm
 CFLAGS   = -std=c99 -Wall -Wextra -g -O2
 RM      := rm
+OUTDIR  := out
 SOURCES := ${wildcard *.c}
+MDS     := ${wildcard *.md}
+DBCS    := ${wildcard *.dbc}
+DOCS    := ${MDS:%.md=%.htm}
 OBJECTS := ${SOURCES:%.c=%.o}
 DEPS    := ${SOURCES:%.c=%.d}
+XMLS    := ${DBCS:%.dbc=${OUTDIR}/%.xml}
+CODECS  := ${DBCS:%.dbc=${OUTDIR}/%.c}
 CFLAGS  += -MMD
 TARGET  := dbcc
 
-.PHONY: doc all clean 
+.PHONY: doc all run clean 
 
-all: mpc.h ${TARGET}
+all: ${TARGET}
 
 %.o: %.c
 	@echo ${CC} $< -c -o $@
@@ -19,13 +25,18 @@ ${TARGET}: ${OBJECTS}
 	@echo ${CC} $< -o $@
 	@${CC} ${CFLAGS} $^ ${LDFLAGS} -o $@
 
-run: ${TARGET}
-	./${TARGET} ex1.dbc
+${OUTDIR}/%.xml: %.dbc ${TARGET}
+	./${TARGET} -x -o ${OUTDIR} $<
 
-doc: dbcc.htm
+${OUTDIR}/%.c: %.dbc ${TARGET}
+	./${TARGET} -o ${OUTDIR} $<
 
-dbcc.htm: readme.md
-	markdown $^ | tee $@
+run: ${XMLS} ${CODECS}
+
+doc: ${DOCS}
+
+%.htm: %.md
+	markdown $^ | tee $@ > /dev/null
 
 -include ${DEPS}
 

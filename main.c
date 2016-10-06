@@ -26,11 +26,12 @@ static void help(void)
 dbcc - compile CAN DBC files to C code\n\
 \n\
 Options:\n\
-\t-     stop processing command line arguments\n\
-\t-x    convert output to XML instead of the default C code\n\
-\t-h    print out a help message and exit\n\
-\t-v    make the program more verbose\n\
-\tfile  process a DBC file\n\
+\t-      stop processing command line arguments\n\
+\t-h     print out a help message and exit\n\
+\t-v     make the program more verbose\n\
+\t-x     convert output to XML instead of the default C code\n\
+\t-o dir set the output directory\n\
+\tfile   process a DBC file\n\
 \n\
 Files must come after the arguments have been processed.\n\
 \n\
@@ -43,10 +44,49 @@ Howe. (see https://github.com/howerj/dbcc for the full program source).\n";
 	fputs(msg, stderr);
 }
 
+char *replace_file_type(const char *file, const char *suffix)
+{
+	char *name = duplicate(file);
+	char *dot = strrchr(name, '.');
+	if(*dot)
+		*dot = '\0';
+	name = reallocator(name, strlen(name) + strlen(suffix) + 2); /* + 1 for '.', + 1 for '\0' */
+	strcat(name, ".");
+	strcat(name, suffix);
+	return name;
+}
+
+int dbc2cWrapper(dbc_t *dbc, const char *dbc_file, const char *file_only)
+{
+	char *cname = replace_file_type(dbc_file,  "c");
+	char *hname = replace_file_type(dbc_file,  "h");
+	char *fname = replace_file_type(file_only, "h");
+	FILE *c = fopen_or_die(cname, "wb");
+	FILE *h = fopen_or_die(hname, "wb");
+	int r = dbc2c(dbc, c, h, fname);
+	fclose(c);
+	fclose(h);
+	free(cname);
+	free(hname);
+	free(fname);
+	return r;
+}
+
+int dbc2xmlWrapper(dbc_t *dbc, const char *dbc_file)
+{
+	char *name = replace_file_type(dbc_file, "xml");
+	FILE *o = fopen_or_die(name, "wb");
+	int r = dbc2xml(dbc, o);
+	fclose(o);
+	free(name);
+	return r;
+}
+
 int main(int argc, char **argv)
 {
 	log_level_e log_level = get_log_level();
 	conversion_type_e convert = convert_to_c; 
+	const char *outdir = NULL;
 
 	int i;
 	for(i = 1; i < argc && argv[i][0] == '-'; i++)
@@ -60,13 +100,19 @@ int main(int argc, char **argv)
 			set_log_level(++log_level);
 			debug("log level: %u", log_level);
 			break;
+		case 'o':
+			if(i >= argc - 1)
+				goto fail;
+			outdir = argv[++i];
+			break;
 		case 'h':
 			usage(argv[0]);
 			help();
 			break;
 		default:
+		fail:
 			usage(argv[0]);
-			error("unknown command line option '%c'", argv[i]);
+			error("unknown/invalid command line option '%c'", argv[i]);
 		}
 done:
 	for(; i < argc; i++) {
@@ -81,13 +127,21 @@ done:
 
 		dbc_t *dbc = ast2dbc(ast);
 
+		char *outpath = argv[i];
+		if(outdir) {
+			outpath = allocate(strlen(outpath) + strlen(outdir) + 2 /* '/' + '\0'*/);
+			strcat(outpath, outdir);
+			strcat(outpath, "/");
+			strcat(outpath, argv[i]);
+		}
+
 		int r = 0;
 		switch(convert) {
 		case convert_to_c:
-			r = dbc2c(dbc, stdout, stdout);
+			r = dbc2cWrapper(dbc, outpath, argv[i]);
 			break;
 		case convert_to_xml:
-			r = dbc2xml(dbc, stdout);
+			r = dbc2xmlWrapper(dbc, outpath);
 			break;
 		default:
 			error("invalid conversion type: %d", convert);
@@ -95,6 +149,8 @@ done:
 		if(r < 0)
 			warning("conversion process failed: %u/%u", r, convert);
 
+		if(outdir)
+			free(outpath);
 		dbc_delete(dbc);
 		mpc_ast_delete(ast);
 	}

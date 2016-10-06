@@ -92,7 +92,7 @@ static mpc_ast_t *_parse_dbc_string(const char *file_name, const char *string)
 	#define X(CVAR, NAME) CVAR,
 	mpc_err_t *language_error = mpca_lang(MPCA_LANG_WHITESPACE_SENSITIVE,
 			" s         : /[ \\t]/ ; "
-			" n         : '\\n' ; "
+			" n         : /\\r?\\n/ ; "
 			" sign      : '+' | '-' ; "
 			" float     : /[-+]?[0-9]+(\\.[0-9]+)?([eE][-+]?[0-9]+)?/ ; "
 			" ident     : /[a-zA-Z_][a-zA-Z0-9_]*/ ;"
@@ -116,7 +116,7 @@ static mpc_ast_t *_parse_dbc_string(const char *file_name, const char *string)
 		        "             <length> <s>* '@' <s>* <endianess> <s>* <sign> <s>* <y_mx_c> <s>* "
 			"             <range> <s>* <unit> <s>* <nodes> <s>* <n> ; "
 			" message   : \"BO_\" <s>+ <id> <s>+ <name>  <s>* ':' <s>* <dlc> <s>+ <ecu> <s>* <n> <signal>* ; "
-			" messages  : (<message> '\n'+)* ; "
+			" messages  : (<message> <n>+)* ; "
 			" version   : \"VERSION\" <s> <string> <n>+ ; "
 			" ecus      : \"BU_\" <s>* ':' (<ident>|<s>)* <n> ; "
 			" symbols   : \"NS_\" <s>* ':' <s>* <n> ('\t' <ident> <n>)* <n> ; " 

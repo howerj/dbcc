@@ -1,14 +1,14 @@
 .\" Manpage for dbcc
 .\" Contact howe.r.j.89@gmail.com to correct errors or typos.
-.TH dbcc 1 "10 May 2016" "0.1.0" "dbcc man page"
+.TH dbcc 1 "06 Oct 2016" "0.1.0" "dbcc man page"
 .SH NAME
 dbcc \- Compile DBC files into C code
 .SH SYNOPSIS
-dbcc [-] [-h] [-v] file*
+dbcc [-] [-h] [-v] [-x] [-o dir] file*
 .SH DESCRIPTION
 Given a DBC file containing descriptions of CAN messages this program will parse
 that file and generate C functions that can serialize and deserialize those
-messages.
+messages. Optionally it can produce XML instead of C.
 
 .SH OPTIONS
 
@@ -25,23 +25,28 @@ Print a help message to stderr(3) and exit the program unsuccessfully.
 Increase the verbosity level of the program.
 
 .TP
+.B -x
+Produce an XML file instead of a C and header file
+
+.TP
+.B -o dir
+Set the output directory
+
+.TP
 .B file
+A DBC file to process
 
 .SH EXAMPLES
 
 .B
 	./dbcc file.dbc
 
-This will run the program on a DBC file called "file.dbc" and spit out
-the results to stdout(3).
-
-.SH COPYRIGHT
-
-The mpc parser combinator library belongs to Daniel Holden
-(contact@daniel-holden.com) licensed under BSD3, Copyright (c) 2013.
-
-The dbcc program is licensed under the MIT license, Copyright (c) 2016, Richard
-Howe.
+This will run the program on a DBC file called
+.I file.dbc 
+and make two files, one called
+.I file.c
+and another called
+.I file.h
 
 .SH EXIT STATUS
 
@@ -63,12 +68,26 @@ And for what CAN is
 .SH BUGS
 The program is in alpha status and thus is unlikely to work or be complete.
 
-This program only works with ASCII, which is not a problem as the comments are
-not used for anything, but the parser will break if it encounters non-ASCII
-characters. As a work around, use iconv(1) on any input DBC that has non-ASCII 
+This program may produce invalid C, which may be accepted by your compiler
+depending on how liberal it is with characters outside of the
+range allowed by C in comments. The units string of a CAN DBC file can contain 
+Unicode characters, which will be put into a comment in the generated C code.
+
+As a work around, use iconv(1) on any input DBC that has non-ASCII 
 characters in it, or is not in ASCII encoded, like so:
 
 .B iconv -t -c utf8.dbc > ascii.dbc
 
+For any bugs, contact the author.
+
 .SH AUTHOR
 Richard James Howe (howe.r.j.89@gmail.com)
+
+.SH COPYRIGHT
+The dbcc program is licensed under the MIT license, Copyright (c) 2016, Richard
+Howe.
+
+The mpc parser combinator library belongs to Daniel Holden
+(contact@daniel-holden.com) licensed under BSD3, Copyright (c) 2013. This was
+used in this project to do the actual parsing.
+

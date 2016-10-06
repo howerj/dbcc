@@ -4,8 +4,27 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 static log_level_e log_level = LOG_NOTES;
+
+bool is_integer(double i)
+{
+	double integral = 0, fractional = 0;
+	fractional = modf(i, &integral);
+	return abs(fractional) < 0.000001; /*is the fractional bit zero?*/
+}
+
+bool is_power_of_two(uint64_t n)
+{
+	return (n > 0 && ((n & (n - 1)) == 0));
+}
+
+double fractional(double x)
+{
+	double i = 0;
+	return modf(x, &i);
+}
 
 bool verbose(log_level_e level)
 {

@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <math.h>
 
 signal_t *signal_new(void)
 {
@@ -68,7 +69,6 @@ static void range(mpc_ast_t *ast, signal_t *sig)
 }
 
 /**@todo implement nodes function
-
 static void nodes(mpc_ast_t *ast, signal_t *sig)
 {
 	assert(ast && sig);

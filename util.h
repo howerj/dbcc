@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #define UNUSED(X) ((void)(X))
 
@@ -15,6 +16,9 @@ typedef enum {
 	LOG_ALL_MESSAGES,
 } log_level_e;
 
+bool is_integer(double i);
+double fractional(double x);
+bool is_power_of_two(uint64_t n);
 bool verbose(log_level_e level);
 void set_log_level(log_level_e level);
 log_level_e get_log_level(void);

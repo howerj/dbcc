@@ -38,6 +38,7 @@ program.
   and signal lists.
 * Allow the merging of multiple DBC files
 * Write unit tests to cover the converter and the generated code.
+* Basic sanity checking of the DBC files could be built in.
 
 [DBC]: http://vector.com/vi_candb_en.html
 [C]: https://en.wikipedia.org/wiki/C_%28programming_language%29
