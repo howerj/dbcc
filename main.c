@@ -17,7 +17,7 @@ typedef enum {
 
 static void usage(const char *arg0)
 {
-	fprintf(stderr, "%s: [-] [-h] [-v] file*\n", arg0);
+	fprintf(stderr, "%s: [-] [-h] [-v] [-o dir] [-x] file*\n", arg0);
 }
 
 static void help(void)
