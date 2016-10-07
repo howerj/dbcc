@@ -104,6 +104,7 @@ int main(int argc, char **argv)
 			if(i >= argc - 1)
 				goto fail;
 			outdir = argv[++i];
+			debug("output directory: %s", outdir);
 			break;
 		case 'h':
 			usage(argv[0]);
@@ -112,7 +113,7 @@ int main(int argc, char **argv)
 		default:
 		fail:
 			usage(argv[0]);
-			error("unknown/invalid command line option '%c'", argv[i]);
+			error("unknown/invalid command line option '%c'", argv[i][1]);
 		}
 done:
 	for(; i < argc; i++) {

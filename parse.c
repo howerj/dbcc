@@ -65,6 +65,7 @@ mpc_ast_t *parse_dbc_string(const char *string)
 	X(signal,     "signal")\
 	X(message,    "message")\
 	X(messages,   "messages")\
+	X(types,      "types")\
 	X(etcetera,   "etcetera")\
 	X(version,    "version")\
 	X(ecus,       "ecus")\
@@ -122,7 +123,8 @@ static mpc_ast_t *_parse_dbc_string(const char *file_name, const char *string)
 			" symbols   : \"NS_\" <s>* ':' <s>* <n> ('\t' <ident> <n>)* <n> ; " 
 			" whatever  : (<ident>|<string>|<integer>|<float>) ; "
 			" bs        : \"BS_\" <s>* ':' <n>+ ; " 
-			" etcetera  : /.*$/ ; " /**@note don't care about the rest of the file, for now*/
+			" types     : <s>* <ident> (<whatever>|<s>)+ ';' (<n>*|/$/) ; "
+			" etcetera  : <types>+ ; " /**@note don't care about the rest of the file, for now*/
 			" values    : \"VAL_TABLE_\" (<whatever>|<s>)* ';' <n> ; " /**@note don't care about this, for now*/
 			" dbc       : <version> <symbols> <bs> <ecus> <values>* <n>* <messages> <etcetera>  ; "
 			, X_MACRO_PARSE_VARS NULL);
