@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <!-- This XSD file describe the output from the DBCC program, a program
+  that turns DBC files into something more useful (either C code or XML ), 
+  see https://github.com/howerj/dbcc for more information.
+
+  There is more information that needs to be included in this files, as a DBC
+  file also contains information about which nodes receive and send signals, and
+  there is extra type information for signals (like specific values meaning special
+  things) which currently are not processed by DBCC. Multiplexed signals and
+  information about remote frames is also not stored, as it is not yet extracted.
+
+  This XSD cannot describe CAN FD messages and signals. -->
+  <!-- The CAN database is simply comprised of messages which each node (or ECU)
+  connected to the bus can send or receive -->
+  <xs:element name="candb">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="message"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <!-- A can message is a package of data that is broadcast to each ECU on the
+  bus, it has an ID and a package length, with zero to eight bytes of
+  data -->
+  <xs:element name="message">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="name" type="xs:string"/>
+        <xs:element name="id" type="can-id"/>
+        <!-- 11 or 29 bit CAN ID -->
+        <xs:element name="dlc" type="dlc"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="signal"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <!-- A signal is a member of a message, it describes how to turn
+  a message into a type (such as a float, an integer, ...) by
+  specifying where in the message and how many bits the value it. 
+  Instead of doing the rational thing and only choosing and standardizing 
+  on one endianess (does not matter which one, just pick *one*) messages
+  can contain signals of differing endianess -->
+  <xs:element name="signal">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="name" type="xs:string"/>
+        <xs:element name="startbit" type="startbit"/>
+        <xs:element name="bitlength" type="bitlength"/>
+        <xs:element name="endianess" type="endianess"/>
+        <xs:element name="scaling" type="xs:decimal"/>
+        <xs:element name="offset" type="xs:decimal"/>
+        <xs:element name="minimum" type="xs:decimal"/>
+        <xs:element name="maximum" type="xs:decimal"/>
+        <xs:element name="signed" type="xs:boolean"/>
+        <xs:element name="units" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <!-- Only two valid byte orders, "motorola" (Big Endian) and "intel" (Little Endian) -->
+  <xs:simpleType name="endianess">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="motorola"/>
+      <xs:enumeration value="intel"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- 2^29-1 for 29 bit CAN IDs, use 2047 for 11-bit can IDS -->
+  <xs:simpleType name="can-id">
+    <xs:restriction base="xs:integer">
+      <xs:minInclusive value="0"/>
+      <xs:maxInclusive value="536870911"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- DLC 0-8 are valid values -->
+  <xs:simpleType name="dlc">
+    <xs:restriction base="xs:integer">
+      <xs:minInclusive value="0"/>
+      <xs:maxInclusive value="8"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- Bit lengths of zero do not make sense, the maximum bit length is
+  the maximum length in a CAN package -->
+  <xs:simpleType name="bitlength">
+    <xs:restriction base="xs:integer">
+      <xs:minInclusive value="1"/>
+      <xs:maxInclusive value="64"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- Offset into the CAN package data, limited by maximum length of a CAN
+  package -->
+  <xs:simpleType name="startbit">
+    <xs:restriction base="xs:integer">
+      <xs:minInclusive value="0"/>
+      <xs:maxInclusive value="64"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>

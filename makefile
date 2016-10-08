@@ -27,6 +27,7 @@ ${TARGET}: ${OBJECTS}
 
 ${OUTDIR}/%.xml: %.dbc ${TARGET}
 	./${TARGET} -x -o ${OUTDIR} $<
+	xmllint --noout --schema dbcc.xsd $@
 
 ${OUTDIR}/%.c: %.dbc ${TARGET}
 	./${TARGET} -o ${OUTDIR} $<

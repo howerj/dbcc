@@ -26,7 +26,7 @@ static int msg2xml(can_msg_t *msg, FILE *o)
 {
 	fprintf(o, "\t<message>\n");
 	fprintf(o, "\t\t<name>%s</name>\n", msg->name);
-	fprintf(o, "\t\t<id>0x%x</id>\n", msg->id);
+	fprintf(o, "\t\t<id>%u</id>\n", msg->id);
 	fprintf(o, "\t\t<dlc>%u</dlc>\n", msg->dlc);
 
 	for(size_t i = 0; i < msg->signal_count; i++)
@@ -45,7 +45,7 @@ int dbc2xml(dbc_t *dbc, FILE *output)
 	for(int i = 0; i < dbc->message_count; i++)
 		if(msg2xml(dbc->messages[i], output) < 0)
 			return -1;
-	if(fprintf(output, "<candb>\n") < 0)
+	if(fprintf(output, "</candb>\n") < 0)
 		return -1;
 	return 0;
 }

@@ -1,7 +1,14 @@
 /**@todo Multiplexed signals are not handled
  * @todo DLC processing
  * @todo Validation functions with configurable behavior (range checks, etc)
- * @todo Tidy up this module, make things configurable*/
+ * @todo Tidy up this module, make things configurable
+ *
+ * This file is quite a mess, but that is not going to change, it is also
+ * quite short and seems to do the job. I better solution would be to make a
+ * template tool, or a macro processor, suited for the task of generating C
+ * code. The entire program really should be written in a language like Perl or
+ * Python, but I wanted to use the MPC library for something, so here we are.
+ */
 
 #include "2c.h"
 #include "util.h"

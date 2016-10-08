@@ -26,14 +26,16 @@ program.
 
 ## Bugs
 
-* It does not work yet (implementation has not been completed)
+* A lot of the DBC file format is not dealt with
+  - Multiplexed signals
+  - Special values
+  - Timeouts 
+* The generated C code has not been tested that much
 
 ## Goals
 
 * Turn a DBC file into C code
   (see <https://github.com/orangeduck/mpc>)
-* Turn a DBC file into an XML representation of the DBC file (with XSD schema)
-  (see <http://www.msweet.org/projects.php?Z3>)
 * Offer a template mechanism so arbitrary code can be populated with messages
   and signal lists.
 * Allow the merging of multiple DBC files

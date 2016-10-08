@@ -1,6 +1,5 @@
 /**@file main.c
- * @brief dbcc - produce serialization and deserialization code for CAN DBC files
- * @todo hunt down the causes of the memory leaks */
+ * @brief dbcc - produce serialization and deserialization code for CAN DBC files*/
 #include <assert.h>
 #include <stdint.h>
 #include "mpc.h"
@@ -17,7 +16,7 @@ typedef enum {
 
 static void usage(const char *arg0)
 {
-	fprintf(stderr, "%s: [-] [-h] [-v] [-o dir] [-x] file*\n", arg0);
+	fprintf(stderr, "%s: [-] [-h] [-v] [-g] [-x] [-o dir] file*\n", arg0);
 }
 
 static void help(void)
@@ -29,6 +28,7 @@ Options:\n\
 \t-      stop processing command line arguments\n\
 \t-h     print out a help message and exit\n\
 \t-v     make the program more verbose\n\
+\t-g     print out the grammar used to parse the DBC files\n\
 \t-x     convert output to XML instead of the default C code\n\
 \t-o dir set the output directory\n\
 \tfile   process a DBC file\n\
@@ -93,22 +93,24 @@ int main(int argc, char **argv)
 		switch(argv[i][1]) {
 		case '\0': /* stop argument processing */
 			goto done; 
-		case 'x':
-			convert = convert_to_xml;
+		case 'h':
+			usage(argv[0]);
+			help();
 			break;
 		case 'v':
 			set_log_level(++log_level);
 			debug("log level: %u", log_level);
+			break;
+		case 'g':
+			return printf("DBCC Grammar =>\n%s\n", parse_get_grammar()) < 0;
+		case 'x':
+			convert = convert_to_xml;
 			break;
 		case 'o':
 			if(i >= argc - 1)
 				goto fail;
 			outdir = argv[++i];
 			debug("output directory: %s", outdir);
-			break;
-		case 'h':
-			usage(argv[0]);
-			help();
 			break;
 		default:
 		fail:

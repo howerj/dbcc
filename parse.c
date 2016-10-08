@@ -4,6 +4,48 @@
 static mpc_ast_t *_parse_dbc_string(const char *file_name, const char *string);
 static mpc_ast_t *_parse_dbc_file_by_handle(const char *name, FILE *handle);
 
+static const char *dbc_grammar = 
+" s         : /[ \\t]/ ; \n"
+" n         : /\\r?\\n/ ; \n"
+" sign      : '+' | '-' ; \n"
+" float     : /[-+]?[0-9]+(\\.[0-9]+)?([eE][-+]?[0-9]+)?/ ; \n"
+" ident     : /[a-zA-Z_][a-zA-Z0-9_]*/ ;\n"
+" integer   : <sign>? /[0-9]+/ ; \n"
+" factor    : <float> | <integer> ; \n"
+" offset    : <float> | <integer> ; \n"
+" length    : /[0-9]+/ ; \n"
+" range     : '[' ( <float> | <integer> ) '|' ( <float> | <integer> ) ']' ;\n"
+" node      : <ident> ; \n"
+" nodes     : <node> <s>* ( ',' <s>* <node>)* ; \n"
+" string    : '\"' /[^\"]*/ '\"' ; " /**@bug escape chars not allowed */
+" unit      : <string> ; " /**@bug non-ASCII chars should be allowed here */
+" startbit  : <integer> ; \n"
+" endianess : '0' | '1' ; " /* for the endianess; 0 = Motorola, 1 = Intel */
+" y_mx_c    : '(' <factor> ',' <offset> ')' ; \n"
+" name      : <ident> ; \n"
+" ecu       : <ident> ; \n"
+" dlc       : <integer> ; \n"
+" id        : <integer> ; \n"
+" signal    : <s>* \"SG_\" <s>+ <name> <s>* ':' <s>* <startbit> <s>* '|' <s>* \n"
+"             <length> <s>* '@' <s>* <endianess> <s>* <sign> <s>* <y_mx_c> <s>* \n"
+"             <range> <s>* <unit> <s>* <nodes> <s>* <n> ; \n"
+" message   : \"BO_\" <s>+ <id> <s>+ <name>  <s>* ':' <s>* <dlc> <s>+ <ecu> <s>* <n> <signal>* ; \n"
+" messages  : (<message> <n>+)* ; \n"
+" version   : \"VERSION\" <s> <string> <n>+ ; \n"
+" ecus      : \"BU_\" <s>* ':' (<ident>|<s>)* <n> ; \n"
+" symbols   : \"NS_\" <s>* ':' <s>* <n> ('\t' <ident> <n>)* <n> ; " 
+" whatever  : (<ident>|<string>|<integer>|<float>) ; \n"
+" bs        : \"BS_\" <s>* ':' <n>+ ; " 
+" types     : <s>* <ident> (<whatever>|<s>)+ ';' (<n>*|/$/) ; \n"
+" etcetera  : <types>+ ; \n" /**@note don't care about the rest of the file, for now*/
+" values    : \"VAL_TABLE_\" (<whatever>|<s>)* ';' <n> ; \n" /**@note don't care about this, for now*/
+" dbc       : <version> <symbols> <bs> <ecus> <values>* <n>* <messages> <etcetera>  ; \n" ;
+
+const char *parse_get_grammar(void)
+{
+	return dbc_grammar;
+}
+
 mpc_ast_t *parse_dbc_file_by_name(const char *name)
 {
 	mpc_ast_t *ast = NULL;
@@ -91,43 +133,7 @@ static mpc_ast_t *_parse_dbc_string(const char *file_name, const char *string)
 
 	/**@todo process more of the DBC format */
 	#define X(CVAR, NAME) CVAR,
-	mpc_err_t *language_error = mpca_lang(MPCA_LANG_WHITESPACE_SENSITIVE,
-			" s         : /[ \\t]/ ; "
-			" n         : /\\r?\\n/ ; "
-			" sign      : '+' | '-' ; "
-			" float     : /[-+]?[0-9]+(\\.[0-9]+)?([eE][-+]?[0-9]+)?/ ; "
-			" ident     : /[a-zA-Z_][a-zA-Z0-9_]*/ ;"
-			" integer   : <sign>? /[0-9]+/ ; "
-			" factor    : <float> | <integer> ; "
-			" offset    : <float> | <integer> ; "
-			" length    : /[0-9]+/ ; "
-			" range     : '[' ( <float> | <integer> ) '|' ( <float> | <integer> ) ']' ;"
-			" node      : <ident> ; "
-			" nodes     : <node> <s>* ( ',' <s>* <node>)* ; "
-			" string    : '\"' /[^\"]*/ '\"' ; " /**@bug escape chars not allowed */
-			" unit      : <string> ; " /**@bug non-ASCII chars should be allowed here */
-			" startbit  : <integer> ; "
-			" endianess : '0' | '1' ; " /* for the endianess; 0 = Motorola, 1 = Intel */
-			" y_mx_c    : '(' <factor> ',' <offset> ')' ; "
-			" name      : <ident> ; "
-			" ecu       : <ident> ; "
-			" dlc       : <integer> ; "
-			" id        : <integer> ; "
-			" signal    : <s>* \"SG_\" <s>+ <name> <s>* ':' <s>* <startbit> <s>* '|' <s>* "
-		        "             <length> <s>* '@' <s>* <endianess> <s>* <sign> <s>* <y_mx_c> <s>* "
-			"             <range> <s>* <unit> <s>* <nodes> <s>* <n> ; "
-			" message   : \"BO_\" <s>+ <id> <s>+ <name>  <s>* ':' <s>* <dlc> <s>+ <ecu> <s>* <n> <signal>* ; "
-			" messages  : (<message> <n>+)* ; "
-			" version   : \"VERSION\" <s> <string> <n>+ ; "
-			" ecus      : \"BU_\" <s>* ':' (<ident>|<s>)* <n> ; "
-			" symbols   : \"NS_\" <s>* ':' <s>* <n> ('\t' <ident> <n>)* <n> ; " 
-			" whatever  : (<ident>|<string>|<integer>|<float>) ; "
-			" bs        : \"BS_\" <s>* ':' <n>+ ; " 
-			" types     : <s>* <ident> (<whatever>|<s>)+ ';' (<n>*|/$/) ; "
-			" etcetera  : <types>+ ; " /**@note don't care about the rest of the file, for now*/
-			" values    : \"VAL_TABLE_\" (<whatever>|<s>)* ';' <n> ; " /**@note don't care about this, for now*/
-			" dbc       : <version> <symbols> <bs> <ecus> <values>* <n>* <messages> <etcetera>  ; "
-			, X_MACRO_PARSE_VARS NULL);
+	mpc_err_t *language_error = mpca_lang(MPCA_LANG_WHITESPACE_SENSITIVE, dbc_grammar, X_MACRO_PARSE_VARS NULL);
 	#undef X
 
 	if (language_error != NULL) {
