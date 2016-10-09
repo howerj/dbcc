@@ -16,7 +16,7 @@ typedef enum {
 
 static void usage(const char *arg0)
 {
-	fprintf(stderr, "%s: [-] [-h] [-v] [-g] [-x] [-o dir] file*\n", arg0);
+	fprintf(stderr, "%s: [-] [-h] [-v] [-g] [-t] [-x] [-o dir] file*\n", arg0);
 }
 
 static void help(void)
@@ -29,6 +29,7 @@ Options:\n\
 \t-h     print out a help message and exit\n\
 \t-v     make the program more verbose\n\
 \t-g     print out the grammar used to parse the DBC files\n\
+\t-t     add timestamps to the generated files\n\
 \t-x     convert output to XML instead of the default C code\n\
 \t-o dir set the output directory\n\
 \tfile   process a DBC file\n\
@@ -56,14 +57,14 @@ char *replace_file_type(const char *file, const char *suffix)
 	return name;
 }
 
-int dbc2cWrapper(dbc_t *dbc, const char *dbc_file, const char *file_only)
+int dbc2cWrapper(dbc_t *dbc, const char *dbc_file, const char *file_only, bool use_time_stamps)
 {
 	char *cname = replace_file_type(dbc_file,  "c");
 	char *hname = replace_file_type(dbc_file,  "h");
 	char *fname = replace_file_type(file_only, "h");
 	FILE *c = fopen_or_die(cname, "wb");
 	FILE *h = fopen_or_die(hname, "wb");
-	int r = dbc2c(dbc, c, h, fname);
+	int r = dbc2c(dbc, c, h, fname, use_time_stamps);
 	fclose(c);
 	fclose(h);
 	free(cname);
@@ -72,11 +73,11 @@ int dbc2cWrapper(dbc_t *dbc, const char *dbc_file, const char *file_only)
 	return r;
 }
 
-int dbc2xmlWrapper(dbc_t *dbc, const char *dbc_file)
+int dbc2xmlWrapper(dbc_t *dbc, const char *dbc_file, bool use_time_stamps)
 {
 	char *name = replace_file_type(dbc_file, "xml");
 	FILE *o = fopen_or_die(name, "wb");
-	int r = dbc2xml(dbc, o);
+	int r = dbc2xml(dbc, o, use_time_stamps);
 	fclose(o);
 	free(name);
 	return r;
@@ -87,6 +88,7 @@ int main(int argc, char **argv)
 	log_level_e log_level = get_log_level();
 	conversion_type_e convert = convert_to_c; 
 	const char *outdir = NULL;
+	bool use_time_stamps = false;
 
 	int i;
 	for(i = 1; i < argc && argv[i][0] == '-'; i++)
@@ -105,6 +107,10 @@ int main(int argc, char **argv)
 			return printf("DBCC Grammar =>\n%s\n", parse_get_grammar()) < 0;
 		case 'x':
 			convert = convert_to_xml;
+			break;
+		case 't':
+			use_time_stamps = true;
+			debug("using time stamps");
 			break;
 		case 'o':
 			if(i >= argc - 1)
@@ -141,10 +147,10 @@ done:
 		int r = 0;
 		switch(convert) {
 		case convert_to_c:
-			r = dbc2cWrapper(dbc, outpath, argv[i]);
+			r = dbc2cWrapper(dbc, outpath, argv[i], use_time_stamps);
 			break;
 		case convert_to_xml:
-			r = dbc2xmlWrapper(dbc, outpath);
+			r = dbc2xmlWrapper(dbc, outpath, use_time_stamps);
 			break;
 		default:
 			error("invalid conversion type: %d", convert);

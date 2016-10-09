@@ -26,11 +26,11 @@ ${TARGET}: ${OBJECTS}
 	@${CC} ${CFLAGS} $^ ${LDFLAGS} -o $@
 
 ${OUTDIR}/%.xml: %.dbc ${TARGET}
-	./${TARGET} -x -o ${OUTDIR} $<
+	./${TARGET} ${DBCCFLAGS} -x -o ${OUTDIR} $<
 	xmllint --noout --schema dbcc.xsd $@
 
 ${OUTDIR}/%.c: %.dbc ${TARGET}
-	./${TARGET} -o ${OUTDIR} $<
+	./${TARGET} ${DBCCFLAGS} -o ${OUTDIR} $<
 
 run: ${XMLS} ${CODECS}
 

@@ -4,6 +4,44 @@
 static mpc_ast_t *_parse_dbc_string(const char *file_name, const char *string);
 static mpc_ast_t *_parse_dbc_file_by_handle(const char *name, FILE *handle);
 
+#define X_MACRO_PARSE_VARS\
+	X(spaces,     "s")\
+	X(newline,    "n")\
+	X(sign,       "sign")\
+	X(flt,        "float")\
+	X(ident,      "ident")\
+	X(integer,    "integer")\
+	X(factor,     "factor")\
+	X(offset,     "offset")\
+	X(range,      "range")\
+	X(length,     "length")\
+	X(node,       "node")\
+	X(nodes,      "nodes")\
+	X(stringp,    "string")\
+	X(unit,       "unit")\
+	X(startbit,   "startbit")\
+	X(endianess,  "endianess")\
+	X(y_mx_c,     "y_mx_c")\
+	X(name,       "name")\
+	X(ecu,        "ecu")\
+	X(dlc,        "dlc")\
+	X(id,         "id")\
+	X(multiplexor, "multiplexor")\
+	X(signal,     "signal")\
+	X(message,    "message")\
+	X(messages,   "messages")\
+	X(types,      "types")\
+	X(etcetera,   "etcetera")\
+	X(version,    "version")\
+	X(ecus,       "ecus")\
+	X(symbols,    "symbols")\
+	X(bs,         "bs")\
+	X(whatever,   "whatever")\
+	X(values,     "values")\
+	X(dbc,        "dbc")
+
+
+
 static const char *dbc_grammar = 
 " s         : /[ \\t]/ ; \n"
 " n         : /\\r?\\n/ ; \n"
@@ -17,16 +55,17 @@ static const char *dbc_grammar =
 " range     : '[' ( <float> | <integer> ) '|' ( <float> | <integer> ) ']' ;\n"
 " node      : <ident> ; \n"
 " nodes     : <node> <s>* ( ',' <s>* <node>)* ; \n"
-" string    : '\"' /[^\"]*/ '\"' ; " /**@bug escape chars not allowed */
-" unit      : <string> ; " /**@bug non-ASCII chars should be allowed here */
+" string    : '\"' /[^\"]*/ '\"' \n; " 
+" unit      : <string> ; \n" 
 " startbit  : <integer> ; \n"
-" endianess : '0' | '1' ; " /* for the endianess; 0 = Motorola, 1 = Intel */
+" endianess : '0' | '1' ; \n" /* for the endianess; 0 = Motorola, 1 = Intel */
 " y_mx_c    : '(' <factor> ',' <offset> ')' ; \n"
 " name      : <ident> ; \n"
 " ecu       : <ident> ; \n"
 " dlc       : <integer> ; \n"
 " id        : <integer> ; \n"
-" signal    : <s>* \"SG_\" <s>+ <name> <s>* ':' <s>* <startbit> <s>* '|' <s>* \n"
+" multiplexor : 'M' | 'm' <s>* <integer> ; \n" 
+" signal    : <s>* \"SG_\" <s>+ <name> <s>* <multiplexor>? <s>* ':' <s>* <startbit> <s>* '|' <s>* \n"
 "             <length> <s>* '@' <s>* <endianess> <s>* <sign> <s>* <y_mx_c> <s>* \n"
 "             <range> <s>* <unit> <s>* <nodes> <s>* <n> ; \n"
 " message   : \"BO_\" <s>+ <id> <s>+ <name>  <s>* ':' <s>* <dlc> <s>+ <ecu> <s>* <n> <signal>* ; \n"
@@ -81,41 +120,6 @@ mpc_ast_t *parse_dbc_string(const char *string)
 {
 	return _parse_dbc_string("<string>", string);
 }
-
-#define X_MACRO_PARSE_VARS\
-	X(spaces,     "s")\
-	X(newline,    "n")\
-	X(sign,       "sign")\
-	X(flt,        "float")\
-	X(ident,      "ident")\
-	X(integer,    "integer")\
-	X(factor,     "factor")\
-	X(offset,     "offset")\
-	X(range,      "range")\
-	X(length,     "length")\
-	X(node,       "node")\
-	X(nodes,      "nodes")\
-	X(stringp,    "string")\
-	X(unit,       "unit")\
-	X(startbit,   "startbit")\
-	X(endianess,  "endianess")\
-	X(y_mx_c,     "y_mx_c")\
-	X(name,       "name")\
-	X(ecu,        "ecu")\
-	X(dlc,        "dlc")\
-	X(id,         "id")\
-	X(signal,     "signal")\
-	X(message,    "message")\
-	X(messages,   "messages")\
-	X(types,      "types")\
-	X(etcetera,   "etcetera")\
-	X(version,    "version")\
-	X(ecus,       "ecus")\
-	X(symbols,    "symbols")\
-	X(bs,         "bs")\
-	X(whatever,   "whatever")\
-	X(values,     "values")\
-	X(dbc,        "dbc")
 
 enum cleanup_length_e
 {
