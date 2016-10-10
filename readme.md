@@ -22,7 +22,11 @@ license
 ## DBC file specification
 
 For a specification, as I understand it, of the DBC file format, see
-[dbc.md][].
+[dbc.md][]. This is a work in progress.
+
+## DBC VIM syntax file
+
+There is a [Vim][] syntax file for DBC files in the project, called [dbc.vim][]
 
 ## Operation
 
@@ -58,6 +62,8 @@ program.
 [mpc.c]: mpc.c
 [mpc.h]: mpc.h
 [dbc.md]: dbc.md
+[dbc.vim]: dbc.vim
+[Vim]: http://www.vim.org/download.php
 
 <style type="text/css">body{margin:40px auto;max-width:850px;line-height:1.6;font-size:16px;color:#444;padding:0 10px}h1,h2,h3{line-height:1.2}</style>
 
