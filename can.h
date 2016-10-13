@@ -22,16 +22,20 @@ typedef struct {
 	char *units;         /**< units used */
 	char **ecus;         /**< ECUs sending/receiving */
 	char *name;          /**< name of the signal */
-	double scaling;   /**< scaling */
-	double offset;    /**< offset */
-	double minimum;   /**< minimum value */
-	double maximum;   /**< maximum value */
+	double scaling;      /**< scaling */
+	double offset;       /**< offset */
+	double minimum;      /**< minimum value */
+	double maximum;      /**< maximum value */
 	unsigned bit_length; /**< bit length in message buffer */
 	unsigned start_bit;  /**< starting bit position in message */
 	endianess_e endianess; /**< endianess of message */
 	bool is_signed;      /**< if true, value is signed */
 	/**@todo fill in is_floating*/
 	bool is_floating;    /**< if true, value is a floating point number*/
+	bool is_multiplexor; /**< true if this is a multiplexor */
+	bool is_multiplexed; /**< true if this is a multiplexed signal */
+	unsigned switchval;  /**< if is_multiplexed, this will contain the 
+			       value that decodes this signal for the multiplexor */
 } signal_t;
 
 typedef struct {

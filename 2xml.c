@@ -2,8 +2,26 @@
 #include "util.h"
 #include <assert.h>
 #include <time.h>
-/**@todo neaten up producing the XML, perhaps with a make tag vprintf wrapper */
-/**@todo units needs escaping*/
+
+static int print_escaped(FILE *o, const char *string)
+{
+	char c;
+	int r = 0;
+	while((c = *(string)++)) {
+		switch(c) {
+		case '"':  r = fputs("&quot;", o); break;
+		case '\'': r = fputs("&apos;", o); break;
+		case '<':  r = fputs("&lt;",   o); break;
+		case '>':  r = fputs("&gt;",   o); break;
+		case '&':  r = fputs("&amp;",  o); break;
+		default:
+			   r = fputc(c, o);
+		}
+		if(r < 0)
+			return -1;
+	}
+	return 0;
+}
 
 static int indent(FILE *o, unsigned depth)
 {
@@ -72,7 +90,14 @@ static int signal2xml(signal_t *sig, FILE *o, unsigned depth)
 	pnode(o, depth+1, "minimum",   "%lf", sig->minimum);
 	pnode(o, depth+1, "maximum",   "%lf", sig->maximum);
 	pnode(o, depth+1, "signed",    "%s",  sig->is_signed ? "true" : "false");
-	pnode(o, depth+1, "units",     "%s",  sig->units);
+
+	indent(o, depth+1);
+	fprintf(o, "<units>\n");
+	indent(o, depth+2);
+	print_escaped(o, sig->units);
+	indent(o, depth+1);
+	fprintf(o, "</units>\n");
+
 	indent(o, depth);
 	if(fprintf(o, "</signal>\n") < 0)
 		return -1;
@@ -87,9 +112,49 @@ static int msg2xml(can_msg_t *msg, FILE *o, unsigned depth)
 	pnode(o, depth+1, "id",   "%u", msg->id);
 	pnode(o, depth+1, "dlc",  "%u", msg->dlc);
 
-	for(size_t i = 0; i < msg->signal_count; i++)
-		if(signal2xml(msg->signals[i], o, depth+1) < 0)
+	signal_t *multiplexor = NULL;
+	for(size_t i = 0; i < msg->signal_count; i++) {
+		signal_t *sig = msg->signals[i];
+		if(sig->is_multiplexor) {
+			if(multiplexor) {
+				error("multiple multiplexor values detected (only one per CAN msg is allowed) for %s", msg->name);
+				return -1;
+			}
+			multiplexor = sig;
+			continue;
+		}
+		if(sig->is_multiplexed)
+			continue;
+		if(signal2xml(sig, o, depth+1) < 0)
 			return -1;
+	}
+
+	if(multiplexor) {
+		indent(o, depth+1);
+		fprintf(o, "<multiplexor-group>\n");
+		indent(o, depth+2);
+		fprintf(o, "<multiplexor>\n");
+		if(signal2xml(multiplexor, o, depth+2) < 0)
+			return -1;
+		indent(o, depth+2);
+		fprintf(o, "</multiplexor>\n");
+
+		for(size_t i = 0; i < msg->signal_count; i++) {
+			signal_t *sig = msg->signals[i];
+			if(!(sig->is_multiplexed))
+				continue;
+			indent(o, depth+2);
+			fprintf(o, "<multiplexed>\n");
+			pnode(o, depth+3, "multiplexed-on", "%u",  sig->switchval);
+			if(signal2xml(sig, o, depth+3) < 0)
+				return -1;
+			indent(o, depth+2);
+			fprintf(o, "</multiplexed>\n");
+		}
+		indent(o, depth+2);
+		fprintf(o, "</multiplexor-group>\n");
+	}
+
 	indent(o, depth);
 	if(fprintf(o, "</message>\n") < 0)
 		return -1;

@@ -1,7 +1,9 @@
-/**@todo Multiplexed signals are not handled
- * @todo DLC processing
- * @todo Validation functions with configurable behavior (range checks, etc)
+/**@todo Validation functions with configurable behavior (range checks, etc)
  * @todo Tidy up this module, make things configurable
+ * @todo A version, in a separate file, that also prints out C, but is more
+ * data driven instead (which would probably be slower, but more compact).
+ * @todo Signal status; signal should be set to unknown first, or when there
+ * is a timeout. A timestamp should also be processed
  *
  * This file is quite a mess, but that is not going to change, it is also
  * quite short and seems to do the job. I better solution would be to make a
@@ -127,7 +129,6 @@ static int signal2serializer(signal_t *sig, FILE *o)
 	if(comment(sig, o) < 0)
 		return -1;
 
-	/**@todo fix this cast and deference to be something more sensible */
 	fprintf(o, "\tx = (*(%s*)(&pack->%s)) & 0x%"PRIx64";\n", determine_unsigned_type(sig->bit_length), sig->name, mask);
 	if(start)
 		fprintf(o, "\tx <<= %u; \n", start);
@@ -195,15 +196,125 @@ static int signal2macros(const char *msgname, unsigned id, signal_t *sig, FILE *
 	return fputs("}\n\n", o);
 }
 
-static int print_function_name(FILE *out, const char *prefix, const char *name, const char *postfix, bool in, char *datatype)
+static int print_function_name(FILE *out, const char *prefix, const char *name, const char *postfix, bool in, char *datatype, bool dlc)
 {
 	assert(out && prefix && name && postfix);
-	return fprintf(out, "int %s_%s(%s_t *%s, %s %sdata)%s", prefix, name, name, prefix, datatype, in ? "" : "*", postfix);
+	return fprintf(out, "int %s_%s(%s_t *%s, %s %sdata%s)%s", 
+			prefix, name, name, prefix, datatype, 
+			in ? "" : "*", 
+			dlc ? ", uint8_t dlc" : "",
+			postfix);
 }
 
 static void make_name(char *newname, size_t maxlen, const char *name, unsigned id)
 {
 	snprintf(newname, maxlen-1, "can_0x%03x_%s", id, name);
+}
+
+static int msg_pack(can_msg_t *msg, FILE *c, const char *name, bool motorola_used, bool intel_used)
+{
+	fprintf(c, "%s_t %s_data;\n\n", name, name);
+
+	print_function_name(c, "pack", name, "\n{\n", false, "uint64_t", false);
+	fprintf(c, "\tregister uint64_t x;\n");
+	if(motorola_used)
+		fprintf(c, "\tregister uint64_t m = 0;\n");
+	if(intel_used)
+		fprintf(c, "\tregister uint64_t i = 0;\n");
+
+	signal_t *multiplexor = NULL;
+	for(size_t i = 0; i < msg->signal_count; i++) {
+		signal_t *sig = msg->signals[i];
+		if(sig->is_multiplexor) {
+			if(multiplexor) {
+				error("multiple multiplexor values detected (only one per CAN msg is allowed) for %s", name);
+				return -1;
+			}
+			multiplexor = sig;
+		}
+		if(sig->is_multiplexed)
+			continue;
+		if(signal2serializer(sig, c) < 0)
+			return -1;
+	}
+
+	if(multiplexor) {
+		fprintf(c, "\tswitch(pack->%s) {\n", multiplexor->name);
+		for(size_t i = 0; i < msg->signal_count; i++) {
+			if(!(msg->signals[i]->is_multiplexed))
+				continue;
+			fprintf(c, "\tcase %u:\n", msg->signals[i]->switchval);
+			if(signal2serializer(msg->signals[i], c) < 0)
+				return -1;
+			fprintf(c, "\tbreak;\n");
+		}
+		fprintf(c, "\tdefault: return -1;\n\t}\n");
+	}
+
+	fprintf(c, "\t*data = %s%s%s%s%s;\n",
+			swap_motorola && motorola_used ? "reverse_byte_order" : "",
+			motorola_used ? "(m)" : "",
+			motorola_used && intel_used ? "|" : "",
+			swap_motorola || !intel_used ? "" : "reverse_byte_order",
+			motorola_used ? "" : "(i)");
+	fprintf(c, "\treturn 0;\n}\n\n");
+	return 0;
+}
+
+static int msg_unpack(can_msg_t *msg, FILE *c, const char *name, bool motorola_used, bool intel_used)
+{
+	print_function_name(c, "unpack", name, "\n{\n", true, "uint64_t", true);
+	fprintf(c, "\tregister uint64_t x;\n");
+	if(motorola_used)
+		fprintf(c, "\tregister uint64_t m = %s(data);\n", swap_motorola ? "reverse_byte_order" : "");
+	if(intel_used)
+		fprintf(c, "\tregister uint64_t i = %s(data);\n", swap_motorola ? "" : "reverse_byte_order");
+
+	fprintf(c, "\tif(dlc < %u)\n\t\treturn -1;\n", msg->dlc);
+
+	signal_t *multiplexor = NULL;
+	for(size_t i = 0; i < msg->signal_count; i++) {
+		signal_t *sig = msg->signals[i];
+		if(sig->is_multiplexor) {
+			if(multiplexor) {
+				error("multiple multiplexor values detected (only one per CAN msg is allowed) for %s", name);
+				return -1;
+			}
+			multiplexor = sig;
+		}
+		if(sig->is_multiplexed)
+			continue;
+		if(signal2deserializer(sig, c) < 0)
+			return -1;
+	}
+
+	if(multiplexor) {
+		fprintf(c, "\tswitch(unpack->%s) {\n", multiplexor->name);
+		for(size_t i = 0; i < msg->signal_count; i++) {
+			if(!(msg->signals[i]->is_multiplexed))
+				continue;
+			fprintf(c, "\tcase %u:\n", msg->signals[i]->switchval);
+			if(signal2deserializer(msg->signals[i], c) < 0)
+				return -1;
+			fprintf(c, "\tbreak;\n");
+		}
+		fprintf(c, "\tdefault: return -1;\n\t}\n");
+	}
+
+	fprintf(c, "\treturn 0;\n}\n\n");
+	return 0;
+}
+
+static int msg_print(can_msg_t *msg, FILE *c, const char *name)
+{
+	print_function_name(c, "print", name, "\n{\n", false, "FILE", false);
+	fprintf(c, "\tdouble scaled;\n");
+	for(size_t i = 0; i < msg->signal_count; i++) {
+		if(signal2print(msg->signals[i], msg->id, c) < 0)
+			return -1;
+	}
+	fprintf(c, "\treturn 0;\n}\n\n");
+	return 0;
 }
 
 static int msg2c(can_msg_t *msg, FILE *c)
@@ -220,54 +331,14 @@ static int msg2c(can_msg_t *msg, FILE *c)
 		else
 			intel_used = true;
 
-	fprintf(c, "%s_t %s_data;\n\n", name, name);
+	if(msg_pack(msg, c, name, motorola_used, intel_used) < 0)
+		return -1;
 
-	print_function_name(c, "pack", name, "\n{\n", false, "uint64_t");
-	fprintf(c, "\tregister uint64_t x;\n");
-	if(motorola_used)
-		fprintf(c, "\tregister uint64_t m = 0;\n");
-	if(intel_used)
-		fprintf(c, "\tregister uint64_t i = 0;\n");
+	if(msg_unpack(msg, c, name, motorola_used, intel_used) < 0)
+		return -1;
 
-	for(size_t i = 0; i < msg->signal_count; i++)
-		if(signal2serializer(msg->signals[i], c) < 0)
-			return -1;
-
-	fprintf(c, "\t*data = %s%s%s%s%s;\n",
-			swap_motorola && motorola_used ? "reverse_byte_order" : "",
-			motorola_used ? "(m)" : "",
-			motorola_used && intel_used ? "|" : "",
-			swap_motorola || !intel_used ? "" : "reverse_byte_order",
-			motorola_used ? "" : "(i)");
-	fprintf(c, "\treturn 0;\n}\n\n");
-
-	print_function_name(c, "unpack", name, "\n{\n", true, "uint64_t");
-	fprintf(c, "\tregister uint64_t x;\n");
-	if(motorola_used)
-		fprintf(c, "\tregister uint64_t m = %s(data);\n", swap_motorola ? "reverse_byte_order" : "");
-	if(intel_used)
-		fprintf(c, "\tregister uint64_t i = %s(data);\n", swap_motorola ? "" : "reverse_byte_order");
-
-	for(size_t i = 0; i < msg->signal_count; i++)
-		if(signal2deserializer(msg->signals[i], c) < 0)
-			return -1;
-	fprintf(c, "\treturn 0;\n}\n\n");
-
-	for(size_t i = 0; i < msg->signal_count; i++) {
-		if(signal2macros(name, msg->id, msg->signals[i], c, true, false) < 0)
-			return -1;
-		if(signal2macros(name, msg->id, msg->signals[i], c, false, false) < 0)
-			return -1;
-	}
-
-	
-	print_function_name(c, "print", name, "\n{\n", false, "FILE");
-	fprintf(c, "\tdouble scaled;\n");
-	for(size_t i = 0; i < msg->signal_count; i++) {
-		if(signal2print(msg->signals[i], msg->id, c) < 0)
-			return -1;
-	}
-	fprintf(c, "\treturn 0;\n}\n\n");
+	if(msg_print(msg, c, name) < 0)
+		return -1;
 
 	return 0;
 }
@@ -286,8 +357,8 @@ static int msg2h(can_msg_t *msg, FILE *h)
 	fprintf(h, "} %s_t;\n\n", name);
 	fprintf(h, "extern %s_t %s_data;\n", name, name);
 
-	print_function_name(h, "pack", name, ";\n", false, "uint64_t");
-	print_function_name(h, "unpack", name, ";\n\n", true, "uint64_t");
+	print_function_name(h, "pack", name, ";\n", false, "uint64_t", false);
+	print_function_name(h, "unpack", name, ";\n\n", true, "uint64_t", true);
 
 	for(size_t i = 0; i < msg->signal_count; i++) {
 		if(signal2macros(name, msg->id, msg->signals[i], h, true, true) < 0)
@@ -296,7 +367,7 @@ static int msg2h(can_msg_t *msg, FILE *h)
 			return -1;
 	}
 
-	print_function_name(h, "print", name, ";\n", false, "FILE");
+	print_function_name(h, "print", name, ";\n", false, "FILE", false);
 
 	fputs("\n\n", h);
 
@@ -332,9 +403,11 @@ static int signal_compare_function(const void *a, const void *b)
 	return 0;
 }
 
-static int switch_function(FILE *c, dbc_t *dbc, char *function, bool unpack, bool prototype, char *datatype)
+static int switch_function(FILE *c, dbc_t *dbc, char *function, bool unpack, bool prototype, char *datatype, bool dlc)
 {
-	fprintf(c, "int %s_message(unsigned id, %s %sdata)", function, datatype, unpack ? "" : "*");
+	fprintf(c, "int %s_message(unsigned id, %s %sdata%s)", 
+			function, datatype, unpack ? "" : "*",
+			dlc ? ", uint8_t dlc" : "");
 	if(prototype)
 		return fprintf(c, ";\n");
 	fprintf(c, " {\n");
@@ -343,11 +416,12 @@ static int switch_function(FILE *c, dbc_t *dbc, char *function, bool unpack, boo
 		can_msg_t *msg = dbc->messages[i];
 		char name[MAX_NAME_LENGTH] = {0};
 		make_name(name, MAX_NAME_LENGTH, msg->name, msg->id);
-		fprintf(c, "\tcase 0x%03x: return %s_%s(&%s_data, data); break;\n", 
+		fprintf(c, "\tcase 0x%03x: return %s_%s(&%s_data, data%s);\n", 
 				msg->id,
 				function,
 				name,
-				name);
+				name,
+				dlc ? ", dlc" : "");
 	}
 	fprintf(c, "\tdefault: break; \n\t}\n");
 	return fprintf(c, "\treturn -1; \n}\n\n");
@@ -397,9 +471,9 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps)
 		"#endif\n\n",
 		file_guard, file_guard);
 
-	switch_function(h, dbc, "unpack", true, true, "uint64_t");
-	switch_function(h, dbc, "pack", false, true, "uint64_t");
-	switch_function(h, dbc, "print", true, true, "FILE*");
+	switch_function(h, dbc, "unpack", true, true, "uint64_t", true);
+	switch_function(h, dbc, "pack", false, true, "uint64_t", false);
+	switch_function(h, dbc, "print", true, true, "FILE*", false);
 	fputs("\n", h);
 
 	for(int i = 0; i < dbc->message_count; i++)
@@ -418,9 +492,9 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps)
 	fprintf(c, "#include <inttypes.h>\n\n");
 	fprintf(c, "%s\n", cfunctions);
 
-	switch_function(c, dbc, "unpack", true, false, "uint64_t");
-	switch_function(c, dbc, "pack", false, false, "uint64_t");
-	switch_function(c, dbc, "print", true, false, "FILE*");
+	switch_function(c, dbc, "unpack", true, false, "uint64_t", true);
+	switch_function(c, dbc, "pack", false, false, "uint64_t", false);
+	switch_function(c, dbc, "print", true, false, "FILE*", false);
 
 	for(int i = 0; i < dbc->message_count; i++)
 		if(msg2c(dbc->messages[i], c) < 0)

@@ -31,6 +31,7 @@
         <!-- 11 or 29 bit CAN ID -->
         <xs:element name="dlc" type="dlc"/>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="signal"/>
+        <xs:element maxOccurs="1" minOccurs="0" ref="multiplexor-group"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
@@ -52,10 +53,46 @@
         <xs:element name="minimum" type="xs:decimal"/>
         <xs:element name="maximum" type="xs:decimal"/>
         <xs:element name="signed" type="xs:boolean"/>
-        <xs:element name="units" type="xs:string"/>
+	<xs:element name="units" type="xs:string"/>
+	<!-- an optional multiplexor, of which there can only be one per
+	     message -->
+        <xs:element minOccurs="0" maxOccurs="1" name="multiplexed-on" type="xs:unsignedInt"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
+
+  <!-- a multiplexor group consists of a multiplexor and a series of messages,
+       which signal gets decoded depends on the value of the multiplexor -->
+  <xs:element name="multiplexor-group">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="multiplexor"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="multiplexed"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- a multiplexor is just an ordinary signal, although it really should be
+       unsigned... -->
+  <xs:element name="multiplexor">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="signal"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- a multiplexed signal consists of a value that the multiplexor should be
+       when the signal is to be decoded and a descriptor of the signal -->
+  <xs:element name="multiplexed">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="multiplexed-on" type="xs:unsignedInt"/>
+        <xs:element ref="signal"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
   <!-- Only two valid byte orders, "motorola" (Big Endian) and "intel" (Little Endian) -->
   <xs:simpleType name="endianess">
     <xs:restriction base="xs:string">

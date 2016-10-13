@@ -1,6 +1,6 @@
 CC       = gcc
 CFLAGS   = -Wall -Wextra -std=c99 -O2
-RM      := rm
+RM      := rm -f
 
 SOURCES := ${wildcard *.c}
 OBJECTS := ${SOURCES:%.c=%.o}

@@ -111,6 +111,18 @@ signal_t *ast2signal(mpc_ast_t *ast)
 	units(mpc_ast_get_child(ast, "unit|string|>"), sig);
 	/*nodes(mpc_ast_get_child(ast, "nodes|node|ident|regex|>"), sig);*/
 
+	/* process multiplexed values, if present */
+	mpc_ast_t *multiplex = mpc_ast_get_child(ast, "multiplexor|>");
+	if(multiplex) {
+		sig->is_multiplexed = true;
+		sig->switchval = atol(multiplex->children[1]->contents);
+	}
+
+	if(mpc_ast_get_child(ast, "multiplexor|char")) {
+		assert(!sig->is_multiplexed);
+		sig->is_multiplexor = true;
+	}
+
 	debug("\tname => %s; start %u length %u %s %s %s",
 			sig->name, sig->start_bit, sig->bit_length, sig->units,
 			sig->endianess ? "intel" : "motorola", 
