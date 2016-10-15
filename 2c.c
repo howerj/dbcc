@@ -172,7 +172,7 @@ static int signal2type(signal_t *sig, FILE *o)
 	return r;
 }
 
-static int signal2macros(const char *msgname, unsigned id, signal_t *sig, FILE *o, bool decode, bool header)
+static int signal2scaling(const char *msgname, unsigned id, signal_t *sig, FILE *o, bool decode, bool header)
 {
 	const char *type = determine_type(sig->bit_length, sig->is_signed);
 	const char *method = decode ? "decode" : "encode";
@@ -211,6 +211,40 @@ static void make_name(char *newname, size_t maxlen, const char *name, unsigned i
 	snprintf(newname, maxlen-1, "can_0x%03x_%s", id, name);
 }
 
+static signal_t *process_signals_and_find_multiplexer(can_msg_t *msg, FILE *c, const char *name, bool serialize)
+{
+	signal_t *multiplexor = NULL;
+	for(size_t i = 0; i < msg->signal_count; i++) {
+		signal_t *sig = msg->signals[i];
+		if(sig->is_multiplexor) {
+			if(multiplexor)
+				error("multiple multiplexor values detected (only one per CAN msg is allowed) for %s", name);
+			multiplexor = sig;
+		}
+		if(sig->is_multiplexed)
+			continue;
+		if((serialize ? signal2serializer(sig, c) : signal2deserializer(sig, c)) < 0)
+			error("%s failed", serialize ? "serialization" : "deserialization");
+	}
+	return multiplexor;
+}
+
+static int multiplexor_switch(can_msg_t *msg, signal_t *multiplexor, FILE *c, bool serialize)
+{
+	fprintf(c, "\tswitch(%s->%s) {\n", serialize ? "pack" : "unpack", multiplexor->name);
+	for(size_t i = 0; i < msg->signal_count; i++) {
+		signal_t *sig = msg->signals[i];
+		if(!(sig->is_multiplexed))
+			continue;
+		fprintf(c, "\tcase %u:\n", sig->switchval);
+		if((serialize ? signal2serializer(sig, c) : signal2deserializer(sig, c)) < 0)
+			return -1;
+		fprintf(c, "\tbreak;\n");
+	}
+	fprintf(c, "\tdefault: return -1;\n\t}\n");
+	return 0;
+}
+
 static int msg_pack(can_msg_t *msg, FILE *c, const char *name, bool motorola_used, bool intel_used)
 {
 	fprintf(c, "%s_t %s_data;\n\n", name, name);
@@ -222,34 +256,11 @@ static int msg_pack(can_msg_t *msg, FILE *c, const char *name, bool motorola_use
 	if(intel_used)
 		fprintf(c, "\tregister uint64_t i = 0;\n");
 
-	signal_t *multiplexor = NULL;
-	for(size_t i = 0; i < msg->signal_count; i++) {
-		signal_t *sig = msg->signals[i];
-		if(sig->is_multiplexor) {
-			if(multiplexor) {
-				error("multiple multiplexor values detected (only one per CAN msg is allowed) for %s", name);
-				return -1;
-			}
-			multiplexor = sig;
-		}
-		if(sig->is_multiplexed)
-			continue;
-		if(signal2serializer(sig, c) < 0)
-			return -1;
-	}
+	signal_t *multiplexor = process_signals_and_find_multiplexer(msg, c, name, true);
 
-	if(multiplexor) {
-		fprintf(c, "\tswitch(pack->%s) {\n", multiplexor->name);
-		for(size_t i = 0; i < msg->signal_count; i++) {
-			if(!(msg->signals[i]->is_multiplexed))
-				continue;
-			fprintf(c, "\tcase %u:\n", msg->signals[i]->switchval);
-			if(signal2serializer(msg->signals[i], c) < 0)
-				return -1;
-			fprintf(c, "\tbreak;\n");
-		}
-		fprintf(c, "\tdefault: return -1;\n\t}\n");
-	}
+	if(multiplexor)
+		if(multiplexor_switch(msg, multiplexor, c, true) < 0)
+			return -1;
 
 	fprintf(c, "\t*data = %s%s%s%s%s;\n",
 			swap_motorola && motorola_used ? "reverse_byte_order" : "",
@@ -272,35 +283,10 @@ static int msg_unpack(can_msg_t *msg, FILE *c, const char *name, bool motorola_u
 
 	fprintf(c, "\tif(dlc < %u)\n\t\treturn -1;\n", msg->dlc);
 
-	signal_t *multiplexor = NULL;
-	for(size_t i = 0; i < msg->signal_count; i++) {
-		signal_t *sig = msg->signals[i];
-		if(sig->is_multiplexor) {
-			if(multiplexor) {
-				error("multiple multiplexor values detected (only one per CAN msg is allowed) for %s", name);
-				return -1;
-			}
-			multiplexor = sig;
-		}
-		if(sig->is_multiplexed)
-			continue;
-		if(signal2deserializer(sig, c) < 0)
+	signal_t *multiplexor = process_signals_and_find_multiplexer(msg, c, name, false);
+	if(multiplexor)
+		if(multiplexor_switch(msg, multiplexor, c, false) < 0)
 			return -1;
-	}
-
-	if(multiplexor) {
-		fprintf(c, "\tswitch(unpack->%s) {\n", multiplexor->name);
-		for(size_t i = 0; i < msg->signal_count; i++) {
-			if(!(msg->signals[i]->is_multiplexed))
-				continue;
-			fprintf(c, "\tcase %u:\n", msg->signals[i]->switchval);
-			if(signal2deserializer(msg->signals[i], c) < 0)
-				return -1;
-			fprintf(c, "\tbreak;\n");
-		}
-		fprintf(c, "\tdefault: return -1;\n\t}\n");
-	}
-
 	fprintf(c, "\treturn 0;\n}\n\n");
 	return 0;
 }
@@ -361,9 +347,9 @@ static int msg2h(can_msg_t *msg, FILE *h)
 	print_function_name(h, "unpack", name, ";\n\n", true, "uint64_t", true);
 
 	for(size_t i = 0; i < msg->signal_count; i++) {
-		if(signal2macros(name, msg->id, msg->signals[i], h, true, true) < 0)
+		if(signal2scaling(name, msg->id, msg->signals[i], h, true, true) < 0)
 			return -1;
-		if(signal2macros(name, msg->id, msg->signals[i], h, false, true) < 0)
+		if(signal2scaling(name, msg->id, msg->signals[i], h, false, true) < 0)
 			return -1;
 	}
 

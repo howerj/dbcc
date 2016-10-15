@@ -14,4 +14,4 @@ all: ${OBJECTS}
 	@${CC} ${CFLAGS} ${INCLUDES} $< -c -o $@
 
 clean:
-	${RM} *.c *.h *.xml *.o
+	${RM} *.c *.h *.xml *.o *.xhtml

@@ -36,7 +36,6 @@ program.
 ## Bugs / To Do
 
 * A lot of the DBC file format is not dealt with
-  - Multiplexed signals
   - Special values
   - Timeouts 
   - Error frames
@@ -44,6 +43,8 @@ program.
 * The generated C code has not been tested that much (it is probably incorrect!)
 * Offer a template mechanism so arbitrary code can be populated with messages
   and signal lists.
+* Make a template converter
+* Read in produced XML file
 * Allow the merging of multiple DBC files
 * Write unit tests to cover the converter and the generated code.
 * Basic sanity checking of the DBC files could be built in.

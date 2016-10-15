@@ -699,6 +699,7 @@ BO_ 666 IMU5: 4 Vector__XXX
  SG_ multi2 m0:  8|4@1+ (1,0) [0|15] "multiplexed-b" Vector__XXX
  SG_ multi3 m2:  8|4@1+ (1,0) [0|15] "multiplexed-c" Vector__XXX
  SG_ multi4 m3:  8|4@1+ (1,0) [0|15] "multiplexed-d" Vector__XXX
+ SG_ normal:  16|8@1- (1,0) [-128|127] "normal" Vector__XXX
 
 CM_ BO_ 33 "increments";
 CM_ BO_ 35 "increments";

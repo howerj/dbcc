@@ -9,3 +9,7 @@ vgcore.*
 *.out
 *.htm
 ex*
+*.1
+*.pdf
+*.html
+*.xhtml

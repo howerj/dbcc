@@ -4,11 +4,14 @@ RM      := rm
 OUTDIR  := out
 SOURCES := ${wildcard *.c}
 MDS     := ${wildcard *.md}
+HTMLS   := ${MDS:%.md=%.html}
+PDFS    := ${MDS:%.md=%.pdf}
+MANS    := ${MDS:%.md=%.1}
 DBCS    := ${wildcard *.dbc}
-DOCS    := ${MDS:%.md=%.htm}
 OBJECTS := ${SOURCES:%.c=%.o}
 DEPS    := ${SOURCES:%.c=%.d}
 XMLS    := ${DBCS:%.dbc=${OUTDIR}/%.xml}
+XHTMLS  := ${XMLS:%.xml=%.xhtml}
 CODECS  := ${DBCS:%.dbc=${OUTDIR}/%.c}
 CFLAGS  += -MMD
 TARGET  := dbcc
@@ -21,6 +24,15 @@ all: ${TARGET}
 	@echo cc $< -c -o $@
 	@${CC} ${CFLAGS} ${INCLUDES} $< -c -o $@
 
+%.1: %.md
+	pandoc --standalone --to man -o$@ $<
+
+%.html: %.md
+	pandoc -o $@ $<
+
+%.pdf: %.md
+	pandoc -o $@ $<
+
 ${TARGET}: ${OBJECTS}
 	@echo ${CC} $< -o $@
 	@${CC} ${CFLAGS} $^ ${LDFLAGS} -o $@
@@ -29,15 +41,15 @@ ${OUTDIR}/%.xml: %.dbc ${TARGET}
 	./${TARGET} ${DBCCFLAGS} -x -o ${OUTDIR} $<
 	xmllint --noout --schema dbcc.xsd $@
 
+%.xhtml: %.xml dbcc.xslt
+	xsltproc --output $@ dbcc.xslt $<
+
 ${OUTDIR}/%.c: %.dbc ${TARGET}
 	./${TARGET} ${DBCCFLAGS} -o ${OUTDIR} $<
 
-run: ${XMLS} ${CODECS}
+run: ${XMLS} ${CODECS} ${XHTMLS}
 
-doc: ${DOCS}
-
-%.htm: %.md
-	markdown $^ | tee $@ > /dev/null
+doc: ${HTMLS} ${MANS} ${PDFS}
 
 -include ${DEPS}
 
