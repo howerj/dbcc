@@ -142,10 +142,11 @@ static int signal2print(signal_t *sig, unsigned id, FILE *o)
 	fprintf(o, "\tscaled = decode_can_0x%03x_%s(print);\n", id, sig->name);
 
 	if(sig->is_floating)
-		return fprintf(o, "\tfprintf(data, \"%s = %%.3lf (wire: %%lf)\\n\", scaled, (double)(print->%s));\n", 
+		return fprintf(o, "\tr = fprintf(data, \"%s = %%.3lf (wire: %%lf)\\n\", scaled, (double)(print->%s));\n", 
 				sig->name, sig->name);
-	return fprintf(o, "\tfprintf(data, \"%s = %%.3lf (wire: %%.0lf)\\n\", scaled, (double)(print->%s));\n", 
+	return fprintf(o, "\tr = fprintf(data, \"%s = %%.3lf (wire: %%.0lf)\\n\", scaled, (double)(print->%s));\n", 
 			sig->name, sig->name);
+	fprintf(o, "\tif(r < 0)\n\t\treturn r;");
 }
 
 static int signal2type(signal_t *sig, FILE *o)
@@ -294,12 +295,12 @@ static int msg_unpack(can_msg_t *msg, FILE *c, const char *name, bool motorola_u
 static int msg_print(can_msg_t *msg, FILE *c, const char *name)
 {
 	print_function_name(c, "print", name, "\n{\n", false, "FILE", false);
-	fprintf(c, "\tdouble scaled;\n");
+	fprintf(c, "\tdouble scaled;\n\tint r = 0;\n");
 	for(size_t i = 0; i < msg->signal_count; i++) {
 		if(signal2print(msg->signals[i], msg->id, c) < 0)
 			return -1;
 	}
-	fprintf(c, "\treturn 0;\n}\n\n");
+	fprintf(c, "\treturn r;\n}\n\n");
 	return 0;
 }
 
