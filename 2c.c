@@ -65,7 +65,7 @@ static const char *determine_type(unsigned length, bool is_signed)
 static int comment(signal_t *sig, FILE *o)
 {
 	assert(sig && o);
-	return fprintf(o, "\t/* %s: start-bit %u, length %u, endianess %s, scaling %lf, offset %lf */\n",
+	return fprintf(o, "\t/* %s: start-bit %u, length %u, endianess %s, scaling %f, offset %f */\n",
 			sig->name,
 			sig->start_bit,
 			sig->bit_length,
@@ -142,9 +142,9 @@ static int signal2print(signal_t *sig, unsigned id, FILE *o)
 	fprintf(o, "\tscaled = decode_can_0x%03x_%s(print);\n", id, sig->name);
 
 	if(sig->is_floating)
-		return fprintf(o, "\tr = fprintf(data, \"%s = %%.3lf (wire: %%lf)\\n\", scaled, (double)(print->%s));\n", 
+		return fprintf(o, "\tr = fprintf(data, \"%s = %%.3f (wire: %%f)\\n\", scaled, (double)(print->%s));\n", 
 				sig->name, sig->name);
-	return fprintf(o, "\tr = fprintf(data, \"%s = %%.3lf (wire: %%.0lf)\\n\", scaled, (double)(print->%s));\n", 
+	return fprintf(o, "\tr = fprintf(data, \"%s = %%.3f (wire: %%.0f)\\n\", scaled, (double)(print->%s));\n", 
 			sig->name, sig->name);
 	fprintf(o, "\tif(r < 0)\n\t\treturn r;");
 }
@@ -168,7 +168,7 @@ static int signal2type(signal_t *sig, FILE *o)
 		type = length == 64 ? "double" : "float";
 	}
 
-	int r = fprintf(o, "\t%s %s; /*scaling %.1lf, offset %.1lf, units %s*/\n", 
+	int r = fprintf(o, "\t%s %s; /*scaling %.1f, offset %.1f, units %s*/\n", 
 			type, sig->name, sig->scaling, sig->offset, sig->units[0] ? sig->units : "none");
 	return r;
 }
@@ -190,9 +190,9 @@ static int signal2scaling(const char *msgname, unsigned id, signal_t *sig, FILE 
 	if(sig->scaling == 0.0)
 		error("invalid scaling factor (fix your DBC file)");
 	if(sig->scaling != 1.0)
-		fprintf(o, "\trval *= %lf;\n", decode ? sig->scaling : 1.0 / sig->scaling);
+		fprintf(o, "\trval *= %f;\n", decode ? sig->scaling : 1.0 / sig->scaling);
 	if(sig->offset != 0.0)
-		fprintf(o, "\trval += %lf;\n", decode ? sig->offset  : -1.0 * sig->offset);
+		fprintf(o, "\trval += %f;\n", decode ? sig->offset  : -1.0 * sig->offset);
 	fputs("\treturn rval;\n", o);
 	return fputs("}\n\n", o);
 }
