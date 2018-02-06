@@ -11,7 +11,7 @@
   information about remote frames is also not stored, as it is not yet extracted.
 
   This XSD cannot describe CAN FD messages and signals. -->
-  <!-- The CAN database is simply comprised of messages which each node (or ECU)
+  <!-- The CAN database is comprised of messages which each node (or ECU)
   connected to the bus can send or receive -->
   <xs:element name="candb">
     <xs:complexType>
@@ -100,7 +100,7 @@
       <xs:enumeration value="intel"/>
     </xs:restriction>
   </xs:simpleType>
-  <!-- 2^29-1 for 29 bit CAN IDs, use 2047 for 11-bit can IDS -->
+  <!-- 2^29-1 for 29 bit CAN IDs, 2047 for 11-bit can IDS -->
   <xs:simpleType name="can-id">
     <xs:restriction base="xs:integer">
       <xs:minInclusive value="0"/>

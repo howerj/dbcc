@@ -1,19 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns="http://www.w3.org/1999/xhtml" version="1.0">
-	<xsl:output method="xml" indent="yes" encoding="UTF-8"/>
-	<!-- @todo handle multiplexed messages -->
+  <xsl:output method="xml" indent="yes" encoding="UTF-8"/>
+  <!-- @todo handle multiplexed messages -->
   <xsl:template match="/candb">
     <html>
       <head>
-	      <title>CAN DB</title>
-	      <!-- Add some very basic styling to the document, nothing too
-		   fancy -->
+        <title>CAN DB</title>
+        <!-- Add some very basic styling to the document, nothing too fancy -->
         <style type="text/css">body{line-height:1.6;font-size:16px;color:#444;padding:0 10px}h1,h2,h3{line-height:1.2}</style>
       </head>
       <body>
-	      <h1>CAN DB</h1>
-	      <!-- A table of all CAN messages in the database, these will be
-		   linked to a list of all CAN signals -->
+        <h1>CAN DB</h1>
+        <!-- A table of all CAN messages in the database, these will be linked to a list of all CAN signals -->
         <table>
           <tr>
             <th>Message</th>
@@ -48,15 +46,9 @@
   <!-- used to generate the message table -->
   <xsl:template match="message">
     <tr>
-      <td>
-        <xsl:value-of select="name"/>
-      </td>
-      <td>
-        <xsl:value-of select="id"/>
-      </td>
-      <td>
-        <xsl:value-of select="dlc"/>
-      </td>
+      <td> <xsl:value-of select="name"/> </td>
+      <td> <xsl:value-of select="id"/> </td>
+      <td> <xsl:value-of select="dlc"/> </td>
       <td>
         <xsl:apply-templates select="signal" mode="signal-name">
           <xsl:sort select="name"/>
@@ -67,8 +59,8 @@
   <!-- signal-name is used to create a reference in the message table -->
   <xsl:template match="signal" mode="signal-name">
     <tr>
-	    <td>
-		    <!-- select message name (from parent) and the signals name, to guarantee uniqueness -->
+      <td>
+        <!-- select message name (from parent) and the signals name, to guarantee uniqueness -->
         <a href="#{../name}-{name}">
           <xsl:value-of select="name"/>
         </a>
@@ -78,38 +70,16 @@
   <!-- this is used to populate a table of all signals -->
   <xsl:template match="signal">
     <tr>
-      <td>
-        <a id="{../name}-{name}">
-          <xsl:value-of select="name"/>
-        </a>
-      </td>
-      <td>
-        <xsl:value-of select="startbit"/>
-      </td>
-      <td>
-        <xsl:value-of select="bitlength"/>
-      </td>
-      <td>
-        <xsl:value-of select="endianess"/>
-      </td>
-      <td>
-        <xsl:value-of select="scaling"/>
-      </td>
-      <td>
-        <xsl:value-of select="offset"/>
-      </td>
-      <td>
-        <xsl:value-of select="minimum"/>
-      </td>
-      <td>
-        <xsl:value-of select="maximum"/>
-      </td>
-      <td>
-        <xsl:value-of select="signed"/>
-      </td>
-      <td>
-        <xsl:value-of select="units"/>
-      </td>
+      <td> <a id="{../name}-{name}"> <xsl:value-of select="name"/> </a> </td>
+      <td> <xsl:value-of select="startbit"/> </td>
+      <td> <xsl:value-of select="bitlength"/> </td>
+      <td> <xsl:value-of select="endianess"/> </td>
+      <td> <xsl:value-of select="scaling"/> </td>
+      <td> <xsl:value-of select="offset"/> </td>
+      <td> <xsl:value-of select="minimum"/> </td>
+      <td> <xsl:value-of select="maximum"/> </td>
+      <td> <xsl:value-of select="signed"/> </td>
+      <td> <xsl:value-of select="units"/> </td>
     </tr>
   </xsl:template>
 </xsl:stylesheet>

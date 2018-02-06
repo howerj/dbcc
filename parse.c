@@ -40,7 +40,9 @@ static mpc_ast_t *_parse_dbc_file_by_handle(const char *name, FILE *handle);
 	X(values,     "values")\
 	X(dbc,        "dbc")
 
-
+/**@todo This grammar needs expanding and fixing, one addition would be comment lines,
+ * which certain tools allow. This consists of a '//' with the rest of the line ignored.
+ * Ideally the grammar would be rewritten, to follow Vectors documentation on it. */
 
 static const char *dbc_grammar = 
 " s         : /[ \\t]/ ; \n"

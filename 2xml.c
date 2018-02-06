@@ -92,17 +92,17 @@ static int signal2xml(signal_t *sig, FILE *o, unsigned depth)
 	pnode(o, depth+1, "startbit",  "%u",  sig->start_bit);
 	pnode(o, depth+1, "bitlength", "%u",  sig->bit_length);
 	pnode(o, depth+1, "endianess", "%s",  sig->endianess == endianess_motorola_e ? "motorola" : "intel");
-	pnode(o, depth+1, "scaling",   "%lf", sig->scaling);
-	pnode(o, depth+1, "offset",    "%lf", sig->offset);
-	pnode(o, depth+1, "minimum",   "%lf", sig->minimum);
-	pnode(o, depth+1, "maximum",   "%lf", sig->maximum);
+	pnode(o, depth+1, "scaling",   "%f", sig->scaling);
+	pnode(o, depth+1, "offset",    "%f", sig->offset);
+	pnode(o, depth+1, "minimum",   "%f", sig->minimum);
+	pnode(o, depth+1, "maximum",   "%f", sig->maximum);
 	pnode(o, depth+1, "signed",    "%s",  sig->is_signed ? "true" : "false");
 
 	indent(o, depth+1);
-	fprintf(o, "<units>\n");
-	indent(o, depth+2);
+	fprintf(o, "<units>");
+	/*indent(o, depth+2);*/
 	print_escaped(o, sig->units);
-	indent(o, depth+1);
+	/*indent(o, depth+1);*/
 	fprintf(o, "</units>\n");
 
 	indent(o, depth);
