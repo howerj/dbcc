@@ -414,7 +414,8 @@ static int switch_function(FILE *c, dbc_t *dbc, char *function, bool unpack, boo
 	return fprintf(c, "\treturn -1; \n}\n\n");
 }
 
-int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps)
+int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps,
+		  bool generate_print, bool generate_pack, bool generate_unpack)
 {
 	/**@todo print out ECU node information */
 	assert(dbc && c && h);
@@ -479,9 +480,14 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps)
 	fprintf(c, "#include <inttypes.h>\n\n");
 	fprintf(c, "%s\n", cfunctions);
 
-	switch_function(c, dbc, "unpack", true, false, "uint64_t", true);
-	switch_function(c, dbc, "pack", false, false, "uint64_t", false);
-	switch_function(c, dbc, "print", true, false, "FILE*", false);
+	if (generate_print)
+		switch_function(c, dbc, "unpack", true, false, "uint64_t", true);
+
+	if (generate_pack)
+		switch_function(c, dbc, "pack", false, false, "uint64_t", false);
+
+	if (generate_unpack)
+		switch_function(c, dbc, "print", true, false, "FILE*", false);
 
 	for(int i = 0; i < dbc->message_count; i++)
 		if(msg2c(dbc->messages[i], c) < 0)
