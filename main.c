@@ -57,14 +57,18 @@ char *replace_file_type(const char *file, const char *suffix)
 	return name;
 }
 
-int dbc2cWrapper(dbc_t *dbc, const char *dbc_file, const char *file_only, bool use_time_stamps)
+int dbc2cWrapper(dbc_t *dbc, const char *dbc_file, const char *file_only, bool use_time_stamps,
+				 bool generate_print, bool generate_pack, bool generate_unpack)
 {
+
 	char *cname = replace_file_type(dbc_file,  "c");
 	char *hname = replace_file_type(dbc_file,  "h");
 	char *fname = replace_file_type(file_only, "h");
 	FILE *c = fopen_or_die(cname, "wb");
 	FILE *h = fopen_or_die(hname, "wb");
-	int r = dbc2c(dbc, c, h, fname, use_time_stamps);
+
+	int r = dbc2c(dbc, c, h, fname, use_time_stamps,
+				  generate_print, generate_pack, generate_unpack);
 	fclose(c);
 	fclose(h);
 	free(cname);
@@ -90,8 +94,14 @@ int main(int argc, char **argv)
 	const char *outdir = NULL;
 	bool use_time_stamps = false;
 
+    bool generate_print = false;
+    bool generate_pack = false;
+    bool generate_unpack = false;
+
 	int i;
-	for(i = 1; i < argc && argv[i][0] == '-'; i++)
+
+
+    for(i = 1; i < argc && argv[i][0] == '-'; i++)
 		switch(argv[i][1]) {
 		case '\0': /* stop argument processing */
 			goto done; 
@@ -112,6 +122,23 @@ int main(int argc, char **argv)
 			use_time_stamps = true;
 			debug("using time stamps");
 			break;
+
+
+        case 'p':
+            generate_print = true;
+            debug("generate code for print");
+            break;
+
+        case 'u':
+            generate_unpack = true;
+            debug("generate code for unpack");
+            break;
+
+        case 'k':
+            generate_pack = true;
+            debug("generate code for pack");
+            break;
+
 		case 'o':
 			if(i >= argc - 1)
 				goto fail;
@@ -124,6 +151,13 @@ int main(int argc, char **argv)
 			error("unknown/invalid command line option '%c'", argv[i][1]);
 		}
 done:
+
+    if (!generate_unpack && !generate_pack && !generate_print) {
+        generate_print  = true;
+        generate_pack   = true;
+        generate_unpack = true;
+    }
+
 	for(; i < argc; i++) {
 		debug("reading => %s", argv[i]);
 		mpc_ast_t *ast = parse_dbc_file_by_name(argv[i]);
@@ -147,7 +181,8 @@ done:
 		int r = 0;
 		switch(convert) {
 		case convert_to_c:
-			r = dbc2cWrapper(dbc, outpath, argv[i], use_time_stamps);
+			r = dbc2cWrapper(dbc, outpath, argv[i], use_time_stamps,
+                             generate_print, generate_pack, generate_unpack);
 			break;
 		case convert_to_xml:
 			r = dbc2xmlWrapper(dbc, outpath, use_time_stamps);

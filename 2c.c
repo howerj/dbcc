@@ -246,9 +246,14 @@ static int multiplexor_switch(can_msg_t *msg, signal_t *multiplexor, FILE *c, bo
 	return 0;
 }
 
+static int msg_data_type(FILE *c, const char *name)
+{
+    fprintf(c, "%s_t %s_data;\n\n", name, name);
+}
+
 static int msg_pack(can_msg_t *msg, FILE *c, const char *name, bool motorola_used, bool intel_used)
 {
-	fprintf(c, "%s_t %s_data;\n\n", name, name);
+	//fprintf(c, "%s_t %s_data;\n\n", name, name);
 
 	print_function_name(c, "pack", name, "\n{\n", false, "uint64_t", false);
 	fprintf(c, "\tregister uint64_t x;\n");
@@ -304,7 +309,7 @@ static int msg_print(can_msg_t *msg, FILE *c, const char *name)
 	return 0;
 }
 
-static int msg2c(can_msg_t *msg, FILE *c)
+static int msg2c(can_msg_t *msg, FILE *c, bool generate_print, bool generate_pack, bool generate_unpack)
 {
 	assert(msg && c);
 	char name[MAX_NAME_LENGTH] = {0};
@@ -318,19 +323,24 @@ static int msg2c(can_msg_t *msg, FILE *c)
 		else
 			intel_used = true;
 
-	if(msg_pack(msg, c, name, motorola_used, intel_used) < 0)
+    if (generate_pack || generate_unpack || generate_print) {
+        if (msg_data_type(c, name) < 0)
+            return -1;
+    }
+
+	if(generate_pack && msg_pack(msg, c, name, motorola_used, intel_used) < 0)
 		return -1;
 
-	if(msg_unpack(msg, c, name, motorola_used, intel_used) < 0)
+	if(generate_unpack && msg_unpack(msg, c, name, motorola_used, intel_used) < 0)
 		return -1;
 
-	if(msg_print(msg, c, name) < 0)
+	if(generate_print && msg_print(msg, c, name) < 0)
 		return -1;
 
 	return 0;
 }
 
-static int msg2h(can_msg_t *msg, FILE *h)
+static int msg2h(can_msg_t *msg, FILE *h, bool generate_print, bool generate_pack, bool generate_unpack)
 {
 	assert(msg && h);
 	char name[MAX_NAME_LENGTH] = {0};
@@ -338,14 +348,19 @@ static int msg2h(can_msg_t *msg, FILE *h)
 
 	/**@todo add time stamp information to struct */
 	fprintf(h, "typedef struct {\n" );
-	for(size_t i = 0; i < msg->signal_count; i++)
+
+    for(size_t i = 0; i < msg->signal_count; i++)
 		if(signal2type(msg->signals[i], h) < 0)
 			return -1;
+
 	fprintf(h, "} %s_t;\n\n", name);
 	fprintf(h, "extern %s_t %s_data;\n", name, name);
 
-	print_function_name(h, "pack", name, ";\n", false, "uint64_t", false);
-	print_function_name(h, "unpack", name, ";\n\n", true, "uint64_t", true);
+	if (generate_pack)
+		print_function_name(h, "pack", name, ";\n", false, "uint64_t", false);
+
+	if (generate_unpack)
+		print_function_name(h, "unpack", name, ";\n\n", true, "uint64_t", true);
 
 	for(size_t i = 0; i < msg->signal_count; i++) {
 		if(signal2scaling(name, msg->id, msg->signals[i], h, true, true) < 0)
@@ -354,7 +369,8 @@ static int msg2h(can_msg_t *msg, FILE *h)
 			return -1;
 	}
 
-	print_function_name(h, "print", name, ";\n", false, "FILE", false);
+	if (generate_print)
+		print_function_name(h, "print", name, ";\n", false, "FILE", false);
 
 	fputs("\n\n", h);
 
@@ -414,7 +430,8 @@ static int switch_function(FILE *c, dbc_t *dbc, char *function, bool unpack, boo
 	return fprintf(c, "\treturn -1; \n}\n\n");
 }
 
-int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps)
+int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps,
+		  bool generate_print, bool generate_pack, bool generate_unpack)
 {
 	/**@todo print out ECU node information */
 	assert(dbc && c && h);
@@ -458,13 +475,19 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps)
 		"#endif\n\n",
 		file_guard, file_guard);
 
-	switch_function(h, dbc, "unpack", true, true, "uint64_t", true);
-	switch_function(h, dbc, "pack", false, true, "uint64_t", false);
-	switch_function(h, dbc, "print", true, true, "FILE*", false);
+	if (generate_unpack)
+		switch_function(h, dbc, "unpack", true, true, "uint64_t", true);
+
+	if (generate_pack)
+		switch_function(h, dbc, "pack", false, true, "uint64_t", false);
+
+	if (generate_print)
+		switch_function(h, dbc, "print", true, true, "FILE*", false);
+
 	fputs("\n", h);
 
 	for(int i = 0; i < dbc->message_count; i++)
-		if(msg2h(dbc->messages[i], h) < 0)
+		if(msg2h(dbc->messages[i], h,  generate_print,  generate_pack,  generate_unpack) < 0)
 			return -1;
 	fputs(
 		"#ifdef __cplusplus\n"
@@ -479,12 +502,17 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps)
 	fprintf(c, "#include <inttypes.h>\n\n");
 	fprintf(c, "%s\n", cfunctions);
 
-	switch_function(c, dbc, "unpack", true, false, "uint64_t", true);
-	switch_function(c, dbc, "pack", false, false, "uint64_t", false);
-	switch_function(c, dbc, "print", true, false, "FILE*", false);
+	if (generate_unpack)
+		switch_function(c, dbc, "unpack", true, false, "uint64_t", true);
+
+	if (generate_pack)
+		switch_function(c, dbc, "pack", false, false, "uint64_t", false);
+
+	if (generate_print)
+		switch_function(c, dbc, "print", true, false, "FILE*", false);
 
 	for(int i = 0; i < dbc->message_count; i++)
-		if(msg2c(dbc->messages[i], c) < 0)
+		if(msg2c(dbc->messages[i], c, generate_print, generate_pack, generate_unpack) < 0)
 			return -1;
 
 	free(file_guard);
