@@ -492,13 +492,13 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps,
 	fprintf(c, "#include <inttypes.h>\n\n");
 	fprintf(c, "%s\n", cfunctions);
 
-	if (generate_print)
+	if (generate_unpack)
 		switch_function(c, dbc, "unpack", true, false, "uint64_t", true);
 
 	if (generate_pack)
 		switch_function(c, dbc, "pack", false, false, "uint64_t", false);
 
-	if (generate_unpack)
+	if (generate_print)
 		switch_function(c, dbc, "print", true, false, "FILE*", false);
 
 	for(int i = 0; i < dbc->message_count; i++)
