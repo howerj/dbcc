@@ -246,9 +246,14 @@ static int multiplexor_switch(can_msg_t *msg, signal_t *multiplexor, FILE *c, bo
 	return 0;
 }
 
+static int msg_data_type(FILE *c, const char *name)
+{
+    fprintf(c, "%s_t %s_data;\n\n", name, name);
+}
+
 static int msg_pack(can_msg_t *msg, FILE *c, const char *name, bool motorola_used, bool intel_used)
 {
-	fprintf(c, "%s_t %s_data;\n\n", name, name);
+	//fprintf(c, "%s_t %s_data;\n\n", name, name);
 
 	print_function_name(c, "pack", name, "\n{\n", false, "uint64_t", false);
 	fprintf(c, "\tregister uint64_t x;\n");
@@ -317,6 +322,11 @@ static int msg2c(can_msg_t *msg, FILE *c, bool generate_print, bool generate_pac
 			motorola_used = true;
 		else
 			intel_used = true;
+
+    if (generate_pack || generate_unpack || generate_print) {
+        if (msg_data_type(c, name) < 0)
+            return -1;
+    }
 
 	if(generate_pack && msg_pack(msg, c, name, motorola_used, intel_used) < 0)
 		return -1;
