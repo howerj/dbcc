@@ -1,7 +1,8 @@
 /**@todo Validation functions with configurable behavior (range checks, etc)
  * @todo Tidy up this module, make things configurable
- * @todo A version, in a separate file, that also prints out C, but is more
- * data driven instead (which would probably be slower, but more compact).
+ * @todo A data driven version would be better, data should be centralized 
+ * and the pack/unpack functions should use data structures instead of
+ * big functions with switch statements.
  * @todo Signal status; signal should be set to unknown first, or when there
  * is a timeout. A timestamp should also be processed
  *
@@ -215,6 +216,7 @@ static void make_name(char *newname, size_t maxlen, const char *name, unsigned i
 static signal_t *process_signals_and_find_multiplexer(can_msg_t *msg, FILE *c, const char *name, bool serialize)
 {
 	signal_t *multiplexor = NULL;
+
 	for(size_t i = 0; i < msg->signal_count; i++) {
 		signal_t *sig = msg->signals[i];
 		if(sig->is_multiplexor) {
@@ -248,27 +250,29 @@ static int multiplexor_switch(can_msg_t *msg, signal_t *multiplexor, FILE *c, bo
 
 static int msg_data_type(FILE *c, const char *name)
 {
-    fprintf(c, "%s_t %s_data;\n\n", name, name);
+	return fprintf(c, "%s_t %s_data;\n\n", name, name);
 }
 
 static int msg_pack(can_msg_t *msg, FILE *c, const char *name, bool motorola_used, bool intel_used)
 {
-	//fprintf(c, "%s_t %s_data;\n\n", name, name);
-
+	bool message_has_signals = motorola_used || intel_used;
 	print_function_name(c, "pack", name, "\n{\n", false, "uint64_t", false);
-	fprintf(c, "\tregister uint64_t x;\n");
+	if(message_has_signals)
+		fprintf(c, "\tregister uint64_t x;\n");
 	if(motorola_used)
 		fprintf(c, "\tregister uint64_t m = 0;\n");
 	if(intel_used)
 		fprintf(c, "\tregister uint64_t i = 0;\n");
-
+	if(!message_has_signals)
+		fprintf(c, "\tUNUSED(data);\n\tUNUSED(pack);\n");
 	signal_t *multiplexor = process_signals_and_find_multiplexer(msg, c, name, true);
 
 	if(multiplexor)
 		if(multiplexor_switch(msg, multiplexor, c, true) < 0)
 			return -1;
 
-	fprintf(c, "\t*data = %s%s%s%s%s;\n",
+	if(message_has_signals)
+		fprintf(c, "\t*data = %s%s%s%s%s;\n",
 			swap_motorola && motorola_used ? "reverse_byte_order" : "",
 			motorola_used ? "(m)" : "",
 			motorola_used && intel_used ? "|" : "",
@@ -280,14 +284,24 @@ static int msg_pack(can_msg_t *msg, FILE *c, const char *name, bool motorola_use
 
 static int msg_unpack(can_msg_t *msg, FILE *c, const char *name, bool motorola_used, bool intel_used)
 {
+	bool message_has_signals = motorola_used || intel_used;
 	print_function_name(c, "unpack", name, "\n{\n", true, "uint64_t", true);
-	fprintf(c, "\tregister uint64_t x;\n");
+	if(message_has_signals)
+		fprintf(c, "\tregister uint64_t x;\n");
 	if(motorola_used)
 		fprintf(c, "\tregister uint64_t m = %s(data);\n", swap_motorola ? "reverse_byte_order" : "");
 	if(intel_used)
 		fprintf(c, "\tregister uint64_t i = %s(data);\n", swap_motorola ? "" : "reverse_byte_order");
+	if(!message_has_signals)
+		fprintf(c, "\tUNUSED(data);\n\tUNUSED(unpack);\n");
 
-	fprintf(c, "\tif(dlc < %u)\n\t\treturn -1;\n", msg->dlc);
+	/**@note This generated check might be best to be made optional, as nodes have
+	 * could be sending the wrong DLC out, decoding should be attempted
+	 * regardless (but an error logged, or something). */
+	if(msg->dlc) 
+		fprintf(c, "\tif(dlc < %u)\n\t\treturn -1;\n", msg->dlc);
+	else
+		fprintf(c, "\tUNUSED(dlc);\n");
 
 	signal_t *multiplexor = process_signals_and_find_multiplexer(msg, c, name, false);
 	if(multiplexor)
@@ -300,12 +314,18 @@ static int msg_unpack(can_msg_t *msg, FILE *c, const char *name, bool motorola_u
 static int msg_print(can_msg_t *msg, FILE *c, const char *name)
 {
 	print_function_name(c, "print", name, "\n{\n", false, "FILE", false);
-	fprintf(c, "\tdouble scaled;\n\tint r = 0;\n");
+	if(msg->signal_count)
+		fprintf(c, "\tdouble scaled;\n\tint r = 0;\n");
+	else
+		fprintf(c, "\tUNUSED(data);\n\tUNUSED(print);\n");
 	for(size_t i = 0; i < msg->signal_count; i++) {
 		if(signal2print(msg->signals[i], msg->id, c) < 0)
 			return -1;
 	}
-	fprintf(c, "\treturn r;\n}\n\n");
+	if(msg->signal_count)
+		fprintf(c, "\treturn r;\n}\n\n");
+	else
+		fprintf(c, "\treturn 0;\n}\n\n");
 	return 0;
 }
 
@@ -323,10 +343,10 @@ static int msg2c(can_msg_t *msg, FILE *c, bool generate_print, bool generate_pac
 		else
 			intel_used = true;
 
-    if (generate_pack || generate_unpack || generate_print) {
-        if (msg_data_type(c, name) < 0)
-            return -1;
-    }
+	if(generate_pack || generate_unpack || generate_print) {
+		if (msg_data_type(c, name) < 0)
+			return -1;
+	}
 
 	if(generate_pack && msg_pack(msg, c, name, motorola_used, intel_used) < 0)
 		return -1;
@@ -349,7 +369,7 @@ static int msg2h(can_msg_t *msg, FILE *h, bool generate_print, bool generate_pac
 	/**@todo add time stamp information to struct */
 	fprintf(h, "typedef struct {\n" );
 
-    for(size_t i = 0; i < msg->signal_count; i++)
+	for(size_t i = 0; i < msg->signal_count; i++)
 		if(signal2type(msg->signals[i], h) < 0)
 			return -1;
 
@@ -413,7 +433,7 @@ static int switch_function(FILE *c, dbc_t *dbc, char *function, bool unpack, boo
 			dlc ? ", uint8_t dlc" : "");
 	if(prototype)
 		return fprintf(c, ";\n");
-	fprintf(c, " {\n");
+	fprintf(c, "\n{\n");
 	fprintf(c, "\tswitch(id) {\n");
 	for(int i = 0; i < dbc->message_count; i++) {
 		can_msg_t *msg = dbc->messages[i];
@@ -500,6 +520,7 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps,
 	/* C FILE */
 	fprintf(c, "#include \"%s\"\n", name);
 	fprintf(c, "#include <inttypes.h>\n\n");
+	fprintf(c, "#define UNUSED(X) ((void)(X))\n\n");
 	fprintf(c, "%s\n", cfunctions);
 
 	if (generate_unpack)

@@ -701,6 +701,11 @@ BO_ 666 IMU5: 4 Vector__XXX
  SG_ multi4 m3:  8|4@1+ (1,0) [0|15] "multiplexed-d" Vector__XXX
  SG_ normal:  16|8@1- (1,0) [-128|127] "normal" Vector__XXX
 
+BO_ 667 MESSAGE_NAME: 0 MESSAGE_SENDER
+ SG_ NonsenseSignal: 0|3@0+ (1,0) [0|7] "" DBG
+
+BO_ 668 MESSAGE_NAME2: 0 MESSAGE_SENDER
+
 CM_ BO_ 33 "increments";
 CM_ BO_ 35 "increments";
 CM_ BO_ 37 "increments";

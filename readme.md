@@ -41,6 +41,8 @@ program.
   - Error frames
   - ...
 * The generated C code has not been tested that much (it is probably incorrect!)
+* Add more control over the generated code, for example options to add 
+variables for containing the CAN messages or not.
 * Offer a template mechanism so arbitrary code can be populated with messages
   and signal lists.
 * Make a template converter

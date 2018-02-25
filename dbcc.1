@@ -43,6 +43,24 @@ Produce an XML file instead of a C and header file
 Set the output directory
 
 .TP
+.B -p
+Generate only code to print out CAN messages. Only effect C code generation, if
+neither '-p', '-k' or '-u' are specified all code is generated. This option can
+be specified along with any of the other code limiting options.
+
+.TP
+.B -k
+Generate only code to pack CAN messages. Only effect C code generation, if
+neither '-p', '-k' or '-u' are specified all code is generated. This option can
+be specified along with any of the other code limiting options.
+
+.TP
+.B -p
+Generate only code to unpack CAN messages. Only effect C code generation, if
+neither '-p', '-k' or '-u' are specified all code is generated. This option can
+be specified along with any of the other code limiting options.
+
+.TP
 .B file
 A DBC file to process
 

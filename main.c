@@ -16,7 +16,7 @@ typedef enum {
 
 static void usage(const char *arg0)
 {
-	fprintf(stderr, "%s: [-] [-h] [-v] [-g] [-t] [-x] [-o dir] file*\n", arg0);
+	fprintf(stderr, "%s: [-] [-hvgtxpku] [-o dir] file*\n", arg0);
 }
 
 static void help(void)
@@ -32,6 +32,9 @@ Options:\n\
 \t-t     add timestamps to the generated files\n\
 \t-x     convert output to XML instead of the default C code\n\
 \t-o dir set the output directory\n\
+\t-p     generate only print code\n\
+\t-k     generate only pack code\n\
+\t-u     generate only unpack code\n\
 \tfile   process a DBC file\n\
 \n\
 Files must come after the arguments have been processed.\n\
@@ -94,14 +97,14 @@ int main(int argc, char **argv)
 	const char *outdir = NULL;
 	bool use_time_stamps = false;
 
-    bool generate_print = false;
-    bool generate_pack = false;
-    bool generate_unpack = false;
+	bool generate_print = false;
+	bool generate_pack = false;
+	bool generate_unpack = false;
 
 	int i;
 
 
-    for(i = 1; i < argc && argv[i][0] == '-'; i++)
+	for(i = 1; i < argc && argv[i][0] == '-'; i++)
 		switch(argv[i][1]) {
 		case '\0': /* stop argument processing */
 			goto done; 
@@ -122,23 +125,18 @@ int main(int argc, char **argv)
 			use_time_stamps = true;
 			debug("using time stamps");
 			break;
-
-
-        case 'p':
-            generate_print = true;
-            debug("generate code for print");
-            break;
-
-        case 'u':
-            generate_unpack = true;
-            debug("generate code for unpack");
-            break;
-
-        case 'k':
-            generate_pack = true;
-            debug("generate code for pack");
-            break;
-
+		case 'p':
+			generate_print = true;
+			debug("generate code for print");
+			break;
+		case 'u':
+			generate_unpack = true;
+			debug("generate code for unpack");
+			break;
+		case 'k':
+			generate_pack = true;
+			debug("generate code for pack");
+			break;
 		case 'o':
 			if(i >= argc - 1)
 				goto fail;
@@ -152,11 +150,11 @@ int main(int argc, char **argv)
 		}
 done:
 
-    if (!generate_unpack && !generate_pack && !generate_print) {
-        generate_print  = true;
-        generate_pack   = true;
-        generate_unpack = true;
-    }
+	if (!generate_unpack && !generate_pack && !generate_print) {
+		generate_print  = true;
+		generate_pack   = true;
+		generate_unpack = true;
+	}
 
 	for(; i < argc; i++) {
 		debug("reading => %s", argv[i]);
@@ -182,7 +180,7 @@ done:
 		switch(convert) {
 		case convert_to_c:
 			r = dbc2cWrapper(dbc, outpath, argv[i], use_time_stamps,
-                             generate_print, generate_pack, generate_unpack);
+				generate_print, generate_pack, generate_unpack);
 			break;
 		case convert_to_xml:
 			r = dbc2xmlWrapper(dbc, outpath, use_time_stamps);
