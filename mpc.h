@@ -5,36 +5,7 @@
 **
 ** Daniel Holden - contact@daniel-holden.com
 ** Licensed under BSD3
- *
- * 
- * Copyright (c) 2013, Daniel Holden All rights reserved.
- * 
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 
- *     Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *     Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
- * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
- * The views and conclusions contained in the software and documentation
- * are those of the authors and should not be interpreted as representing
- * official policies, either expressed or implied, of the FreeBSD Project.
- */
+*/
 
 #ifndef mpc_h
 #define mpc_h
@@ -110,6 +81,9 @@ typedef mpc_val_t*(*mpc_apply_t)(mpc_val_t*);
 typedef mpc_val_t*(*mpc_apply_to_t)(mpc_val_t*,void*);
 typedef mpc_val_t*(*mpc_fold_t)(int,mpc_val_t**);
 
+typedef int(*mpc_check_t)(mpc_val_t**);
+typedef int(*mpc_check_with_t)(mpc_val_t**,void*);
+
 /*
 ** Building a Parser
 */
@@ -154,6 +128,10 @@ mpc_parser_t *mpc_expect(mpc_parser_t *a, const char *e);
 mpc_parser_t *mpc_expectf(mpc_parser_t *a, const char *fmt, ...);
 mpc_parser_t *mpc_apply(mpc_parser_t *a, mpc_apply_t f);
 mpc_parser_t *mpc_apply_to(mpc_parser_t *a, mpc_apply_to_t f, void *x);
+mpc_parser_t *mpc_check(mpc_parser_t *a, mpc_check_t f, const char *e);
+mpc_parser_t *mpc_check_with(mpc_parser_t *a, mpc_check_with_t f, void *x, const char *e);
+mpc_parser_t *mpc_checkf(mpc_parser_t *a, mpc_check_t f, const char *fmt, ...);
+mpc_parser_t *mpc_check_withf(mpc_parser_t *a, mpc_check_with_t f, void *x, const char *fmt, ...);
 
 mpc_parser_t *mpc_not(mpc_parser_t *a, mpc_dtor_t da);
 mpc_parser_t *mpc_not_lift(mpc_parser_t *a, mpc_dtor_t da, mpc_ctor_t lf);
