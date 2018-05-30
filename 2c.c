@@ -271,13 +271,14 @@ static int msg_pack(can_msg_t *msg, FILE *c, const char *name, bool motorola_use
 		if(multiplexor_switch(msg, multiplexor, c, true) < 0)
 			return -1;
 
-	if(message_has_signals)
+	if(message_has_signals) {
 		fprintf(c, "\t*data = %s%s%s%s%s;\n",
 			swap_motorola && motorola_used ? "reverse_byte_order" : "",
 			motorola_used ? "(m)" : "",
 			motorola_used && intel_used ? "|" : "",
-			swap_motorola || !intel_used ? "" : "reverse_byte_order",
-			motorola_used ? "" : "(i)");
+			(!swap_motorola && intel_used) ? "reverse_byte_order" : "",
+			intel_used ? "(i)" : "");
+	}
 	fprintf(c, "\treturn 0;\n}\n\n");
 	return 0;
 }
