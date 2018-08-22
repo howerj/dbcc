@@ -180,6 +180,7 @@ static int signal2scaling(const char *msgname, unsigned id, signal_t *sig, FILE 
 	const char *method = decode ? "decode" : "encode";
 	const char *rtype = type;
 	/**@todo more advanced type conversion could be done here */
+	/**@todo Add min/max, and also add better logging throughout */
 	if(sig->scaling != 1.0 || sig->offset != 0.0)
 		rtype = "double";
 	fprintf(o, "%s %s_can_0x%03x_%s(%s_t *record)", rtype, method, id, sig->name, msgname);
@@ -355,6 +356,15 @@ static int msg2c(can_msg_t *msg, FILE *c, bool generate_print, bool generate_pac
 	if(generate_unpack && msg_unpack(msg, c, name, motorola_used, intel_used) < 0)
 		return -1;
 
+	for(size_t i = 0; i < msg->signal_count; i++) {
+		if(generate_unpack)
+			if(signal2scaling(name, msg->id, msg->signals[i], c, true, false) < 0)
+				return -1;
+		if(generate_pack)
+			if(signal2scaling(name, msg->id, msg->signals[i], c, false, false) < 0)
+				return -1;
+	}
+
 	if(generate_print && msg_print(msg, c, name) < 0)
 		return -1;
 
@@ -384,10 +394,12 @@ static int msg2h(can_msg_t *msg, FILE *h, bool generate_print, bool generate_pac
 		print_function_name(h, "unpack", name, ";\n\n", true, "uint64_t", true);
 
 	for(size_t i = 0; i < msg->signal_count; i++) {
-		if(signal2scaling(name, msg->id, msg->signals[i], h, true, true) < 0)
-			return -1;
-		if(signal2scaling(name, msg->id, msg->signals[i], h, false, true) < 0)
-			return -1;
+		if(generate_unpack)
+			if(signal2scaling(name, msg->id, msg->signals[i], h, true, true) < 0)
+				return -1;
+		if(generate_pack)
+			if(signal2scaling(name, msg->id, msg->signals[i], h, false, true) < 0)
+				return -1;
 	}
 
 	if (generate_print)
