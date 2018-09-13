@@ -1,6 +1,6 @@
 /**@todo Validation functions with configurable behavior (range checks, etc)
  * @todo Tidy up this module, make things configurable
- * @todo A data driven version would be better, data should be centralized 
+ * @todo A data driven version would be better, data should be centralized
  * and the pack/unpack functions should use data structures instead of
  * big functions with switch statements.
  * @todo Signal status; signal should be set to unknown first, or when there
@@ -25,10 +25,10 @@
 
 static const bool swap_motorola = true;
 
-static unsigned fix_start_bit(bool motorola, unsigned start)
+static unsigned fix_start_bit(bool motorola, unsigned start, unsigned siglen)
 {
 	if(motorola)
-		start = (8 * (7 - (start / 8))) + (start % 8);
+		start = (8 * (7 - (start / 8))) + (start % 8) - (siglen - 1);
 	return start;
 }
 
@@ -78,8 +78,8 @@ static int comment(signal_t *sig, FILE *o)
 static int signal2deserializer(signal_t *sig, FILE *o)
 {
 	assert(sig && o);
-	bool motorola   = sig->endianess == endianess_motorola_e;
-	unsigned start  = fix_start_bit(motorola, sig->start_bit);
+	bool motorola   = (sig->endianess == endianess_motorola_e);
+	unsigned start  = fix_start_bit(motorola, sig->start_bit, sig->bit_length);
 	unsigned length = sig->bit_length;
 	uint64_t mask = length == 64 ?
 		0xFFFFFFFFFFFFFFFFuLL :
@@ -111,7 +111,7 @@ static int signal2deserializer(signal_t *sig, FILE *o)
 			negative &= 0xFF;
 		if(negative)
 			fprintf(o, "\tx = x & 0x%"PRIx64" ? x | 0x%"PRIx64" : x; \n", top, negative);
-	} 
+	}
 
 	fprintf(o, "\tunpack->%s = x;\n", sig->name);
 	return 0;
@@ -120,8 +120,8 @@ static int signal2deserializer(signal_t *sig, FILE *o)
 static int signal2serializer(signal_t *sig, FILE *o)
 {
 	assert(sig && o);
-	bool motorola = sig->endianess == endianess_motorola_e;
-	int start = fix_start_bit(motorola, sig->start_bit);
+	bool motorola = (sig->endianess == endianess_motorola_e);
+	int start = fix_start_bit(motorola, sig->start_bit, sig->bit_length);
 
 	uint64_t mask = sig->bit_length == 64 ?
 		0xFFFFFFFFFFFFFFFFuLL :
@@ -143,9 +143,9 @@ static int signal2print(signal_t *sig, unsigned id, FILE *o)
 	fprintf(o, "\tscaled = decode_can_0x%03x_%s(print);\n", id, sig->name);
 
 	if(sig->is_floating)
-		return fprintf(o, "\tr = fprintf(data, \"%s = %%.3f (wire: %%f)\\n\", scaled, (double)(print->%s));\n", 
+		return fprintf(o, "\tr = fprintf(data, \"%s = %%.3f (wire: %%f)\\n\", scaled, (double)(print->%s));\n",
 				sig->name, sig->name);
-	return fprintf(o, "\tr = fprintf(data, \"%s = %%.3f (wire: %%.0f)\\n\", scaled, (double)(print->%s));\n", 
+	return fprintf(o, "\tr = fprintf(data, \"%s = %%.3f (wire: %%.0f)\\n\", scaled, (double)(print->%s));\n",
 			sig->name, sig->name);
 	fprintf(o, "\tif(r < 0)\n\t\treturn r;");
 }
@@ -169,7 +169,7 @@ static int signal2type(signal_t *sig, FILE *o)
 		type = length == 64 ? "double" : "float";
 	}
 
-	int r = fprintf(o, "\t%s %s; /*scaling %.1f, offset %.1f, units %s*/\n", 
+	int r = fprintf(o, "\t%s %s; /*scaling %.1f, offset %.1f, units %s*/\n",
 			type, sig->name, sig->scaling, sig->offset, sig->units[0] ? sig->units : "none");
 	return r;
 }
@@ -186,7 +186,7 @@ static int signal2scaling(const char *msgname, unsigned id, signal_t *sig, FILE 
 	fprintf(o, "%s %s_can_0x%03x_%s(%s_t *record)", rtype, method, id, sig->name, msgname);
 	if(header)
 		return fputs(";\n", o);
-	
+
 	fputs("\n{\n", o);
 	fprintf(o, "\t%s rval = (%s)(record->%s);\n", rtype, rtype, sig->name);
 	if(sig->scaling == 0.0)
@@ -202,9 +202,9 @@ static int signal2scaling(const char *msgname, unsigned id, signal_t *sig, FILE 
 static int print_function_name(FILE *out, const char *prefix, const char *name, const char *postfix, bool in, char *datatype, bool dlc)
 {
 	assert(out && prefix && name && postfix);
-	return fprintf(out, "int %s_%s(%s_t *%s, %s %sdata%s)%s", 
-			prefix, name, name, prefix, datatype, 
-			in ? "" : "*", 
+	return fprintf(out, "int %s_%s(%s_t *%s, %s %sdata%s)%s",
+			prefix, name, name, prefix, datatype,
+			in ? "" : "*",
 			dlc ? ", uint8_t dlc" : "",
 			postfix);
 }
@@ -300,7 +300,7 @@ static int msg_unpack(can_msg_t *msg, FILE *c, const char *name, bool motorola_u
 	/**@note This generated check might be best to be made optional, as nodes have
 	 * could be sending the wrong DLC out, decoding should be attempted
 	 * regardless (but an error logged, or something). */
-	if(msg->dlc) 
+	if(msg->dlc)
 		fprintf(c, "\tif(dlc < %u)\n\t\treturn -1;\n", msg->dlc);
 	else
 		fprintf(c, "\tUNUSED(dlc);\n");
@@ -410,8 +410,8 @@ static int msg2h(can_msg_t *msg, FILE *h, bool generate_print, bool generate_pac
 	return 0;
 }
 
-static const char *cfunctions = 
-"static inline uint64_t reverse_byte_order(uint64_t x)\n" 
+static const char *cfunctions =
+"static inline uint64_t reverse_byte_order(uint64_t x)\n"
 "{\n"
 "\tx = (x & 0x00000000FFFFFFFF) << 32 | (x & 0xFFFFFFFF00000000) >> 32;\n"
 "\tx = (x & 0x0000FFFF0000FFFF) << 16 | (x & 0xFFFF0000FFFF0000) >> 16;\n"
@@ -441,7 +441,7 @@ static int signal_compare_function(const void *a, const void *b)
 
 static int switch_function(FILE *c, dbc_t *dbc, char *function, bool unpack, bool prototype, char *datatype, bool dlc)
 {
-	fprintf(c, "int %s_message(unsigned id, %s %sdata%s)", 
+	fprintf(c, "int %s_message(unsigned id, %s %sdata%s)",
 			function, datatype, unpack ? "" : "*",
 			dlc ? ", uint8_t dlc" : "");
 	if(prototype)
@@ -452,7 +452,7 @@ static int switch_function(FILE *c, dbc_t *dbc, char *function, bool unpack, boo
 		can_msg_t *msg = dbc->messages[i];
 		char name[MAX_NAME_LENGTH] = {0};
 		make_name(name, MAX_NAME_LENGTH, msg->name, msg->id);
-		fprintf(c, "\tcase 0x%03x: return %s_%s(&%s_data, data%s);\n", 
+		fprintf(c, "\tcase 0x%03x: return %s_%s(&%s_data, data%s);\n",
 				msg->id,
 				function,
 				name,
