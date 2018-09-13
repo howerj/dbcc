@@ -41,9 +41,11 @@ The current grammar for the DBC parser is as follows:
 
 The file format contains significant whitespace, so the parsers grammar has to
 be made to be more complex than it should be, alternatively a parser could be
-made that accepts **ident** tags only if they are not keywords.
+made that accepts **ident** tags only if they are not keywords (which would be
+*much* better).
 
-The two most important things in the [DBC][] file are messages and signals, 
+The two most important things in the [DBC][] file are messages and signals. You
+can resolve
 
 ## Maximum Character Length
 

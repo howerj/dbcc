@@ -4,7 +4,7 @@
 #include <time.h>
 
 /*
-Add: 
+Add:
 	<?xml-stylesheet type="text/xsl" href="yourxsl.xsl"?>
 
 

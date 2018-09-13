@@ -93,7 +93,7 @@ int dbc2xmlWrapper(dbc_t *dbc, const char *dbc_file, bool use_time_stamps)
 int main(int argc, char **argv)
 {
 	log_level_e log_level = get_log_level();
-	conversion_type_e convert = convert_to_c; 
+	conversion_type_e convert = convert_to_c;
 	const char *outdir = NULL;
 	bool use_time_stamps = false;
 
@@ -107,7 +107,7 @@ int main(int argc, char **argv)
 	for(i = 1; i < argc && argv[i][0] == '-'; i++)
 		switch(argv[i][1]) {
 		case '\0': /* stop argument processing */
-			goto done; 
+			goto done;
 		case 'h':
 			usage(argv[0]);
 			help();

@@ -48,7 +48,7 @@ const char *emsg(void)
 
 static void logmsg(log_level_e ll, const char *prefix, const char *fmt, va_list ap)
 {
-	assert(prefix && fmt && ll < LOG_ALL_MESSAGES); 
+	assert(prefix && fmt && ll < LOG_ALL_MESSAGES);
 	if(!verbose(ll))
 		return;
 	fputs(prefix , stderr);
@@ -109,7 +109,7 @@ void *allocate(size_t sz)
 
 void *reallocator(void *p, size_t n)
 {
-	void *r = realloc(p, n); 
+	void *r = realloc(p, n);
 	if(!r)
 		error("reallocator failed: %s", emsg());
 	return r;
@@ -126,7 +126,7 @@ char *duplicate(const char *s)
 
 /**@warning does not work for large file >4GB */
 char *slurp(FILE *f)
-{ 
+{
 	long length = 0, r = 0;
 	char *b = NULL;
 	errno = 0;

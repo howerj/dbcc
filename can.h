@@ -34,7 +34,7 @@ typedef struct {
 	bool is_floating;    /**< if true, value is a floating point number*/
 	bool is_multiplexor; /**< true if this is a multiplexor */
 	bool is_multiplexed; /**< true if this is a multiplexed signal */
-	unsigned switchval;  /**< if is_multiplexed, this will contain the 
+	unsigned switchval;  /**< if is_multiplexed, this will contain the
 			       value that decodes this signal for the multiplexor */
 } signal_t;
 

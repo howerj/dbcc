@@ -44,7 +44,7 @@ static mpc_ast_t *_parse_dbc_file_by_handle(const char *name, FILE *handle);
  * which certain tools allow. This consists of a '//' with the rest of the line ignored.
  * Ideally the grammar would be rewritten, to follow Vectors documentation on it. */
 
-static const char *dbc_grammar = 
+static const char *dbc_grammar =
 " s         : /[ \\t]/ ; \n"
 " n         : /\\r?\\n/ ; \n"
 " sign      : '+' | '-' ; \n"
@@ -57,8 +57,8 @@ static const char *dbc_grammar =
 " range     : '[' ( <float> | <integer> ) '|' ( <float> | <integer> ) ']' ;\n"
 " node      : <ident> ; \n"
 " nodes     : <node> <s>* ( ',' <s>* <node>)* ; \n"
-" string    : '\"' /[^\"]*/ '\"' \n; " 
-" unit      : <string> ; \n" 
+" string    : '\"' /[^\"]*/ '\"' \n; "
+" unit      : <string> ; \n"
 " startbit  : <integer> ; \n"
 " endianess : '0' | '1' ; \n" /* for the endianess; 0 = Motorola, 1 = Intel */
 " y_mx_c    : '(' <factor> ',' <offset> ')' ; \n"
@@ -66,7 +66,7 @@ static const char *dbc_grammar =
 " ecu       : <ident> ; \n"
 " dlc       : <integer> ; \n"
 " id        : <integer> ; \n"
-" multiplexor : 'M' | 'm' <s>* <integer> ; \n" 
+" multiplexor : 'M' | 'm' <s>* <integer> ; \n"
 " signal    : <s>* \"SG_\" <s>+ <name> <s>* <multiplexor>? <s>* ':' <s>* <startbit> <s>* '|' <s>* \n"
 "             <length> <s>* '@' <s>* <endianess> <s>* <sign> <s>* <y_mx_c> <s>* \n"
 "             <range> <s>* <unit> <s>* <nodes> <s>* <n> ; \n"
@@ -74,9 +74,9 @@ static const char *dbc_grammar =
 " messages  : (<message> <n>+)* ; \n"
 " version   : \"VERSION\" <s> <string> <n>+ ; \n"
 " ecus      : \"BU_\" <s>* ':' (<ident>|<s>)* <n> ; \n"
-" symbols   : \"NS_\" <s>* ':' <s>* <n> ('\t' <ident> <n>)* <n> ; " 
+" symbols   : \"NS_\" <s>* ':' <s>* <n> ('\t' <ident> <n>)* <n> ; "
 " whatever  : (<ident>|<string>|<integer>|<float>) ; \n"
-" bs        : \"BS_\" <s>* ':' <n>+ ; " 
+" bs        : \"BS_\" <s>* ':' <n>+ ; "
 " types     : <s>* <ident> (<whatever>|<s>)+ ';' (<n>*|/$/) ; \n"
 " etcetera  : <types>+ ; \n" /**@note don't care about the rest of the file, for now*/
 " values    : \"VAL_TABLE_\" (<whatever>|<s>)* ';' <n> ; \n" /**@note don't care about this, for now*/
@@ -90,8 +90,8 @@ const char *parse_get_grammar(void)
 mpc_ast_t *parse_dbc_file_by_name(const char *name)
 {
 	mpc_ast_t *ast = NULL;
-	FILE *input = NULL; 
-	
+	FILE *input = NULL;
+
 	if(!(input = fopen(name, "rb")))
 		goto end;
 	ast = _parse_dbc_file_by_handle(name, input);

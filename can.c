@@ -125,7 +125,7 @@ signal_t *ast2signal(mpc_ast_t *ast)
 
 	debug("\tname => %s; start %u length %u %s %s %s",
 			sig->name, sig->start_bit, sig->bit_length, sig->units,
-			sig->endianess ? "intel" : "motorola", 
+			sig->endianess ? "intel" : "motorola",
 			sig->is_signed ? "signed " : "unsigned");
 	return sig;
 }
