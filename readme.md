@@ -59,6 +59,7 @@ This affects numbers larger than 2^53.
   - The easiest way to check this is by generating an XML file and verifying it
   with an XSD file
 * Find/make more CAN database examples
+* Generate CSV files
 
 [DBC]: http://vector.com/vi_candb_en.html
 [C]: https://en.wikipedia.org/wiki/C_%28programming_language%29

@@ -5,6 +5,11 @@
  * big functions with switch statements.
  * @todo Signal status; signal should be set to unknown first, or when there
  * is a timeout. A timestamp should also be processed
+ * @todo MISRA C Compliance
+ * @todo More intelligence code generation (use 'double' less)
+ * @todo Group functionality together, eg: function declarations, variable
+ * instantiations, ...
+ * @todo Optional variable instantiation
  *
  * This file is quite a mess, but that is not going to change, it is also
  * quite short and seems to do the job. I better solution would be to make a
@@ -140,14 +145,20 @@ static int signal2serializer(signal_t *sig, FILE *o)
 static int signal2print(signal_t *sig, unsigned id, FILE *o)
 {
 	/*super lazy*/
-	fprintf(o, "\tscaled = decode_can_0x%03x_%s(print);\n", id, sig->name);
 
+	if(sig->is_floating)
+		return fprintf(o, "\tr = fprintf(data, \"%s = (wire: %%f)\\n\", (double)(print->%s));\n",
+				sig->name, sig->name);
+	return fprintf(o, "\tr = fprintf(data, \"%s = (wire: %%.0f)\\n\", (double)(print->%s));\n",
+			sig->name, sig->name);
+	/* @todo TODO Fix this */
+	fprintf(o, "\tscaled = decode_can_0x%03x_%s(print);\n", id, sig->name);
 	if(sig->is_floating)
 		return fprintf(o, "\tr = fprintf(data, \"%s = %%.3f (wire: %%f)\\n\", scaled, (double)(print->%s));\n",
 				sig->name, sig->name);
 	return fprintf(o, "\tr = fprintf(data, \"%s = %%.3f (wire: %%.0f)\\n\", scaled, (double)(print->%s));\n",
 			sig->name, sig->name);
-	fprintf(o, "\tif(r < 0)\n\t\treturn r;");
+	/*fprintf(o, "\tif(r < 0)\n\t\treturn r;");*/
 }
 
 static int signal2type(signal_t *sig, FILE *o)
@@ -174,29 +185,76 @@ static int signal2type(signal_t *sig, FILE *o)
 	return r;
 }
 
-static int signal2scaling(const char *msgname, unsigned id, signal_t *sig, FILE *o, bool decode, bool header)
+static bool signal_are_min_max_valid(signal_t *sig) 
+{
+	return sig->minimum != sig->maximum;
+}
+
+/**@todo more advanced type conversion could be done here */
+/**@todo better range generation code, for example the range checks can be
+ * eliminated for encoding values where minimum and maximum values are the
+ * same as the integral type used for a given signal. Not only that, but
+ * integers should be used instead of floats where possible */
+static int signal2scaling_encode(const char *msgname, unsigned id, signal_t *sig, FILE *o, bool header) 
 {
 	const char *type = determine_type(sig->bit_length, sig->is_signed);
-	const char *method = decode ? "decode" : "encode";
-	const char *rtype = type;
-	/**@todo more advanced type conversion could be done here */
-	/**@todo Add min/max, and also add better logging throughout */
 	if(sig->scaling != 1.0 || sig->offset != 0.0)
-		rtype = "double";
-	fprintf(o, "%s %s_can_0x%03x_%s(%s_t *record)", rtype, method, id, sig->name, msgname);
+		type = "double";
+	fprintf(o, "bool encode_can_0x%03x_%s(%s_t *record, %s in)", id, sig->name, msgname, type);
 	if(header)
 		return fputs(";\n", o);
-
 	fputs("\n{\n", o);
-	fprintf(o, "\t%s rval = (%s)(record->%s);\n", rtype, rtype, sig->name);
+	fprintf(o, "\trecord->%s = 0;\n", sig->name); // cast!
+	if(signal_are_min_max_valid(sig)) {
+		fprintf(o, "\tif((in < %f) || (in > %f))\n\t\treturn false;\n", sig->minimum, sig->maximum);
+	}
+
 	if(sig->scaling == 0.0)
 		error("invalid scaling factor (fix your DBC file)");
 	if(sig->scaling != 1.0)
-		fprintf(o, "\trval *= %f;\n", decode ? sig->scaling : 1.0 / sig->scaling);
+		fprintf(o, "\tin *= %f;\n", sig->scaling);
 	if(sig->offset != 0.0)
-		fprintf(o, "\trval += %f;\n", decode ? sig->offset  : -1.0 * sig->offset);
-	fputs("\treturn rval;\n", o);
+		fprintf(o, "\tin += %f;\n", sig->offset);
+	fprintf(o, "\trecord->%s = in;\n", sig->name); // cast!
+	return fputs("\treturn true;\n}\n\n", o);
+}
+
+static int signal2scaling_decode(const char *msgname, unsigned id, signal_t *sig, FILE *o, bool header) 
+{
+	const char *type = determine_type(sig->bit_length, sig->is_signed);
+	if(sig->scaling != 1.0 || sig->offset != 0.0)
+		type = "double";
+	fprintf(o, "bool decode_can_0x%03x_%s(%s_t *record, %s *out)", id, sig->name, msgname, type);
+	if(header)
+		return fputs(";\n", o);
+	fputs("\n{\n", o);
+	fprintf(o, "\t%s rval = (%s)(record->%s);\n", type, type, sig->name);
+	if(sig->scaling == 0.0)
+		error("invalid scaling factor (fix your DBC file)");
+	if(sig->offset != 0.0)
+		fprintf(o, "\trval += %f;\n", -1.0 * sig->offset);
+	if(sig->scaling != 1.0)
+		fprintf(o, "\trval *= %f;\n", 1.0 / sig->scaling);
+	if(signal_are_min_max_valid(sig)) {
+		fprintf(o, "\tif((rval <= %f) && (rval >= %f)) {\n", sig->minimum, sig->maximum);
+		fputs("\t\t*out = rval;\n", o);
+		fputs("\t\treturn true;\n", o);
+		fputs("\t} else {\n", o);
+		fprintf(o, "\t\t*out = (%s)0;\n", type);
+		fputs("\t\treturn false;\n", o);
+		fputs("\t}\n", o);
+	} else {
+		fputs("\t*out = rval;\n", o);
+		fputs("\treturn true;\n", o);
+	}
 	return fputs("}\n\n", o);
+}
+
+static int signal2scaling(const char *msgname, unsigned id, signal_t *sig, FILE *o, bool decode, bool header)
+{
+	if(decode)
+		return signal2scaling_decode(msgname, id, sig, o, header);
+	return signal2scaling_encode(msgname, id, sig, o, header);
 }
 
 static int print_function_name(FILE *out, const char *prefix, const char *name, const char *postfix, bool in, char *datatype, bool dlc)
@@ -317,7 +375,7 @@ static int msg_print(can_msg_t *msg, FILE *c, const char *name)
 {
 	print_function_name(c, "print", name, "\n{\n", false, "FILE", false);
 	if(msg->signal_count)
-		fprintf(c, "\tdouble scaled;\n\tint r = 0;\n");
+		fprintf(c, "\tint r = 0;\n"); //fprintf(c, "\tdouble scaled;\n\tint r = 0;\n");
 	else
 		fprintf(c, "\tUNUSED(data);\n\tUNUSED(print);\n");
 	for(size_t i = 0; i < msg->signal_count; i++) {
@@ -502,11 +560,14 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps,
 		"#ifndef %s\n"
 		"#define %s\n\n"
 		"#include <stdint.h>\n"
+		"#include <stdbool.h>\n"
 		"#include <stdio.h>\n\n"
 		"#ifdef __cplusplus\n"
 		"extern \"C\" { \n"
 		"#endif\n\n",
-		file_guard, file_guard);
+		file_guard, 
+		/*generate_print ? "#include <stdio.h>" : "", */
+		file_guard);
 
 	if (generate_unpack)
 		switch_function(h, dbc, "unpack", true, true, "uint64_t", true);
