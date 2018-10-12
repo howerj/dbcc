@@ -236,7 +236,7 @@ static int signal2scaling_decode(const char *msgname, unsigned id, signal_t *sig
 	if(sig->scaling != 1.0)
 		fprintf(o, "\trval *= %f;\n", 1.0 / sig->scaling);
 	if(signal_are_min_max_valid(sig)) {
-		fprintf(o, "\tif((rval <= %f) && (rval >= %f)) {\n", sig->minimum, sig->maximum);
+		fprintf(o, "\tif((rval >= %f) && (rval <= %f)) {\n", sig->minimum, sig->maximum);
 		fputs("\t\t*out = rval;\n", o);
 		fputs("\t\treturn true;\n", o);
 		fputs("\t} else {\n", o);
