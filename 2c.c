@@ -294,16 +294,36 @@ static signal_t *process_signals_and_find_multiplexer(can_msg_t *msg, FILE *c, c
 static int multiplexor_switch(can_msg_t *msg, signal_t *multiplexor, FILE *c, bool serialize)
 {
 	fprintf(c, "\tswitch(%s->%s) {\n", serialize ? "pack" : "unpack", multiplexor->name);
-	for(size_t i = 0; i < msg->signal_count; i++) {
-		signal_t *sig = msg->signals[i];
-		if(!(sig->is_multiplexed))
+	const size_t bits = 1u << multiplexor->bit_length;
+	for (size_t i = 0; i < bits; i++) { // slow for large multiplexor values
+		bool multiplex = false;
+		for (size_t j = 0; j < msg->signal_count; j++) {
+			signal_t *sig = msg->signals[j];
+			if(!(sig->is_multiplexed))
+				continue;
+			if (i == sig->switchval) {
+				multiplex = true;
+				break;
+			}
+		}
+
+		if (!multiplex)
 			continue;
-		fprintf(c, "\tcase %u:\n", sig->switchval);
-		if((serialize ? signal2serializer(sig, c) : signal2deserializer(sig, c)) < 0)
-			return -1;
+
+		fprintf(c, "\tcase %u:\n", (unsigned)i);
+		for (size_t j = 0; j < msg->signal_count; j++) {
+			signal_t *sig = msg->signals[j];
+			if(!(sig->is_multiplexed))
+				continue;
+			if(i != sig->switchval)
+				continue;
+			/**@todo correct indentation level */
+			if((serialize ? signal2serializer(sig, c) : signal2deserializer(sig, c)) < 0)
+				return -1;
+		}
 		fprintf(c, "\tbreak;\n");
 	}
-	fprintf(c, "\tdefault: return -1;\n\t}\n");
+	fprintf(c, "\tdefault:\n\t\treturn -1;\n}");
 	return 0;
 }
 

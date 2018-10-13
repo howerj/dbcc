@@ -696,7 +696,8 @@ BO_ 279 IMU5: 4 Vector__XXX
 BO_ 666 IMU5: 4 Vector__XXX
  SG_ multiplexor M:   0|4@1+ (1,0) [0|15] "multiplexor" Vector__XXX
  SG_ multi1 m1:  8|4@1+ (1,0) [0|15] "multiplexed-a" Vector__XXX
- SG_ multi2 m0:  8|4@1+ (1,0) [0|15] "multiplexed-b" Vector__XXX
+ SG_ multi2a m0: 6|2@1+ (1,0) [0|3] "multiplexed-b1" Vector__XXX
+ SG_ multi2b m0: 8|2@1+ (1,0) [0|3] "multiplexed-b2" Vector__XXX
  SG_ multi3 m2:  8|4@1+ (1,0) [0|15] "multiplexed-c" Vector__XXX
  SG_ multi4 m3:  8|4@1+ (1,0) [0|15] "multiplexed-d" Vector__XXX
  SG_ normal:  16|8@1- (1,0) [-128|127] "normal" Vector__XXX

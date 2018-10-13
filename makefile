@@ -1,5 +1,5 @@
 LDFLAGS  = -lm
-CFLAGS   = -std=c99 -Wall -Wextra -g -O2
+CFLAGS   = -std=c99 -Wall -Wextra -g -O2 -pedantic
 RM      := rm
 OUTDIR  := out
 SOURCES := ${wildcard *.c}
