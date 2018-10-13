@@ -236,7 +236,7 @@ static int signal2scaling_decode(const char *msgname, unsigned id, signal_t *sig
 	if(sig->scaling != 1.0)
 		fprintf(o, "\trval *= %f;\n", 1.0 / sig->scaling);
 	if(signal_are_min_max_valid(sig)) {
-		fprintf(o, "\tif((rval <= %f) && (rval >= %f)) {\n", sig->minimum, sig->maximum);
+		fprintf(o, "\tif((rval >= %f) && (rval <= %f)) {\n", sig->minimum, sig->maximum);
 		fputs("\t\t*out = rval;\n", o);
 		fputs("\t\treturn true;\n", o);
 		fputs("\t} else {\n", o);
@@ -293,14 +293,41 @@ static signal_t *process_signals_and_find_multiplexer(can_msg_t *msg, FILE *c, c
 
 static int multiplexor_switch(can_msg_t *msg, signal_t *multiplexor, FILE *c, bool serialize)
 {
+	int cmp(const void* lhs, const void* rhs)
+	{
+		int ret = 0;
+		if ((*(signal_t**)lhs)->switchval < ((*(signal_t**)rhs)->switchval))
+		{
+			ret = -1;
+		}
+		else if ((*(signal_t**)lhs)->switchval > (*(signal_t**)rhs)->switchval)
+		{
+			ret = 1;
+		}
+		return ret;
+	}
 	fprintf(c, "\tswitch(%s->%s) {\n", serialize ? "pack" : "unpack", multiplexor->name);
-	for(size_t i = 0; i < msg->signal_count; i++) {
+	qsort(msg->signals, msg->signal_count, sizeof(*msg->signals), cmp);
+	for(size_t i = 0; i < msg->signal_count; i++)
+	{
 		signal_t *sig = msg->signals[i];
 		if(!(sig->is_multiplexed))
 			continue;
 		fprintf(c, "\tcase %u:\n", sig->switchval);
-		if((serialize ? signal2serializer(sig, c) : signal2deserializer(sig, c)) < 0)
-			return -1;
+		size_t j = i;
+		for (; j < msg->signal_count; j++)
+		{
+			if (msg->signals[i]->switchval != msg->signals[j]->switchval)
+			{
+				break;
+			}
+			signal_t* sig = msg->signals[j];
+			if((serialize ? signal2serializer(sig, c) : signal2deserializer(sig, c)) < 0)
+			{
+				return -1;
+			}
+		}
+		i = j;
 		fprintf(c, "\tbreak;\n");
 	}
 	fprintf(c, "\tdefault: return -1;\n\t}\n");
