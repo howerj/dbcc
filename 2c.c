@@ -291,7 +291,7 @@ static signal_t *process_signals_and_find_multiplexer(can_msg_t *msg, FILE *c, c
 	return multiplexor;
 }
 
-static int cmp_signal(const void* lhs, const void* rhs) {
+static int cmp_signal(const void *lhs, const void *rhs) {
 	int ret = 0;
 	if((*(signal_t**)lhs)->switchval < ((*(signal_t**)rhs)->switchval))
 		ret = -1;
