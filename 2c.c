@@ -211,10 +211,10 @@ static int signal2scaling_encode(const char *msgname, unsigned id, signal_t *sig
 
 	if(sig->scaling == 0.0)
 		error("invalid scaling factor (fix your DBC file)");
-	if(sig->scaling != 1.0)
-		fprintf(o, "\tin *= %f;\n", sig->scaling);
 	if(sig->offset != 0.0)
-		fprintf(o, "\tin += %f;\n", sig->offset);
+		fprintf(o, "\tin += %f;\n", -1.0 * sig->offset);
+	if(sig->scaling != 1.0)
+		fprintf(o, "\tin *= %f;\n", 1.0 / sig->scaling);
 	fprintf(o, "\trecord->%s = in;\n", sig->name); // cast!
 	return fputs("\treturn true;\n}\n\n", o);
 }
@@ -231,10 +231,10 @@ static int signal2scaling_decode(const char *msgname, unsigned id, signal_t *sig
 	fprintf(o, "\t%s rval = (%s)(record->%s);\n", type, type, sig->name);
 	if(sig->scaling == 0.0)
 		error("invalid scaling factor (fix your DBC file)");
-	if(sig->offset != 0.0)
-		fprintf(o, "\trval += %f;\n", -1.0 * sig->offset);
 	if(sig->scaling != 1.0)
-		fprintf(o, "\trval *= %f;\n", 1.0 / sig->scaling);
+		fprintf(o, "\trval *= %f;\n", sig->scaling);
+	if(sig->offset != 0.0)
+		fprintf(o, "\trval += %f;\n", sig->offset);
 	if(signal_are_min_max_valid(sig)) {
 		fprintf(o, "\tif((rval >= %f) && (rval <= %f)) {\n", sig->minimum, sig->maximum);
 		fputs("\t\t*out = rval;\n", o);
