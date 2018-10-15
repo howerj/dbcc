@@ -34,6 +34,10 @@ There is a [Vim][] syntax file for DBC files in the project, called [dbc.vim][]
 As well as [C][], [XML][] can be generated, the project contains an [XSD][] and
 [XSLT][] file for the generated XML.
 
+## CSV Generation
+
+A flat CSV file can be generated, which is easier to import into Excel.
+
 ## Operation
 
 Consult the [manual page][] for more information about the precise operation of the
@@ -59,7 +63,6 @@ This affects numbers larger than 2^53.
   - The easiest way to check this is by generating an XML file and verifying it
   with an XSD file
 * Find/make more CAN database examples
-* Generate CSV files
 
 [DBC]: http://vector.com/vi_candb_en.html
 [C]: https://en.wikipedia.org/wiki/C_%28programming_language%29

@@ -2,7 +2,6 @@ language: c
 sudo: false # only for faster builds
 compiler:
   - clang
-  - gcc
 script:
   - make
 

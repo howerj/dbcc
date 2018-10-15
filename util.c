@@ -12,7 +12,7 @@ bool is_integer(double i)
 {
 	double integral = 0, fractional = 0;
 	fractional = modf(i, &integral);
-	return abs(fractional) < 0.000001; /*is the fractional bit zero?*/
+	return fabs(fractional) < 0.000001; /*is the fractional bit zero?*/
 }
 
 bool is_power_of_two(uint64_t n)

@@ -1,5 +1,5 @@
 LDFLAGS  = -lm
-CFLAGS   = -std=c99 -Wall -Wextra -g -O2 -pedantic
+CFLAGS   = -std=c99 -Wall -Wextra -g -O2 -pedantic -fwrapv
 RM      := rm
 OUTDIR  := out
 SOURCES := ${wildcard *.c}
@@ -41,6 +41,9 @@ ${OUTDIR}/%.xml: %.dbc ${TARGET}
 	./${TARGET} ${DBCCFLAGS} -x -o ${OUTDIR} $<
 	xmllint --noout --schema dbcc.xsd $@
 
+${OUTDIR}/%.csv: %.dbc ${TARGET}
+	./${TARGET} ${DBCCFLAGS} -C -o ${OUTDIR} $<
+
 %.xhtml: %.xml dbcc.xslt
 	xsltproc --output $@ dbcc.xslt $<
 
@@ -49,7 +52,7 @@ ${OUTDIR}/%.c: %.dbc ${TARGET}
 
 run: ${XMLS} ${CODECS} ${XHTMLS}
 
-test: ${OUTDIR}/ex1.c ${OUTDIR}/ex2.c ${OUTDIR}/ex1.xml ${OUTDIR}/ex2.xml
+test: ${OUTDIR}/ex1.c ${OUTDIR}/ex2.c ${OUTDIR}/ex1.xml ${OUTDIR}/ex2.xml ${OUTDIR}/ex1.csv ${OUTDIR}/ex2.csv
 	make -C ${OUTDIR}
 
 doc: ${HTMLS} ${MANS} ${PDFS}
