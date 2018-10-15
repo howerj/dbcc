@@ -1,5 +1,7 @@
 /**@file main.c
- * @brief dbcc - produce serialization and deserialization code for CAN DBC files*/
+ * @brief dbcc - produce serialization and deserialization code for CAN DBC files
+ * @copyright Richard James Howe
+ * @license MIT */
 #include <assert.h>
 #include <stdint.h>
 #include "mpc.h"
@@ -10,12 +12,13 @@
 #include "2c.h"
 
 typedef enum {
-	convert_to_c,
-	convert_to_xml
+	CONVERT_TO_C,
+	CONVERT_TO_XML
 } conversion_type_e;
 
 static void usage(const char *arg0)
 {
+	assert(arg0);
 	fprintf(stderr, "%s: [-] [-hvgtxpku] [-o dir] file*\n", arg0);
 }
 
@@ -48,8 +51,10 @@ Howe. (see https://github.com/howerj/dbcc for the full program source).\n";
 	fputs(msg, stderr);
 }
 
-char *replace_file_type(const char *file, const char *suffix)
+static char *replace_file_type(const char *file, const char *suffix)
 {
+	assert(file);
+	assert(suffix);
 	char *name = duplicate(file);
 	char *dot = strrchr(name, '.');
 	if(*dot)
@@ -60,10 +65,13 @@ char *replace_file_type(const char *file, const char *suffix)
 	return name;
 }
 
-int dbc2cWrapper(dbc_t *dbc, const char *dbc_file, const char *file_only, bool use_time_stamps,
+static int dbc2cWrapper(dbc_t *dbc, const char *dbc_file, const char *file_only, bool use_time_stamps,
 				 bool generate_print, bool generate_pack, bool generate_unpack)
 {
 
+	assert(dbc);
+	assert(dbc_file);
+	assert(file_only);
 	char *cname = replace_file_type(dbc_file,  "c");
 	char *hname = replace_file_type(dbc_file,  "h");
 	char *fname = replace_file_type(file_only, "h");
@@ -80,11 +88,11 @@ int dbc2cWrapper(dbc_t *dbc, const char *dbc_file, const char *file_only, bool u
 	return r;
 }
 
-int dbc2xmlWrapper(dbc_t *dbc, const char *dbc_file, bool use_time_stamps)
+static int dbc2xmlWrapper(dbc_t *dbc, const char *dbc_file, bool use_time_stamps)
 {
 	char *name = replace_file_type(dbc_file, "xml");
 	FILE *o = fopen_or_die(name, "wb");
-	int r = dbc2xml(dbc, o, use_time_stamps);
+	const int r = dbc2xml(dbc, o, use_time_stamps);
 	fclose(o);
 	free(name);
 	return r;
@@ -93,7 +101,7 @@ int dbc2xmlWrapper(dbc_t *dbc, const char *dbc_file, bool use_time_stamps)
 int main(int argc, char **argv)
 {
 	log_level_e log_level = get_log_level();
-	conversion_type_e convert = convert_to_c;
+	conversion_type_e convert = CONVERT_TO_C;
 	const char *outdir = NULL;
 	bool use_time_stamps = false;
 
@@ -102,7 +110,6 @@ int main(int argc, char **argv)
 	bool generate_unpack = false;
 
 	int i;
-
 
 	for(i = 1; i < argc && argv[i][0] == '-'; i++)
 		switch(argv[i][1]) {
@@ -119,7 +126,7 @@ int main(int argc, char **argv)
 		case 'g':
 			return printf("DBCC Grammar =>\n%s\n", parse_get_grammar()) < 0;
 		case 'x':
-			convert = convert_to_xml;
+			convert = CONVERT_TO_XML;
 			break;
 		case 't':
 			use_time_stamps = true;
@@ -178,11 +185,11 @@ done:
 
 		int r = 0;
 		switch(convert) {
-		case convert_to_c:
+		case CONVERT_TO_C:
 			r = dbc2cWrapper(dbc, outpath, argv[i], use_time_stamps,
 				generate_print, generate_pack, generate_unpack);
 			break;
-		case convert_to_xml:
+		case CONVERT_TO_XML:
 			r = dbc2xmlWrapper(dbc, outpath, use_time_stamps);
 			break;
 		default:

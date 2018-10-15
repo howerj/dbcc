@@ -68,22 +68,26 @@ static void logmsg(log_level_e ll, const char *prefix, const char *fmt, va_list 
 
 void error(const char *fmt, ...)
 {
+	assert(fmt);
 	LOG_INTERAL(LOG_ERRORS, "error: ", fmt);
 	exit(EXIT_FAILURE);
 }
 
 void warning(const char *fmt, ...)
 {
+	assert(fmt);
 	LOG_INTERAL(LOG_WARNINGS, "warning: ", fmt);
 }
 
 void note(const char *fmt, ...)
 {
+	assert(fmt);
 	LOG_INTERAL(LOG_NOTES, "note: ", fmt);
 }
 
 void debug(const char *fmt, ...)
 {
+	assert(fmt);
 	LOG_INTERAL(LOG_DEBUG, "debug: ", fmt);
 }
 
@@ -127,6 +131,7 @@ char *duplicate(const char *s)
 /**@warning does not work for large file >4GB */
 char *slurp(FILE *f)
 {
+	assert(f);
 	long length = 0, r = 0;
 	char *b = NULL;
 	errno = 0;

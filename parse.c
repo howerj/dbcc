@@ -1,5 +1,6 @@
 #include "parse.h"
 #include "util.h"
+#include <assert.h>
 
 static mpc_ast_t *_parse_dbc_string(const char *file_name, const char *string);
 static mpc_ast_t *_parse_dbc_file_by_handle(const char *name, FILE *handle);
@@ -89,6 +90,7 @@ const char *parse_get_grammar(void)
 
 mpc_ast_t *parse_dbc_file_by_name(const char *name)
 {
+	assert(name);
 	mpc_ast_t *ast = NULL;
 	FILE *input = NULL;
 
@@ -103,11 +105,14 @@ end:
 
 mpc_ast_t *parse_dbc_file_by_handle(FILE *handle)
 {
+	assert(handle);
 	return _parse_dbc_file_by_handle("<FILE*>", handle);
 }
 
 static mpc_ast_t *_parse_dbc_file_by_handle(const char *name, FILE *handle)
 {
+	assert(name);
+	assert(handle);
 	mpc_ast_t *ast = NULL;
 	char *istring = NULL;
 	if(!(istring = slurp(handle)))
@@ -120,6 +125,7 @@ end:
 
 mpc_ast_t *parse_dbc_string(const char *string)
 {
+	assert(string);
 	return _parse_dbc_string("<string>", string);
 }
 
@@ -133,6 +139,8 @@ enum cleanup_length_e
 
 static mpc_ast_t *_parse_dbc_string(const char *file_name, const char *string)
 {
+	assert(file_name);
+	assert(string);
 	#define X(CVAR, NAME) mpc_parser_t *CVAR = mpc_new((NAME));
 	X_MACRO_PARSE_VARS
 	#undef X

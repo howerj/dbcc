@@ -16,7 +16,7 @@ CODECS  := ${DBCS:%.dbc=${OUTDIR}/%.c}
 CFLAGS  += -MMD
 TARGET  := dbcc
 
-.PHONY: doc all run clean 
+.PHONY: doc all run clean test
 
 all: ${TARGET}
 
@@ -48,6 +48,9 @@ ${OUTDIR}/%.c: %.dbc ${TARGET}
 	./${TARGET} ${DBCCFLAGS} -o ${OUTDIR} $<
 
 run: ${XMLS} ${CODECS} ${XHTMLS}
+
+test: ${OUTDIR}/ex1.c ${OUTDIR}/ex2.c ${OUTDIR}/ex1.xml ${OUTDIR}/ex2.xml
+	make -C ${OUTDIR}
 
 doc: ${HTMLS} ${MANS} ${PDFS}
 
