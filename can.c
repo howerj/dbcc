@@ -157,8 +157,25 @@ can_msg_t *ast2msg(mpc_ast_t *ast)
 			i++;
 		}
 	}
-	c->signals = signals;
-	c->signal_count = j;
+
+  c->signals = signals;
+  c->signal_count = j;
+
+  if (c->signal_count > 1) {
+    // Lets sort the signals so that their start_bit is asc (lowest number first)
+    bool bFlip = false;
+    do {
+      bFlip = false;
+      for (int i = 0; i < c->signal_count - 1; i++) {
+        if (c->signals[i]->start_bit > c->signals[i + 1]->start_bit) {
+          signal_t *tmp = c->signals[i];
+          c->signals[i] = c->signals[i + 1];
+          c->signals[i + 1] = tmp;
+          bFlip = true;
+        }
+      }
+    } while (bFlip);
+  }
 
 	debug("%s id:%u dlc:%u signals:%zu ecu:%s", c->name, c->id, c->dlc, c->signal_count, c->ecu);
 	return c;
