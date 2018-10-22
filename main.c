@@ -16,6 +16,7 @@ typedef enum {
 	CONVERT_TO_C,
 	CONVERT_TO_XML,
 	CONVERT_TO_CSV,
+  CONVERT_TO_BSM,
 } conversion_type_e;
 
 static void usage(const char *arg0)
@@ -36,6 +37,7 @@ Options:\n\
 \t-g     print out the grammar used to parse the DBC files\n\
 \t-t     add timestamps to the generated files\n\
 \t-x     convert output to XML instead of the default C code\n\
+\t-b     convert output to BSM (beSTORM) instead of the default C code\n\
 \t-C     convert output to CSV instead of the default C code\n\
 \t-o dir set the output directory\n\
 \t-p     generate only print code\n\
@@ -91,6 +93,18 @@ static int dbc2cWrapper(dbc_t *dbc, const char *dbc_file, const char *file_only,
 	return r;
 }
 
+static int dbc2bsmWrapper(dbc_t *dbc, const char *dbc_file, bool use_time_stamps)
+{
+  assert(dbc);
+  assert(dbc_file);
+  char *name = replace_file_type(dbc_file, "bsm");
+  FILE *o = fopen_or_die(name, "wb");
+  const int r = dbc2bsm(dbc, o, use_time_stamps);
+  fclose(o);
+  free(name);
+  return r;
+}
+
 static int dbc2xmlWrapper(dbc_t *dbc, const char *dbc_file, bool use_time_stamps)
 {
 	assert(dbc);
@@ -142,7 +156,10 @@ int main(int argc, char **argv)
 			break;
 		case 'g':
 			return printf("DBCC Grammar =>\n%s\n", parse_get_grammar()) < 0;
-		case 'x':
+    case 'b':
+      convert = CONVERT_TO_BSM;
+      break;
+    case 'x':
 			convert = CONVERT_TO_XML;
 			break;
 		case 'C':
@@ -209,6 +226,9 @@ done:
 			r = dbc2cWrapper(dbc, outpath, argv[i], use_time_stamps,
 				generate_print, generate_pack, generate_unpack);
 			break;
+    case CONVERT_TO_BSM:
+      r = dbc2bsmWrapper(dbc, outpath, use_time_stamps);
+      break;
 		case CONVERT_TO_XML:
 			r = dbc2xmlWrapper(dbc, outpath, use_time_stamps);
 			break;
