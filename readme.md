@@ -38,6 +38,10 @@ As well as [C][], [XML][] can be generated, the project contains an [XSD][] and
 
 A flat CSV file can be generated, which is easier to import into Excel.
 
+### BSM (beSTORM Module) Generation
+
+An XML based file that can be imported into Beyond Security's beSTORM and used to test CAN BUS infrastructure.
+
 ## Operation
 
 Consult the [manual page][] for more information about the precise operation of the
