@@ -1,5 +1,5 @@
 CC       = gcc
-CFLAGS   = -Wall -Wextra -std=c99 -O2
+CFLAGS   = -Wall -Wextra -std=c99 -O2 -pedantic -fwrapv
 RM      := rm -f
 
 SOURCES := ${wildcard *.c}
@@ -14,4 +14,4 @@ all: ${OBJECTS}
 	@${CC} ${CFLAGS} ${INCLUDES} $< -c -o $@
 
 clean:
-	${RM} *.c *.h *.xml *.o *.xhtml
+	${RM} *.c *.h *.xml *.o *.xhtml *.csv

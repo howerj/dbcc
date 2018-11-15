@@ -11,6 +11,7 @@
 #include "2xml.h"
 #include "2csv.h"
 #include "2c.h"
+#include "options.h"
 
 typedef enum {
 	CONVERT_TO_C,

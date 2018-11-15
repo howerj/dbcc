@@ -33,6 +33,84 @@
 
 #define MAX_NAME_LENGTH (512u)
 
+/* The float packing and unpacking is stolen from 
+ * <https://beej.us/guide/bgnet/examples/pack2b.c>! 
+ * (It's public domain code as far as I know, from Beejs guide to network 
+ * programming).
+ *
+ * NOTE: This pack/unpack code does not handle special values,
+ * such as +/- Inf, or NaN */
+
+static char *float_pack = "\
+\n\
+/* pack754() -- pack a floating point number into IEEE-754 format */ \n\
+static uint64_t pack754(double f, unsigned bits, unsigned expbits)\n\
+{\n\
+	double fnorm;\n\
+	int shift;\n\
+	long long sign, exp, significand;\n\
+	unsigned significandbits = bits - expbits - 1; // -1 for sign bit\n\
+\n\
+	if (f == 0.0) return 0; // get this special case out of the way\n\
+\n\
+	// check sign and begin normalization\n\
+	if (f < 0) { sign = 1; fnorm = -f; }\n\
+	else { sign = 0; fnorm = f; }\n\
+\n\
+	// get the normalized form of f and track the exponent\n\
+	shift = 0;\n\
+	while (fnorm >= 2.0) { fnorm /= 2.0; shift++; }\n\
+	while (fnorm < 1.0)  { fnorm *= 2.0; shift--; }\n\
+	fnorm = fnorm - 1.0;\n\
+\n\
+	// calculate the binary form (non-float) of the significand data\n\
+	significand = fnorm * (( 1LL << significandbits) + 0.5f);\n\
+\n\
+	// get the biased exponent\n\
+	exp = shift + (( 1 << (expbits - 1)) - 1); // shift + bias\n\
+\n\
+	// return the final answer\n\
+	return (sign << (bits - 1)) | (exp << (bits - expbits - 1)) | significand;\n\
+}\n\
+\n\
+static inline uint32_t   pack754_32(float  f)   { return   pack754(f, 32, 8); }\n\
+static inline uint64_t   pack754_64(double f)   { return   pack754(f, 64, 11); }\n\
+\n\n";
+
+
+static char *float_unpack = "\
+\n\
+/* unpack754() -- unpack a floating point number from IEEE-754 format */ \n\
+static double unpack754(uint64_t i, unsigned bits, unsigned expbits)\n\
+{\n\
+	double result;\n\
+	long long shift;\n\
+	unsigned bias;\n\
+	unsigned significandbits = bits - expbits - 1; // -1 for sign bit\n\
+\n\
+	if (i == 0) return 0.0;\n\
+\n\
+	// pull the significand\n\
+	result = (i & ((1LL << significandbits) - 1)); // mask\n\
+	result /= (1LL << significandbits); // convert back to float\n\
+	result += 1.0f; // add the one back on\n\
+\n\
+	// deal with the exponent\n\
+	bias = (1 << (expbits - 1)) - 1;\n\
+	shift = ((i >> significandbits) & ((1LL << expbits) - 1)) - bias;\n\
+	while(shift > 0) { result *= 2.0; shift--; }\n\
+	while(shift < 0) { result /= 2.0; shift++; }\n\
+\n\
+	// sign it\n\
+	result *= (i >> (bits - 1)) & 1? -1.0: 1.0;\n\
+\n\
+	return result;\n\
+}\n\
+\n\
+static inline float    unpack754_32(uint32_t i) { return unpack754(i, 32, 8); }\n\
+static inline double   unpack754_64(uint64_t i) { return unpack754(i, 64, 11); }\n\
+\n\n";
+
 static const bool swap_motorola = true;
 
 static unsigned fix_start_bit(bool motorola, unsigned start, unsigned siglen)
@@ -107,8 +185,11 @@ static int signal2deserializer(signal_t *sig, FILE *o)
 
 	if(sig->is_floating) {
 		assert(length == 32 || length == 64);
-		if(fprintf(o, "\tunpack->%s = *((%s*)&x);\n", sig->name, length == 32 ? "float" : "double") < 0)
+		if(fprintf(o, "\tunpack->%s = unpack754_%d(x);\n", sig->name, length) < 0)
 			return -1;
+		/**@todo Make type-punned version optional */
+		//if(fprintf(o, "\tunpack->%s = *((%s*)&x);\n", sig->name, length == 32 ? "float" : "double") < 0)
+		//	return -1;
 		return 0;
 	}
 
@@ -143,7 +224,13 @@ static int signal2serializer(signal_t *sig, FILE *o)
 	if(comment(sig, o) < 0)
 		return -1;
 
-	fprintf(o, "\tx = (*(%s*)(&pack->%s)) & 0x%"PRIx64";\n", determine_unsigned_type(sig->bit_length), sig->name, mask);
+	if (sig->is_floating) {
+		assert(sig->bit_length == 32 || sig->bit_length == 64);
+		/**@todo Add option for type punning version */
+		fprintf(o, "\tx = pack754_%u(pack->%s) & 0x%"PRIx64";\n", sig->bit_length, sig->name, mask);
+	} else {
+		fprintf(o, "\tx = (*(%s*)(&pack->%s)) & 0x%"PRIx64";\n", determine_unsigned_type(sig->bit_length), sig->name, mask);
+	}
 	if(start)
 		fprintf(o, "\tx <<= %u; \n", start);
 	fprintf(o, "\t%c |= x;\n", motorola ? 'm' : 'i');
@@ -155,11 +242,12 @@ static int signal2print(signal_t *sig, unsigned id, FILE *o)
 	/*super lazy*/
 
 	if(sig->is_floating)
-		return fprintf(o, "\tr = fprintf(data, \"%s = (wire: %%f)\\n\", (double)(print->%s));\n",
-				sig->name, sig->name);
-	return fprintf(o, "\tr = fprintf(data, \"%s = (wire: %%.0f)\\n\", (double)(print->%s));\n",
-			sig->name, sig->name);
-	/* @todo TODO Fix this */
+		return fprintf(o, "\tr = fprintf(data, \"%s = (wire: %%f)\\n\", (double)(print->%s));\n", sig->name, sig->name);
+	return fprintf(o, "\tr = fprintf(data, \"%s = (wire: %%.0f)\\n\", (double)(print->%s));\n", sig->name, sig->name);
+
+	/* NEVER REACHED */
+
+	/* @todo TODO Fix this, it should print out the encoded values as well */
 	fprintf(o, "\tscaled = decode_can_0x%03x_%s(print);\n", id, sig->name);
 	if(sig->is_floating)
 		return fprintf(o, "\tr = fprintf(data, \"%s = %%.3f (wire: %%f)\\n\", scaled, (double)(print->%s));\n",
@@ -182,15 +270,16 @@ static int signal2type(signal_t *sig, FILE *o)
 	}
 
 	if(sig->is_floating) {
-		if(length != 32 || length != 64) {
+		if(length != 32 && length != 64) {
 			warning("signal %s is floating point number but has length %u (fix the dbc file)", sig->name, length);
 			return -1;
 		}
 		type = length == 64 ? "double" : "float";
 	}
 
-	return fprintf(o, "\t%s %s; /*scaling %.1f, offset %.1f, units %s*/\n",
-			type, sig->name, sig->scaling, sig->offset, sig->units[0] ? sig->units : "none");
+	return fprintf(o, "\t%s %s; /*scaling %.1f, offset %.1f, units %s %s*/\n",
+			type, sig->name, sig->scaling, sig->offset, sig->units[0] ? sig->units : "none",
+			sig->is_floating ? ", floating" : "");
 }
 
 static bool signal_are_min_max_valid(signal_t *sig) 
@@ -533,7 +622,7 @@ static const char *cfunctions =
 "\tx = (x & 0x0000FFFF0000FFFF) << 16 | (x & 0xFFFF0000FFFF0000) >> 16;\n"
 "\tx = (x & 0x00FF00FF00FF00FF) << 8  | (x & 0xFF00FF00FF00FF00) >> 8;\n"
 "\treturn x;\n"
-"}\n\n";
+"}\n";
 
 static int message_compare_function(const void *a, const void *b)
 {
@@ -663,13 +752,17 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps,
 	fprintf(c, "#include \"%s\"\n", name);
 	fprintf(c, "#include <inttypes.h>\n\n");
 	fprintf(c, "#define UNUSED(X) ((void)(X))\n\n");
-	fprintf(c, "%s\n", cfunctions);
+	fputs(cfunctions, c);
 
-	if (generate_unpack)
+	if (generate_unpack) {
+		fputs(float_unpack, c);
 		switch_function(c, dbc, "unpack", true, false, "uint64_t", true);
+	}
 
-	if (generate_pack)
+	if (generate_pack) {
+		fputs(float_pack, c);
 		switch_function(c, dbc, "pack", false, false, "uint64_t", false);
+	}
 
 	if (generate_print)
 		switch_function(c, dbc, "print", true, false, "FILE*", false);

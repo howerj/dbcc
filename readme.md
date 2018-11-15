@@ -63,6 +63,10 @@ This affects numbers larger than 2^53.
   - The easiest way to check this is by generating an XML file and verifying it
   with an XSD file
 * Find/make more CAN database examples
+* There are two pieces of information that are useful to any CAN stack for
+received messages; the time stamp of the received message, and the status
+(error CRC/timeout, message okay, or message never set). These conditions are
+not accounted for.
 
 [DBC]: http://vector.com/vi_candb_en.html
 [C]: https://en.wikipedia.org/wiki/C_%28programming_language%29

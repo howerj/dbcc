@@ -32,11 +32,12 @@ static mpc_ast_t *_parse_dbc_file_by_handle(const char *name, FILE *handle);
 	X(message,    "message")\
 	X(messages,   "messages")\
 	X(types,      "types")\
-	X(etcetera,   "etcetera")\
 	X(version,    "version")\
 	X(ecus,       "ecus")\
 	X(symbols,    "symbols")\
 	X(bs,         "bs")\
+	X(sigtype,    "sigtype")\
+	X(sigval,     "sigval")\
 	X(whatever,   "whatever")\
 	X(values,     "values")\
 	X(dbc,        "dbc")
@@ -75,13 +76,14 @@ static const char *dbc_grammar =
 " messages  : (<message> <n>+)* ; \n"
 " version   : \"VERSION\" <s> <string> <n>+ ; \n"
 " ecus      : \"BU_\" <s>* ':' (<ident>|<s>)* <n> ; \n"
-" symbols   : \"NS_\" <s>* ':' <s>* <n> ('\t' <ident> <n>)* <n> ; "
+" symbols   : \"NS_\" <s>* ':' <s>* <n> ('\t' <ident> <n>)* <n> ; \n"
+" sigtype   : <integer>  ;\n"
+" sigval    : <s>* \"SIG_VALTYPE_\" <s>+ <id> <s>+ <name> <s>* \":\" <s>* <sigtype> <s>* ';' <n>* ; \n"
 " whatever  : (<ident>|<string>|<integer>|<float>) ; \n"
 " bs        : \"BS_\" <s>* ':' <n>+ ; "
 " types     : <s>* <ident> (<whatever>|<s>)+ ';' (<n>*|/$/) ; \n"
-" etcetera  : <types>+ ; \n" /**@note don't care about the rest of the file, for now*/
 " values    : \"VAL_TABLE_\" (<whatever>|<s>)* ';' <n> ; \n" /**@note don't care about this, for now*/
-" dbc       : <version> <symbols> <bs> <ecus> <values>* <n>* <messages> <etcetera>  ; \n" ;
+" dbc       : <version> <symbols> <bs> <ecus> <values>* <n>* <messages> (<sigval>|<types>)*  ; \n" ;
 
 const char *parse_get_grammar(void)
 {
