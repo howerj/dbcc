@@ -4,6 +4,7 @@
  * @license MIT */
 #include <assert.h>
 #include <stdint.h>
+#include <sys/stat.h>
 #include "mpc.h"
 #include "util.h"
 #include "can.h"
@@ -120,6 +121,7 @@ int main(int argc, char **argv)
 	log_level_e log_level = get_log_level();
 	conversion_type_e convert = CONVERT_TO_C;
 	const char *outdir = NULL;
+	struct stat outpath_stat;
 	bool use_time_stamps = false;
 
 	bool generate_print = false;
@@ -185,6 +187,13 @@ done:
 
 	for(; i < argc; i++) {
 		debug("reading => %s", argv[i]);
+
+		stat(argv[i], &outpath_stat);
+		if (!S_ISREG(outpath_stat.st_mode)) {
+			warning("'%s' is not a regular file", argv[i]);
+			continue;
+		}
+
 		mpc_ast_t *ast = parse_dbc_file_by_name(argv[i]);
 		if(!ast) {
 			warning("could not parse file '%s'", argv[i]);
