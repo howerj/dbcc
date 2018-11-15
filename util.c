@@ -95,7 +95,8 @@ FILE *fopen_or_die(const char *name, const char *mode)
 {
 	assert(name && mode);
 	errno = 0;
-	FILE *r = fopen(name, mode);
+  FILE *r = NULL;
+  fopen_s(&r, name, mode);
 	if(!r) {
 		error("open '%s' (mode '%s'): %s", name, mode, emsg());
 	}

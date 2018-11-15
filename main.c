@@ -64,9 +64,10 @@ static char *replace_file_type(const char *file, const char *suffix)
 	char *dot = strrchr(name, '.');
 	if(*dot)
 		*dot = '\0';
-	name = reallocator(name, strlen(name) + strlen(suffix) + 2); /* + 1 for '.', + 1 for '\0' */
-	strcat(name, ".");
-	strcat(name, suffix);
+  size_t name_size = strlen(name) + strlen(suffix) + 2;
+	name = reallocator(name, name_size); /* + 1 for '.', + 1 for '\0' */
+	strcat_s(name, name_size, ".");
+	strcat_s(name, name_size, suffix);
 	return name;
 }
 
@@ -214,10 +215,11 @@ done:
 
 		char *outpath = argv[i];
 		if(outdir) {
-			outpath = allocate(strlen(outpath) + strlen(outdir) + 2 /* '/' + '\0'*/);
-			strcat(outpath, outdir);
-			strcat(outpath, "/");
-			strcat(outpath, argv[i]);
+      size_t outpath_size = strlen(outpath) + strlen(outdir) + 2; /* '/' + '\0'*/
+			outpath = allocate(outpath_size);
+			strcat_s(outpath, outpath_size, outdir);
+			strcat_s(outpath, outpath_size, "/");
+			strcat_s(outpath, outpath_size, argv[i]);
 		}
 
 		int r = 0;

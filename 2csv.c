@@ -27,7 +27,7 @@ static int msg2csv(can_msg_t *msg, FILE *o)
 			multi = "multiplexor";
 		}
 		if(sig->is_multiplexed) {
-			sprintf(sv, "%d", sig->switchval);
+			sprintf_s(sv, sizeof(sv) - 1, "%d", sig->switchval);
 			multi = sv;
 		}
 

@@ -50,9 +50,9 @@ static void y_mx_c(mpc_ast_t *ast, signal_t *sig)
 	assert(ast && sig);
 	mpc_ast_t *scalar = ast->children[1];
 	mpc_ast_t *offset = ast->children[3];
-	r = sscanf(scalar->contents, "%lf", &sig->scaling);
+	r = sscanf_s(scalar->contents, "%lf", &sig->scaling);
 	assert(r == 1);
-	r = sscanf(offset->contents, "%lf", &sig->offset);
+	r = sscanf_s(offset->contents, "%lf", &sig->offset);
 	assert(r == 1);
 }
 
@@ -62,9 +62,9 @@ static void range(mpc_ast_t *ast, signal_t *sig)
 	assert(ast && sig);
 	mpc_ast_t *min = ast->children[1];
 	mpc_ast_t *max = ast->children[3];
-	r = sscanf(min->contents, "%lf", &sig->minimum);
+	r = sscanf_s(min->contents, "%lf", &sig->minimum);
 	assert(r == 1);
-	r = sscanf(max->contents, "%lf", &sig->maximum);
+	r = sscanf_s(max->contents, "%lf", &sig->maximum);
 	assert(r == 1);
 }
 
@@ -93,9 +93,9 @@ signal_t *ast2signal(mpc_ast_t *ast)
 	mpc_ast_t *endianess = mpc_ast_get_child(ast, "endianess|char");
 	mpc_ast_t *sign   = mpc_ast_get_child(ast, "sign|char");
 	sig->name = duplicate(name->contents);
-	r = sscanf(start->contents, "%u", &sig->start_bit);
+	r = sscanf_s(start->contents, "%u", &sig->start_bit);
 	assert(r == 1 && sig->start_bit <= 64);
-	r = sscanf(length->contents, "%u", &sig->bit_length);
+	r = sscanf_s(length->contents, "%u", &sig->bit_length);
 	assert(r == 1 && sig->bit_length <= 64);
 	char endchar = endianess->contents[0];
 	assert(endchar == '0' || endchar == '1');
@@ -140,9 +140,9 @@ can_msg_t *ast2msg(mpc_ast_t *ast)
 	mpc_ast_t *id   = mpc_ast_get_child(ast, "id|integer|regex");
 	c->name = duplicate(name->contents);
 	c->ecu  = duplicate(ecu->contents);
-	r = sscanf(dlc->contents, "%u", &c->dlc);
+	r = sscanf_s(dlc->contents, "%u", &c->dlc);
 	assert(r == 1);
-	r = sscanf(id->contents,  "%u", &c->id);
+	r = sscanf_s(id->contents,  "%u", &c->id);
 	assert(r == 1);
 
 	/**@todo make test cases with no signals, and the like*/

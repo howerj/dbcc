@@ -66,5 +66,6 @@
 "
 
 int dbc2xml(dbc_t *dbc, FILE *output, bool use_time_stamps);
+int dbc2bsm(dbc_t *dbc, FILE *output, bool use_time_stamps);
 
 #endif
