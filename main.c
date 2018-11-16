@@ -196,18 +196,18 @@ done:
 
 		dbc_t *dbc = ast2dbc(ast);
 
-		char *outpath = argv[i];
+		char *outpath = dbcc_basename(argv[i]);
 		if(outdir) {
 			outpath = allocate(strlen(outpath) + strlen(outdir) + 2 /* '/' + '\0'*/);
 			strcat(outpath, outdir);
 			strcat(outpath, "/");
-			strcat(outpath, argv[i]);
+			strcat(outpath, dbcc_basename(argv[i]));
 		}
 
 		int r = 0;
 		switch(convert) {
 		case CONVERT_TO_C:
-			r = dbc2cWrapper(dbc, outpath, argv[i], use_time_stamps,
+			r = dbc2cWrapper(dbc, outpath, dbcc_basename(argv[i]), use_time_stamps,
 				generate_print, generate_pack, generate_unpack);
 			break;
 		case CONVERT_TO_XML:
