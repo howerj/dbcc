@@ -53,6 +53,7 @@
         <xs:element name="minimum" type="xs:decimal"/>
         <xs:element name="maximum" type="xs:decimal"/>
         <xs:element name="signed" type="xs:boolean"/>
+        <xs:element name="floating" type="xs:unsignedInt"/>
 	<xs:element name="units" type="xs:string"/>
 	<!-- an optional multiplexor, of which there can only be one per
 	     message -->
