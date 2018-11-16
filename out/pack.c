@@ -10,8 +10,8 @@
 #endif
 
 /* From https://beej.us/guide/bgnet/html/multi/index.html, 
-
-/* Special cases:
+ *
+ * Special cases:
  *
  * Zero and sign bit set -> Negative Zero
  *
