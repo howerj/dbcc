@@ -3,6 +3,7 @@
  * @copyright Richard James Howe
  * @license MIT */
 #include <assert.h>
+#include <libgen.h>
 #include <stdint.h>
 #include "mpc.h"
 #include "util.h"
@@ -196,18 +197,18 @@ done:
 
 		dbc_t *dbc = ast2dbc(ast);
 
-		char *outpath = argv[i];
+		char *outpath = basename(argv[i]);
 		if(outdir) {
 			outpath = allocate(strlen(outpath) + strlen(outdir) + 2 /* '/' + '\0'*/);
 			strcat(outpath, outdir);
 			strcat(outpath, "/");
-			strcat(outpath, argv[i]);
+			strcat(outpath, basename(argv[i]));
 		}
 
 		int r = 0;
 		switch(convert) {
 		case CONVERT_TO_C:
-			r = dbc2cWrapper(dbc, outpath, argv[i], use_time_stamps,
+			r = dbc2cWrapper(dbc, outpath, basename(argv[i]), use_time_stamps,
 				generate_print, generate_pack, generate_unpack);
 			break;
 		case CONVERT_TO_XML:
