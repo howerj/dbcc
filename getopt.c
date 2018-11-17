@@ -30,13 +30,9 @@ int dbcc_getopt(int nargc, char *const nargv[], const char *ostr)
 			place = EMSG;
 			return -1;
 		}
-	}			/* option letter okay? */
-	if ((dbcc_optopt = (int)*place++) == (int)':' ||
-	    !(oli = strchr(ostr, dbcc_optopt))) {
-		/*
-		 * if the user didn't specify '-' as an option,
-		 * assume it means -1.
-		 */
+	}			
+	if ((dbcc_optopt = (int)*place++) == (int)':' || !(oli = strchr(ostr, dbcc_optopt))) { /* option letter okay? */
+		/* if the user didn't specify '-' as an option, assume it means -1. */
 		if (dbcc_optopt == (int)'-')
 			return (-1);
 		if (!*place)
@@ -59,8 +55,9 @@ int dbcc_getopt(int nargc, char *const nargv[], const char *ostr)
 			if (dbcc_opterr)
 				(void) printf ("option requires an argument -- %c\n", dbcc_optopt);
 			return BADCH;
-		} else		/* white space */
+		} else { /* white space */
 			dbcc_optarg = nargv[dbcc_optind];
+		}
 		place = EMSG;
 		++dbcc_optind;
 	}

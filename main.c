@@ -122,17 +122,14 @@ int main(int argc, char **argv)
 	conversion_type_e convert = CONVERT_TO_C;
 	const char *outdir = NULL;
 	bool use_time_stamps = false;
-
 	bool generate_print = false;
 	bool generate_pack = false;
 	bool generate_unpack = false;
 
-	int i;
+	int opt;
 
-	for(i = 1; i < argc && argv[i][0] == '-'; i++)
-		switch(argv[i][1]) {
-		case '\0': /* stop argument processing */
-			goto done;
+	while ((opt = dbcc_getopt(argc, argv, "hvgxCtpuko:")) != -1) {
+		switch (opt) {
 		case 'h':
 			usage(argv[0]);
 			help();
@@ -166,17 +163,17 @@ int main(int argc, char **argv)
 			debug("generate code for pack");
 			break;
 		case 'o':
-			if(i >= argc - 1)
-				goto fail;
-			outdir = argv[++i];
+			outdir = dbcc_optarg;
 			debug("output directory: %s", outdir);
 			break;
 		default:
-		fail:
+			fprintf(stderr, "invalid options\n");
 			usage(argv[0]);
-			error("unknown/invalid command line option '%c'", argv[i][1]);
+			help();
+			break;
 		}
-done:
+
+	}
 
 	if (!generate_unpack && !generate_pack && !generate_print) {
 		generate_print  = true;
@@ -184,7 +181,7 @@ done:
 		generate_unpack = true;
 	}
 
-	for(; i < argc; i++) {
+	for(int i = dbcc_optind; i < argc; i++) {
 		debug("reading => %s", argv[i]);
 		mpc_ast_t *ast = parse_dbc_file_by_name(argv[i]);
 		if(!ast) {

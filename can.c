@@ -1,4 +1,4 @@
-/**@note error checking is not done in this file, or if it is done it should be
+/**@note Error checking is not done in this file, or if it is done it should be
  * done with assertions, the parser does the validation and processing of the
  * input, if a returned object is not checked it is because it *must* exist (or
  * there is a bug in the grammar).
@@ -18,10 +18,11 @@ static signal_t *signal_new(void)
 
 static void signal_delete(signal_t *signal)
 {
-	if(signal)
-		free(signal->name);
+	if(!signal)
+		return;
 	for(size_t i = 0; i < signal->ecu_count; i++)
 		free(signal->ecus[i]);
+	free(signal->name);
 	free(signal->ecus);
 	free(signal->units);
 	free(signal);
@@ -46,11 +47,10 @@ static void can_msg_delete(can_msg_t *msg)
 
 static void y_mx_c(mpc_ast_t *ast, signal_t *sig)
 {
-	int r;
 	assert(ast && sig);
 	mpc_ast_t *scalar = ast->children[1];
 	mpc_ast_t *offset = ast->children[3];
-	r = sscanf(scalar->contents, "%lf", &sig->scaling);
+	int r = sscanf(scalar->contents, "%lf", &sig->scaling);
 	assert(r == 1);
 	r = sscanf(offset->contents, "%lf", &sig->offset);
 	assert(r == 1);
@@ -58,11 +58,10 @@ static void y_mx_c(mpc_ast_t *ast, signal_t *sig)
 
 static void range(mpc_ast_t *ast, signal_t *sig)
 {
-	int r;
 	assert(ast && sig);
 	mpc_ast_t *min = ast->children[1];
 	mpc_ast_t *max = ast->children[3];
-	r = sscanf(min->contents, "%lf", &sig->minimum);
+	int r = sscanf(min->contents, "%lf", &sig->minimum);
 	assert(r == 1);
 	r = sscanf(max->contents, "%lf", &sig->maximum);
 	assert(r == 1);
