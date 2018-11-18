@@ -92,7 +92,7 @@ typedef struct {
   char *lasts;
   char last;
   
-  size_t mem_index;
+ 	size_t mem_index;
   char mem_full[MPC_INPUT_MEM_NUM];
   mpc_mem_t mem[MPC_INPUT_MEM_NUM];
   
@@ -102,14 +102,14 @@ static mpc_input_t *mpc_input_new_string(const char *filename, const char *strin
 
   mpc_input_t *i = malloc(sizeof(mpc_input_t));
   
-  size_t filename_size = strlen(filename) + 1;
+ 	size_t filename_size = strlen(filename) + 1;
   i->filename = malloc(filename_size);
   strcpy_s(i->filename, filename_size, filename);
   i->type = MPC_INPUT_STRING;
   
   i->state = mpc_state_new();
   
-  size_t string_size = strlen(string) + 1;
+ 	size_t string_size = strlen(string) + 1;
   i->string = malloc(string_size);
   strcpy_s(i->string, string_size, string);
   i->buffer = NULL;
@@ -129,18 +129,18 @@ static mpc_input_t *mpc_input_new_string(const char *filename, const char *strin
   return i;
 }
 
-static mpc_input_t *mpc_input_new_nstring(const char *filename, const char *string, size_t length) {
+static mpc_input_t *mpc_input_new_nstring(const char *filename, const char *string,	size_t length) {
 
   mpc_input_t *i = malloc(sizeof(mpc_input_t));
   
-  size_t filename_size = strlen(filename) + 1;
+ 	size_t filename_size = strlen(filename) + 1;
   i->filename = malloc(filename_size);
   strcpy_s(i->filename, filename_size, filename);
   i->type = MPC_INPUT_STRING;
   
   i->state = mpc_state_new();
   
-  size_t string_size = length + 1;
+ 	size_t string_size = length + 1;
   i->string = malloc(string_size);
   strncpy_s(i->string, string_size, string, length);
   i->string[length] = '\0';
@@ -166,7 +166,7 @@ static mpc_input_t *mpc_input_new_pipe(const char *filename, FILE *pipe) {
 
   mpc_input_t *i = malloc(sizeof(mpc_input_t));
   
-  size_t filename_size = strlen(filename) + 1;
+ 	size_t filename_size = strlen(filename) + 1;
   i->filename = malloc(filename_size);
   strcpy_s(i->filename, filename_size, filename);
   
@@ -196,7 +196,7 @@ static mpc_input_t *mpc_input_new_file(const char *filename, FILE *file) {
   
   mpc_input_t *i = malloc(sizeof(mpc_input_t));
   
-  size_t filename_size = strlen(filename) + 1;
+ 	size_t filename_size = strlen(filename) + 1;
   i->filename = malloc(filename_size);
   strcpy_s(i->filename, filename_size, filename);
   i->type = MPC_INPUT_FILE;
@@ -238,8 +238,8 @@ static int mpc_mem_ptr(mpc_input_t *i, void *p) {
     (char*)p <  (char*)(i->mem) + (MPC_INPUT_MEM_NUM * sizeof(mpc_mem_t));
 }
 
-static void *mpc_malloc(mpc_input_t *i, size_t n) {
-  size_t j;
+static void *mpc_malloc(mpc_input_t *i,	size_t n) {
+ 	size_t j;
   char *p;
   
   if (n > sizeof(mpc_mem_t)) { return malloc(n); }
@@ -258,20 +258,20 @@ static void *mpc_malloc(mpc_input_t *i, size_t n) {
   return malloc(n);
 }
 
-static void *mpc_calloc(mpc_input_t *i, size_t n, size_t m) {
+static void *mpc_calloc(mpc_input_t *i,	size_t n,	size_t m) {
   char *x = mpc_malloc(i, n * m);
   memset(x, 0, n * m);
   return x;
 }
 
 static void mpc_free(mpc_input_t *i, void *p) {
-  size_t j;
+ 	size_t j;
   if (!mpc_mem_ptr(i, p)) { free(p); return; }
   j = ((size_t)(((char*)p) - ((char*)i->mem))) / sizeof(mpc_mem_t);
   i->mem_full[j] = 0;
 }
 
-static void *mpc_realloc(mpc_input_t *i, void *p, size_t n) {
+static void *mpc_realloc(mpc_input_t *i, void *p,	size_t n) {
   
   char *q = NULL;
   
@@ -532,7 +532,7 @@ static int mpc_input_string(mpc_input_t *i, const char *c, char **o) {
   }
   mpc_input_unmark(i);
   
-  size_t o_size = strlen(c) + 1;
+ 	size_t o_size = strlen(c) + 1;
   *o = mpc_malloc(i, o_size);
   strcpy_s(*o, o_size, c);
   return 1;
@@ -572,7 +572,7 @@ void mpc_err_print_to(mpc_err_t *x, FILE *f) {
   free(str);
 }
 
-static void mpc_err_string_cat(char *buffer, size_t buffer_size, int *pos, int *max, char const *fmt, ...) {
+static void mpc_err_string_cat(char *buffer,	size_t buffer_size, int *pos, int *max, char const *fmt, ...) {
   /* TODO: Error Checking on Length */
   int left = ((*max) - (*pos));
   va_list va;
@@ -649,7 +649,7 @@ static mpc_err_t *mpc_err_new(mpc_input_t *i, const char *expected) {
   if (i->suppress) { return NULL; }
   x = mpc_malloc(i, sizeof(mpc_err_t));
 
-  size_t filename_size = strlen(i->filename) + 1;
+ 	size_t filename_size = strlen(i->filename) + 1;
   x->filename = mpc_malloc(i, filename_size);
   strcpy_s(x->filename, filename_size, i->filename);
 
@@ -657,7 +657,7 @@ static mpc_err_t *mpc_err_new(mpc_input_t *i, const char *expected) {
   x->expected_num = 1;
   x->expected = mpc_malloc(i, sizeof(char*));
 
-  size_t expected_zero_size = strlen(expected) + 1;
+ 	size_t expected_zero_size = strlen(expected) + 1;
   x->expected[0] = mpc_malloc(i, expected_zero_size);
   strcpy_s(x->expected[0], expected_zero_size, expected);
 
@@ -671,7 +671,7 @@ static mpc_err_t *mpc_err_fail(mpc_input_t *i, const char *failure) {
   if (i->suppress) { return NULL; }
   x = mpc_malloc(i, sizeof(mpc_err_t));
 
-  size_t filename_size = strlen(i->filename) + 1;
+ 	size_t filename_size = strlen(i->filename) + 1;
   x->filename = mpc_malloc(i, filename_size);
   strcpy_s(x->filename, filename_size, i->filename);
 
@@ -679,7 +679,7 @@ static mpc_err_t *mpc_err_fail(mpc_input_t *i, const char *failure) {
   x->expected_num = 0;
   x->expected = NULL;
 
-  size_t failure_size = strlen(failure) + 1;
+ 	size_t failure_size = strlen(failure) + 1;
   x->failure = mpc_malloc(i, failure_size);
   strcpy_s(x->failure, failure_size, failure);
 
@@ -690,14 +690,14 @@ static mpc_err_t *mpc_err_fail(mpc_input_t *i, const char *failure) {
 static mpc_err_t *mpc_err_file(const char *filename, const char *failure) {
   mpc_err_t *x;
   x = malloc(sizeof(mpc_err_t));
-  size_t filename_size = strlen(filename) + 1;
+ 	size_t filename_size = strlen(filename) + 1;
   x->filename = malloc(filename_size);
   strcpy_s(x->filename, filename_size, filename);
 
   x->state = mpc_state_new();
   x->expected_num = 0;
   x->expected = NULL;
-  size_t failure_size = strlen(failure) + 1;
+ 	size_t failure_size = strlen(failure) + 1;
   x->failure = malloc(failure_size);
   strcpy_s(x->failure, failure_size, failure);
   x->recieved = ' ';
@@ -738,7 +738,7 @@ static void mpc_err_add_expected(mpc_input_t *i, mpc_err_t *x, char *expected) {
   (void)i;
   x->expected_num++;
   x->expected = mpc_realloc(i, x->expected, sizeof(char*) * x->expected_num);
-  size_t expected_size = strlen(expected) + 1;
+ 	size_t expected_size = strlen(expected) + 1;
   x->expected[x->expected_num-1] = mpc_malloc(i, expected_size);
   strcpy_s(x->expected[x->expected_num-1], expected_size, expected);
 }
@@ -760,7 +760,7 @@ static mpc_err_t *mpc_err_or(mpc_input_t *i, mpc_err_t** x, int n) {
   e->expected_num = 0;
   e->expected = NULL;
   e->failure = NULL;
-  size_t filename_size = strlen(x[fst]->filename) + 1;
+ 	size_t filename_size = strlen(x[fst]->filename) + 1;
   e->filename = mpc_malloc(i, filename_size);
   strcpy_s(e->filename, filename_size, x[fst]->filename);
   
@@ -774,7 +774,7 @@ static mpc_err_t *mpc_err_or(mpc_input_t *i, mpc_err_t** x, int n) {
     if (x[j]->state.pos < e->state.pos) { continue; }
     
     if (x[j]->failure) {
-      size_t failure_size = strlen(x[j]->failure) + 1;
+     	size_t failure_size = strlen(x[j]->failure) + 1;
       e->failure = mpc_malloc(i, failure_size);
       strcpy_s(e->failure, failure_size, x[j]->failure);
       break;
@@ -800,7 +800,7 @@ static mpc_err_t *mpc_err_or(mpc_input_t *i, mpc_err_t** x, int n) {
 static mpc_err_t *mpc_err_repeat(mpc_input_t *i, mpc_err_t *x, const char *prefix) {
 
   int j = 0;
-  size_t l = 0;
+ 	size_t l = 0;
   char *expect = NULL;
   
   if (x == NULL) { return NULL; }
@@ -814,7 +814,7 @@ static mpc_err_t *mpc_err_repeat(mpc_input_t *i, mpc_err_t *x, const char *prefi
   }
   
   else if (x->expected_num == 1) {
-    size_t exepct_size = strlen(prefix) + strlen(x->expected[0]) + 1;
+   	size_t exepct_size = strlen(prefix) + strlen(x->expected[0]) + 1;
     expect = mpc_malloc(i, exepct_size);
     strcpy_s(expect, exepct_size, prefix);
     strcat_s(expect, exepct_size, x->expected[0]);
@@ -833,7 +833,7 @@ static mpc_err_t *mpc_err_repeat(mpc_input_t *i, mpc_err_t *x, const char *prefi
     l += strlen(" or ");
     l += strlen(x->expected[x->expected_num-1]);
     
-    size_t expect_size = l + 1;
+   	size_t expect_size = l + 1;
     expect = mpc_malloc(i, expect_size);
     
     strcpy_s(expect, expect_size, prefix);
@@ -864,7 +864,7 @@ static mpc_err_t *mpc_err_count(mpc_input_t *i, mpc_err_t *x, int n) {
   mpc_err_t *y;
   int digits = n/10 + 1;
   char *prefix;
-  size_t prefix_size = digits + strlen(" of ") + 1;
+ 	size_t prefix_size = digits + strlen(" of ") + 1;
   prefix = mpc_malloc(i, prefix_size);
   sprintf_s(prefix, prefix_size, "%i of ", n);
   y = mpc_err_repeat(i, x, prefix);
@@ -974,10 +974,10 @@ static mpc_val_t *mpcf_input_trd_free(mpc_input_t *i, int n, mpc_val_t **xs) { r
 
 static mpc_val_t *mpcf_input_strfold(mpc_input_t *i, int n, mpc_val_t **xs) {
   int j;
-  size_t l = 0;
+ 	size_t l = 0;
   if (n == 0) { return mpc_calloc(i, 1, 1); }
   for (j = 0; j < n; j++) { l += strlen(xs[j]); }
-  size_t xs_size = l + 1;
+ 	size_t xs_size = l + 1;
   xs[0] = mpc_realloc(i, xs[0], xs_size);
   for (j = 1; j < n; j++) { 
     strcat_s(xs[0], xs_size, xs[j]);
@@ -1316,7 +1316,7 @@ int mpc_parse(const char *filename, const char *string, mpc_parser_t *p, mpc_res
   return x;
 }
 
-int mpc_nparse(const char *filename, const char *string, size_t length, mpc_parser_t *p, mpc_result_t *r) {
+int mpc_nparse(const char *filename, const char *string,	size_t length, mpc_parser_t *p, mpc_result_t *r) {
   int x;
   mpc_input_t *i = mpc_input_new_nstring(filename, string, length);
   x = mpc_parse_input(i, p, r);
@@ -1471,7 +1471,7 @@ static mpc_parser_t *mpc_undefined(void) {
 mpc_parser_t *mpc_new(const char *name) {
   mpc_parser_t *p = mpc_undefined();
   p->retained = 1;
-  size_t name_size = strlen(name) + 1;
+ 	size_t name_size = strlen(name) + 1;
   p->name = realloc(p->name, name_size);
   strcpy_s(p->name, name_size, name);
   return p;
@@ -1489,7 +1489,7 @@ mpc_parser_t *mpc_copy(mpc_parser_t *a) {
   p->data = a->data;
   
   if (a->name) {
-    size_t name_size = strlen(a->name) + 1;
+   	size_t name_size = strlen(a->name) + 1;
     p->name = malloc(name_size);
     strcpy_s(p->name, name_size, a->name);
   }
@@ -1497,7 +1497,7 @@ mpc_parser_t *mpc_copy(mpc_parser_t *a) {
   switch (a->type) {
     
   case MPC_TYPE_FAIL: {
-    size_t m_size = strlen(a->data.fail.m) + 1;
+   	size_t m_size = strlen(a->data.fail.m) + 1;
     p->data.fail.m = malloc(m_size);
     strcpy_s(p->data.fail.m, m_size, a->data.fail.m);
     break;
@@ -1506,7 +1506,7 @@ mpc_parser_t *mpc_copy(mpc_parser_t *a) {
     case MPC_TYPE_ONEOF: 
     case MPC_TYPE_NONEOF:
     case MPC_TYPE_STRING: {
-      size_t x_size = strlen(a->data.string.x) + 1;
+     	size_t x_size = strlen(a->data.string.x) + 1;
       p->data.string.x = malloc(x_size);
       strcpy_s(p->data.string.x, x_size, a->data.string.x);
       break;
@@ -1524,7 +1524,7 @@ mpc_parser_t *mpc_copy(mpc_parser_t *a) {
     case MPC_TYPE_EXPECT: {
       p->data.expect.x = mpc_copy(a->data.expect.x);
 
-      size_t m_size = strlen(a->data.expect.m) + 1;
+     	size_t m_size = strlen(a->data.expect.m) + 1;
       p->data.expect.m = malloc(m_size);
       strcpy_s(p->data.expect.m, m_size, a->data.expect.m);
       break;
@@ -1556,7 +1556,7 @@ mpc_parser_t *mpc_copy(mpc_parser_t *a) {
     case MPC_TYPE_CHECK: {
       p->data.check.x = mpc_copy(a->data.check.x);
       
-      size_t e_size = strlen(a->data.check.e) + 1;
+     	size_t e_size = strlen(a->data.check.e) + 1;
       p->data.check.e = malloc(e_size);
       strcpy_s(p->data.check.e, e_size, a->data.check.e);
       break;
@@ -1564,7 +1564,7 @@ mpc_parser_t *mpc_copy(mpc_parser_t *a) {
     case MPC_TYPE_CHECK_WITH: {
       p->data.check_with.x = mpc_copy(a->data.check_with.x);
       
-      size_t e_size = strlen(a->data.check_with.e) + 1;
+     	size_t e_size = strlen(a->data.check_with.e) + 1;
       p->data.check_with.e = malloc(e_size);
       strcpy_s(p->data.check_with.e, e_size, a->data.check_with.e);
       break;
@@ -1621,7 +1621,7 @@ mpc_parser_t *mpc_pass(void) {
 mpc_parser_t *mpc_fail(const char *m) {
   mpc_parser_t *p = mpc_undefined();
   p->type = MPC_TYPE_FAIL;
-  size_t m_size = strlen(m) + 1;
+ 	size_t m_size = strlen(m) + 1;
   p->data.fail.m = malloc(m_size);
   strcpy_s(p->data.fail.m, m_size, m);
   return p;
@@ -1656,7 +1656,7 @@ mpc_parser_t *mpc_failf(const char *fmt, ...) {
   p->type = MPC_TYPE_FAIL;
   
   va_start(va, fmt);
-  size_t buffer_size = 2048;
+ 	size_t buffer_size = 2048;
   buffer = malloc(buffer_size);
   vsprintf_s(buffer, buffer_size, fmt, va);
   va_end(va);
@@ -1698,7 +1698,7 @@ mpc_parser_t *mpc_expect(mpc_parser_t *a, const char *expected) {
   mpc_parser_t *p = mpc_undefined();
   p->type = MPC_TYPE_EXPECT;
   p->data.expect.x = a;
-  size_t m_size = strlen(expected) + 1;
+ 	size_t m_size = strlen(expected) + 1;
   p->data.expect.m = malloc(m_size);
   strcpy_s(p->data.expect.m, m_size, expected);
   return p;
@@ -1732,7 +1732,7 @@ mpc_parser_t *mpc_expectf(mpc_parser_t *a, const char *fmt, ...) {
   p->type = MPC_TYPE_EXPECT;
   
   va_start(va, fmt);
-  size_t buffer_size = 2048;
+ 	size_t buffer_size = 2048;
   buffer = malloc(buffer_size);
   vsprintf_s(buffer, buffer_size, fmt, va);
   va_end(va);
@@ -1771,7 +1771,7 @@ mpc_parser_t *mpc_range(char s, char e) {
 mpc_parser_t *mpc_oneof(const char *s) {
   mpc_parser_t *p = mpc_undefined();
   p->type = MPC_TYPE_ONEOF;
-  size_t x_size = strlen(s) + 1;
+ 	size_t x_size = strlen(s) + 1;
   p->data.string.x = malloc(x_size);
   strcpy_s(p->data.string.x, x_size, s);
   return mpc_expectf(p, "one of '%s'", s);
@@ -1780,7 +1780,7 @@ mpc_parser_t *mpc_oneof(const char *s) {
 mpc_parser_t *mpc_noneof(const char *s) {
   mpc_parser_t *p = mpc_undefined();
   p->type = MPC_TYPE_NONEOF;
-  size_t x_size = strlen(s) + 1;
+ 	size_t x_size = strlen(s) + 1;
   p->data.string.x = malloc(x_size);
   strcpy_s(p->data.string.x, x_size, s);
   return mpc_expectf(p, "none of '%s'", s);
@@ -1797,7 +1797,7 @@ mpc_parser_t *mpc_satisfy(int(*f)(char)) {
 mpc_parser_t *mpc_string(const char *s) {
   mpc_parser_t *p = mpc_undefined();
   p->type = MPC_TYPE_STRING;
-  size_t x_size = strlen(s) + 1;
+ 	size_t x_size = strlen(s) + 1;
   p->data.string.x = malloc(x_size);
   strcpy_s(p->data.string.x, x_size, s);
   return mpc_expectf(p, "\"%s\"", s);
@@ -1829,7 +1829,7 @@ mpc_parser_t *mpc_check(mpc_parser_t *a, mpc_check_t f, const char *e) {
   p->type          = MPC_TYPE_CHECK;
   p->data.check.x  = a;
   p->data.check.f  = f;
-  size_t e_size = strlen(e) + 1;
+ 	size_t e_size = strlen(e) + 1;
   p->data.check.e  = malloc(e_size);
   strcpy_s(p->data.check.e, e_size, e);
   return p;
@@ -1842,7 +1842,7 @@ mpc_parser_t *mpc_check_with(mpc_parser_t *a, mpc_check_with_t f, void *x, const
   p->data.check_with.f = f;
   p->data.check_with.d = x;
 
-  size_t e_size = strlen(e) + 1;
+ 	size_t e_size = strlen(e) + 1;
   p->data.check_with.e = malloc(e_size);
   strcpy_s(p->data.check_with.e, e_size, e);
   return p;
@@ -1854,7 +1854,7 @@ mpc_parser_t *mpc_checkf(mpc_parser_t *a, mpc_check_t f, const char *fmt, ...) {
   mpc_parser_t  *p;
 
   va_start(va, fmt);
-  size_t buffer_size = 2048;
+ 	size_t buffer_size = 2048;
   buffer = malloc(buffer_size);
   vsprintf_s(buffer, buffer_size, fmt, va);
   va_end(va);
@@ -1871,7 +1871,7 @@ mpc_parser_t *mpc_check_withf(mpc_parser_t *a, mpc_check_with_t f, void *x, cons
   mpc_parser_t  *p;
 
   va_start(va, fmt);
-  size_t buffer_size = 2048;
+ 	size_t buffer_size = 2048;
   buffer = malloc(buffer_size);
   vsprintf_s(buffer, buffer_size, fmt, va);
   va_end(va);
@@ -2263,8 +2263,8 @@ static const char *mpc_re_range_escape_char(char c) {
 static mpc_val_t *mpcf_re_range(mpc_val_t *x) {
   
   mpc_parser_t *out;
-  size_t i, j;
-  size_t start, end;
+ 	size_t i, j;
+ 	size_t start, end;
   const char *tmp = NULL;
   const char *s = x;
   int comp = s[0] == '^' ? 1 : 0;
@@ -2280,7 +2280,7 @@ static mpc_val_t *mpcf_re_range(mpc_val_t *x) {
     if (s[i] == '\\') {
       tmp = mpc_re_range_escape_char(s[i+1]);
       if (tmp != NULL) {
-        size_t range_size = strlen(range) + strlen(tmp) + 1;
+       	size_t range_size = strlen(range) + strlen(tmp) + 1;
         range = realloc(range, range_size);
         strcat_s(range, range_size, tmp);
       } else {
@@ -2294,7 +2294,7 @@ static mpc_val_t *mpcf_re_range(mpc_val_t *x) {
     /* Regex Range...Range */
     else if (s[i] == '-') {
       if (s[i+1] == '\0' || i == 0) {
-        size_t range_size = strlen(range) + strlen("-") + 1;
+       	size_t range_size = strlen(range) + strlen("-") + 1;
           range = realloc(range, range_size);
           strcat_s(range, range_size, "-");
       } else {
@@ -2440,7 +2440,7 @@ mpc_val_t *mpcf_strtriml(mpc_val_t *x) {
 
 mpc_val_t *mpcf_strtrimr(mpc_val_t *x) {
   char *s = x;
-  size_t l = strlen(s);
+ 	size_t l = strlen(s);
   while (isspace(s[l-1])) {
     s[l-1] = '\0'; l--;
   }
@@ -2483,7 +2483,7 @@ static mpc_val_t *mpcf_escape_new(mpc_val_t *x, const char *input, const char **
 
     while (output[i]) {
       if (*s == input[i]) {
-        size_t y_size = strlen(y) + strlen(output[i]) + 1;
+       	size_t y_size = strlen(y) + strlen(output[i]) + 1;
         y = realloc(y, y_size);
         strcat_s(y, y_size, output[i]);
         found = 1;
@@ -2493,7 +2493,7 @@ static mpc_val_t *mpcf_escape_new(mpc_val_t *x, const char *input, const char **
     }
     
     if (!found) {
-      size_t y_size = strlen(y) + 2;
+     	size_t y_size = strlen(y) + 2;
       y = realloc(y, y_size);
       buff[0] = *s; buff[1] = '\0';
       strcat_s(y, y_size, buff);
@@ -2522,7 +2522,7 @@ static mpc_val_t *mpcf_unescape_new(mpc_val_t *x, const char *input, const char 
     while (output[i]) {
       if ((*(s+0)) == output[i][0] &&
           (*(s+1)) == output[i][1]) {
-        size_t y_size = strlen(y) + 1 + 1;
+       	size_t y_size = strlen(y) + 1 + 1;
         y = realloc(y, y_size);
         buff[0] = input[i]; buff[1] = '\0';
         strcat_s(y, y_size, buff);
@@ -2534,7 +2534,7 @@ static mpc_val_t *mpcf_unescape_new(mpc_val_t *x, const char *input, const char 
     }
     
     if (!found) {
-      size_t y_size = strlen(y) + 1 + 1;
+     	size_t y_size = strlen(y) + 1 + 1;
       y = realloc(y, y_size);
       buff[0] = *s; buff[1] = '\0';
       strcat_s(y, y_size, buff);
@@ -2615,13 +2615,13 @@ mpc_val_t *mpcf_trd_free(int n, mpc_val_t **xs) { return mpcf_nth_free(n, xs, 2)
 
 mpc_val_t *mpcf_strfold(int n, mpc_val_t **xs) {
   int i;
-  size_t l = 0;
+ 	size_t l = 0;
   
   if (n == 0) { return calloc(1, 1); }
   
   for (i = 0; i < n; i++) { l += strlen(xs[i]); }
   
-  size_t xs_zero_size = l + 1;
+ 	size_t xs_zero_size = l + 1;
   xs[0] = realloc(xs[0], xs_zero_size);
   
   for (i = 1; i < n; i++) {
@@ -2880,11 +2880,11 @@ mpc_ast_t *mpc_ast_new(const char *tag, const char *contents) {
   
   mpc_ast_t *a = malloc(sizeof(mpc_ast_t));
   
-  size_t tag_size = strlen(tag) + 1;
+ 	size_t tag_size = strlen(tag) + 1;
   a->tag = malloc(tag_size);
   strcpy_s(a->tag, tag_size, tag);
   
-  size_t contents_size = strlen(contents) + 1;
+ 	size_t contents_size = strlen(contents) + 1;
   a->contents = malloc(contents_size);
   strcpy_s(a->contents, contents_size, contents);
   
@@ -2967,7 +2967,7 @@ mpc_ast_t *mpc_ast_add_root_tag(mpc_ast_t *a, const char *t) {
 }
 
 mpc_ast_t *mpc_ast_tag(mpc_ast_t *a, const char *t) {
-  size_t tag_size = strlen(t) + 1;
+ 	size_t tag_size = strlen(t) + 1;
   a->tag = realloc(a->tag, tag_size);
   strcpy_s(a->tag, tag_size, t);
   return a;
@@ -3413,7 +3413,7 @@ static mpc_val_t *mpcaf_grammar_regex(mpc_val_t *x, void *s) {
 
 /* Should this just use `isdigit` instead? */
 static int is_number(const char* s) {
-  size_t i;
+ 	size_t i;
   for (i = 0; i < strlen(s); i++) { if (!strchr("0123456789", s[i])) { return 0; } }
   return 1;
 }
