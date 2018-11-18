@@ -9,6 +9,7 @@
 #include "can.h"
 #include "parse.h"
 #include "2xml.h"
+#include "2bsm.h"
 #include "2csv.h"
 #include "2c.h"
 
