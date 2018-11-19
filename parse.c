@@ -94,9 +94,8 @@ mpc_ast_t *parse_dbc_file_by_name(const char *name)
 {
 	assert(name);
 	mpc_ast_t *ast = NULL;
-	FILE *input = NULL;
-
-	if(!(input = fopen(name, "rb")))
+	FILE *input = fopen(name, "rb");
+	if(!input)
 		goto end;
 	ast = _parse_dbc_file_by_handle(name, input);
 end:
