@@ -14,3 +14,11 @@ ex*
 *.html
 *.xhtml
 *.exe
+
+Debug/
+*.sln
+*.vcxproj*
+dbcc.VC.db
+*.opendb
+
+Release/
