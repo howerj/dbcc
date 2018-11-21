@@ -138,7 +138,7 @@ static int msg2xml(can_msg_t *msg, FILE *o, unsigned depth)
 
 	signal_t *multiplexor = NULL;
 	for(size_t i = 0; i < msg->signal_count; i++) {
-		signal_t *sig = msg->signals[i];
+		signal_t *sig = msg->signal_s[i];
 		if(sig->is_multiplexor) {
 			if(multiplexor) {
 				error("multiple multiplexor values detected (only one per CAN msg is allowed) for %s", msg->name);
@@ -164,7 +164,7 @@ static int msg2xml(can_msg_t *msg, FILE *o, unsigned depth)
 		fprintf(o, "</multiplexor>\n");
 
 		for(size_t i = 0; i < msg->signal_count; i++) {
-			signal_t *sig = msg->signals[i];
+			signal_t *sig = msg->signal_s[i];
 			if(!(sig->is_multiplexed))
 				continue;
 			indent(o, depth+2);

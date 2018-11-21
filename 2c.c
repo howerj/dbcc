@@ -300,7 +300,7 @@ static signal_t *process_signals_and_find_multiplexer(can_msg_t *msg, FILE *c, c
 	signal_t *multiplexor = NULL;
 
 	for(size_t i = 0; i < msg->signal_count; i++) {
-		signal_t *sig = msg->signals[i];
+		signal_t *sig = msg->signal_s[i];
 		if(sig->is_multiplexor) {
 			if(multiplexor)
 				error("multiple multiplexor values detected (only one per CAN msg is allowed) for %s", name);
@@ -331,16 +331,16 @@ static int multiplexor_switch(can_msg_t *msg, signal_t *multiplexor, FILE *c, bo
 	assert(multiplexor);
 	assert(c);
 	fprintf(c, "\tswitch(%s->%s) {\n", serialize ? "pack" : "unpack", multiplexor->name);
-	qsort(msg->signals, msg->signal_count, sizeof(*msg->signals), cmp_signal);
+	qsort(msg->signal_s, msg->signal_count, sizeof(*msg->signal_s), cmp_signal);
 	for(size_t i = 0; i < msg->signal_count; i++) {
-		signal_t *sig = msg->signals[i];
+		signal_t *sig = msg->signal_s[i];
 		if(!(sig->is_multiplexed))
 			continue;
 		fprintf(c, "\tcase %u:\n", sig->switchval);
 		size_t j = i;
-		for(; j < msg->signal_count && msg->signals[i]->switchval == msg->signals[j]->switchval; j++) {
+		for(; j < msg->signal_count && msg->signal_s[i]->switchval == msg->signal_s[j]->switchval; j++) {
 			assert(j < msg->signal_count);
-			signal_t* sig = msg->signals[j];
+			signal_t* sig = msg->signal_s[j];
 			if((serialize ? signal2serializer(sig, c) : signal2deserializer(sig, c)) < 0)
 				return -1;
 		}
@@ -435,7 +435,7 @@ static int msg_print(can_msg_t *msg, FILE *c, const char *name)
 	else
 		fprintf(c, "\tUNUSED(data);\n\tUNUSED(print);\n");
 	for(size_t i = 0; i < msg->signal_count; i++) {
-		if(signal2print(msg->signals[i], msg->id, c) < 0)
+		if(signal2print(msg->signal_s[i], msg->id, c) < 0)
 			return -1;
 	}
 	if(msg->signal_count)
@@ -455,7 +455,7 @@ static int msg2c(can_msg_t *msg, FILE *c, bool generate_print, bool generate_pac
 	bool intel_used = false;
 
 	for(size_t i = 0; i < msg->signal_count; i++)
-		if(msg->signals[i]->endianess == endianess_motorola_e)
+		if(msg->signal_s[i]->endianess == endianess_motorola_e)
 			motorola_used = true;
 		else
 			intel_used = true;
@@ -473,10 +473,10 @@ static int msg2c(can_msg_t *msg, FILE *c, bool generate_print, bool generate_pac
 
 	for(size_t i = 0; i < msg->signal_count; i++) {
 		if(generate_unpack)
-			if(signal2scaling(name, msg->id, msg->signals[i], c, true, false) < 0)
+			if(signal2scaling(name, msg->id, msg->signal_s[i], c, true, false) < 0)
 				return -1;
 		if(generate_pack)
-			if(signal2scaling(name, msg->id, msg->signals[i], c, false, false) < 0)
+			if(signal2scaling(name, msg->id, msg->signal_s[i], c, false, false) < 0)
 				return -1;
 	}
 
@@ -497,7 +497,7 @@ static int msg2h(can_msg_t *msg, FILE *h, bool generate_print, bool generate_pac
 	fprintf(h, "typedef struct {\n" );
 
 	for(size_t i = 0; i < msg->signal_count; i++)
-		if(signal2type(msg->signals[i], h) < 0)
+		if(signal2type(msg->signal_s[i], h) < 0)
 			return -1;
 
 	fprintf(h, "} %s_t;\n\n", name);
@@ -511,10 +511,10 @@ static int msg2h(can_msg_t *msg, FILE *h, bool generate_print, bool generate_pac
 
 	for(size_t i = 0; i < msg->signal_count; i++) {
 		if(generate_unpack)
-			if(signal2scaling(name, msg->id, msg->signals[i], h, true, true) < 0)
+			if(signal2scaling(name, msg->id, msg->signal_s[i], h, true, true) < 0)
 				return -1;
 		if(generate_pack)
-			if(signal2scaling(name, msg->id, msg->signals[i], h, false, true) < 0)
+			if(signal2scaling(name, msg->id, msg->signal_s[i], h, false, true) < 0)
 				return -1;
 	}
 
@@ -615,7 +615,7 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps,
 	/* sort by size for better struct packing */
 	for(int i = 0; i < dbc->message_count; i++) {
 		can_msg_t *msg = dbc->messages[i];
-		qsort(msg->signals, msg->signal_count, sizeof(msg->signals[0]), signal_compare_function);
+		qsort(msg->signal_s, msg->signal_count, sizeof(msg->signal_s[0]), signal_compare_function);
 	}
 
 	/* header file (begin) */

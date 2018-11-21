@@ -37,8 +37,8 @@ void can_msg_delete(can_msg_t *msg)
 	if(!msg)
 		return;
 	for(size_t i = 0; i < msg->signal_count; i++)
-		signal_delete(msg->signals[i]);
-	free(msg->signals);
+        signal_delete(msg->signal_s[i]);
+    free(msg->signal_s);
 	free(msg->name);
 	free(msg->ecu);
 	free(msg);
@@ -146,18 +146,18 @@ can_msg_t *ast2msg(mpc_ast_t *ast)
 	assert(r == 1);
 
 	/**@todo make test cases with no signals, and the like*/
-	signal_t **signals = allocate(sizeof(*signals));
+    signal_t **signal_s = allocate(sizeof(*signal_s));
 	size_t len = 1, j = 0;
 	for(int i = 0; i >= 0;) {
 		i = mpc_ast_get_index_lb(ast, "signal|>", i);
 		if(i >= 0) {
 			mpc_ast_t *sig_ast = mpc_ast_get_child_lb(ast, "signal|>", i);
-			signals = reallocator(signals, sizeof(*signals)*++len);
-			signals[j++] = ast2signal(sig_ast);
+            signal_s = reallocator(signal_s, sizeof(*signal_s)*++len);
+            signal_s[j++] = ast2signal(sig_ast);
 			i++;
 		}
 	}
-	c->signals = signals;
+    c->signal_s = signal_s;
 	c->signal_count = j;
 
 	debug("%s id:%u dlc:%u signals:%zu ecu:%s", c->name, c->id, c->dlc, c->signal_count, c->ecu);

@@ -1,6 +1,10 @@
 #ifndef CAN_H
 #define CAN_H
 
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -41,7 +45,7 @@ typedef struct {
 typedef struct {
 	char *name;    /**< can message name */
 	char *ecu;     /**< name of ECU @todo check this makes sense */
-	signal_t **signals; /**< signals that can decode/encode this message*/
+	signal_t **signal_s; /**< signals that can decode/encode this message*/
 	uint64_t data; /**< data, up to eight bytes, not used for generation */
 	size_t signal_count; /**< number of signals */
 	unsigned dlc;  /**< length of CAN message 0-8 bytes */
@@ -61,5 +65,9 @@ signal_t *ast2signal(mpc_ast_t *ast);
 can_msg_t *ast2msg(mpc_ast_t *ast);
 dbc_t *ast2dbc(mpc_ast_t *ast);
 void dbc_delete(dbc_t *dbc);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

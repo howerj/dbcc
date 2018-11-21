@@ -1,6 +1,10 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -32,5 +36,9 @@ void *allocate(size_t sz);
 char *duplicate(const char *s);
 void *reallocator(void *p, size_t n);
 char *slurp(FILE *f);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
