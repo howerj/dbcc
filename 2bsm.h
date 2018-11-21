@@ -2,7 +2,7 @@
 #define _2BSM_H
 
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif
 
 #include "can.h"

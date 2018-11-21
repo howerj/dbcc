@@ -45,8 +45,8 @@ int dbcc_getopt(int nargc, char *const nargv[], const char *ostr)
 		dbcc_optarg = NULL;
 		if (!*place)
 			++dbcc_optind;
-	} else {		/* need an argument */
-		if (*place)	/* no white space */
+	} else {                /* need an argument */
+		if (*place)     /* no white space */
 			dbcc_optarg = place;
 		else if (nargc <= ++dbcc_optind) { /* no arg */
 			place = EMSG;

@@ -177,7 +177,7 @@ static can_msg_t *ast2msg(mpc_ast_t *top, mpc_ast_t *ast)
 	assert(r == 1);
 
 	/**@todo make test cases with no signals, and the like*/
-    signal_t **signal_s = allocate(sizeof(*signal_s));
+	signal_t **signal_s = allocate(sizeof(*signal_s));
 	size_t len = 1, j = 0;
 	for(int i = 0; i >= 0;) {
 		i = mpc_ast_get_index_lb(ast, "signal|>", i);
