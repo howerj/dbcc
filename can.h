@@ -36,6 +36,7 @@ typedef struct {
 	bool is_signed;      /**< if true, value is signed */
 	/**@todo fill in is_floating*/
 	bool is_floating;    /**< if true, value is a floating point number*/
+	unsigned sigval;     /**< 1 == float, 2 == double. is_floating implies sigval == 1 || sigval == 2 */
 	bool is_multiplexor; /**< true if this is a multiplexor */
 	bool is_multiplexed; /**< true if this is a multiplexed signal */
 	unsigned switchval;  /**< if is_multiplexed, this will contain the
@@ -53,16 +54,11 @@ typedef struct {
 } can_msg_t;
 
 typedef struct {
+	bool use_float; /**< floating point conversion routines are needed */
 	int message_count;
 	can_msg_t **messages;
 } dbc_t;
 
-signal_t *signal_new(void);
-void signal_delete(signal_t *signal);
-can_msg_t *can_msg_new(void);
-void can_msg_delete(can_msg_t *msg);
-signal_t *ast2signal(mpc_ast_t *ast);
-can_msg_t *ast2msg(mpc_ast_t *ast);
 dbc_t *ast2dbc(mpc_ast_t *ast);
 void dbc_delete(dbc_t *dbc);
 

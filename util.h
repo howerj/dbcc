@@ -36,6 +36,7 @@ void *allocate(size_t sz);
 char *duplicate(const char *s);
 void *reallocator(void *p, size_t n);
 char *slurp(FILE *f);
+char *dbcc_basename(char *s);
 
 #ifdef __cplusplus
 }

@@ -20,6 +20,27 @@ The sources file [mpc.c][] and [mpc.h][] originate from a parser combinator
 written in [C][] called [MPC][] and are licensed under the [3 Clause BSD][] 
 license.
 
+To build, you only need a C (C99) compiler and Make (probably GNU make, I make not
+effort to support other Make implementations). The dbcc program itself it
+written in what should be portable C with the only external dependency being
+your platforms C library.
+
+You should be able to type:
+
+	make
+
+To build, an executable called 'dbcc' is produced. To test run the tests, 
+[xmllint][] is required. 
+
+## C Coding Standards
+
+* When in doubt, format with [indent][] with the "-linux" option. 
+* Use tabs, not spaces for formatting
+* Use assertions where possible (not for error checking, for checking pre/post
+conditions and invariants).
+* The tool should run on Windows and Linux with no modification.
+* No external dependencies should brought into the project.
+
 ## DBC file specification
 
 For a specification, as I understand it, of the DBC file format, see [dbc.md][]. 
@@ -38,6 +59,10 @@ As well as [C][], [XML][] can be generated, the project contains an [XSD][] and
 
 A flat CSV file can be generated, which is easier to import into Excel.
 
+## BSM (beSTORM Module) Generation
+
+An XML based file that can be imported into Beyond Security's beSTORM and used to test CAN BUS infrastructure.
+
 ## Operation
 
 Consult the [manual page][] for more information about the precise operation of the
@@ -45,6 +70,8 @@ program.
 
 ## Bugs / To Do
 
+* The floating point conversion routines assume your platform is using
+[IEEE-754][] floats. If it does not, then tough.
 * A lot of the DBC file format is not dealt with:
   - Special values
   - Timeouts 
@@ -63,6 +90,10 @@ This affects numbers larger than 2^53.
   - The easiest way to check this is by generating an XML file and verifying it
   with an XSD file
 * Find/make more CAN database examples
+* There are two pieces of information that are useful to any CAN stack for
+received messages; the time stamp of the received message, and the status
+(error CRC/timeout, message okay, or message never set). These conditions are
+not accounted for.
 
 [DBC]: http://vector.com/vi_candb_en.html
 [C]: https://en.wikipedia.org/wiki/C_%28programming_language%29
@@ -81,6 +112,9 @@ This affects numbers larger than 2^53.
 [XSD]: dbcc.xsd
 [XSLT]: dbcc.xslt
 [MISRA C]: https://misra.org.uk/
+[IEEE-754]: https://en.wikipedia.org/wiki/IEEE_754
+[indent]: https://www.gnu.org/software/indent/
+[xmllint]: http://xmlsoft.org/xmllint.html
 
 <style type="text/css">
 	body {

@@ -9,13 +9,16 @@
 #include "can.h"
 #include "parse.h"
 #include "2xml.h"
+#include "2bsm.h"
 #include "2csv.h"
 #include "2c.h"
+#include "options.h"
 
 typedef enum {
 	CONVERT_TO_C,
 	CONVERT_TO_XML,
 	CONVERT_TO_CSV,
+	CONVERT_TO_BSM,
 } conversion_type_e;
 
 static void usage(const char *arg0)
@@ -36,6 +39,7 @@ Options:\n\
 \t-g     print out the grammar used to parse the DBC files\n\
 \t-t     add timestamps to the generated files\n\
 \t-x     convert output to XML instead of the default C code\n\
+\t-b     convert output to BSM (beSTORM) instead of the default C code\n\
 \t-C     convert output to CSV instead of the default C code\n\
 \t-o dir set the output directory\n\
 \t-p     generate only print code\n\
@@ -62,14 +66,15 @@ static char *replace_file_type(const char *file, const char *suffix)
 	char *dot = strrchr(name, '.');
 	if(*dot)
 		*dot = '\0';
-	name = reallocator(name, strlen(name) + strlen(suffix) + 2); /* + 1 for '.', + 1 for '\0' */
+	size_t name_size = strlen(name) + strlen(suffix) + 2;
+	name = reallocator(name, name_size); /* + 1 for '.', + 1 for '\0' */
 	strcat(name, ".");
 	strcat(name, suffix);
 	return name;
 }
 
 static int dbc2cWrapper(dbc_t *dbc, const char *dbc_file, const char *file_only, bool use_time_stamps,
-				 bool generate_print, bool generate_pack, bool generate_unpack)
+				bool generate_print, bool generate_pack, bool generate_unpack)
 {
 
 	assert(dbc);
@@ -82,12 +87,24 @@ static int dbc2cWrapper(dbc_t *dbc, const char *dbc_file, const char *file_only,
 	FILE *h = fopen_or_die(hname, "wb");
 
 	int r = dbc2c(dbc, c, h, fname, use_time_stamps,
-				  generate_print, generate_pack, generate_unpack);
+				generate_print, generate_pack, generate_unpack);
 	fclose(c);
 	fclose(h);
 	free(cname);
 	free(hname);
 	free(fname);
+	return r;
+}
+
+static int dbc2bsmWrapper(dbc_t *dbc, const char *dbc_file, bool use_time_stamps)
+{
+	assert(dbc);
+	assert(dbc_file);
+	char *name = replace_file_type(dbc_file, "bsm");
+	FILE *o = fopen_or_die(name, "wb");
+	const int r = dbc2bsm(dbc, o, use_time_stamps);
+	fclose(o);
+	free(name);
 	return r;
 }
 
@@ -121,17 +138,14 @@ int main(int argc, char **argv)
 	conversion_type_e convert = CONVERT_TO_C;
 	const char *outdir = NULL;
 	bool use_time_stamps = false;
-
 	bool generate_print = false;
 	bool generate_pack = false;
 	bool generate_unpack = false;
 
-	int i;
+	int opt;
 
-	for(i = 1; i < argc && argv[i][0] == '-'; i++)
-		switch(argv[i][1]) {
-		case '\0': /* stop argument processing */
-			goto done;
+	while ((opt = dbcc_getopt(argc, argv, "hvbgxCtpuko:")) != -1) {
+		switch (opt) {
 		case 'h':
 			usage(argv[0]);
 			help();
@@ -142,6 +156,9 @@ int main(int argc, char **argv)
 			break;
 		case 'g':
 			return printf("DBCC Grammar =>\n%s\n", parse_get_grammar()) < 0;
+		case 'b':
+			convert = CONVERT_TO_BSM;
+			break;
 		case 'x':
 			convert = CONVERT_TO_XML;
 			break;
@@ -165,17 +182,16 @@ int main(int argc, char **argv)
 			debug("generate code for pack");
 			break;
 		case 'o':
-			if(i >= argc - 1)
-				goto fail;
-			outdir = argv[++i];
+			outdir = dbcc_optarg;
 			debug("output directory: %s", outdir);
 			break;
 		default:
-		fail:
+			fprintf(stderr, "invalid options\n");
 			usage(argv[0]);
-			error("unknown/invalid command line option '%c'", argv[i][1]);
+			help();
+			break;
 		}
-done:
+	}
 
 	if (!generate_unpack && !generate_pack && !generate_print) {
 		generate_print  = true;
@@ -183,7 +199,7 @@ done:
 		generate_unpack = true;
 	}
 
-	for(; i < argc; i++) {
+	for(int i = dbcc_optind; i < argc; i++) {
 		debug("reading => %s", argv[i]);
 		mpc_ast_t *ast = parse_dbc_file_by_name(argv[i]);
 		if(!ast) {
@@ -195,19 +211,22 @@ done:
 
 		dbc_t *dbc = ast2dbc(ast);
 
-		char *outpath = argv[i];
+		char *outpath = dbcc_basename(argv[i]);
 		if(outdir) {
 			outpath = allocate(strlen(outpath) + strlen(outdir) + 2 /* '/' + '\0'*/);
 			strcat(outpath, outdir);
 			strcat(outpath, "/");
-			strcat(outpath, argv[i]);
+			strcat(outpath, dbcc_basename(argv[i]));
 		}
 
 		int r = 0;
 		switch(convert) {
 		case CONVERT_TO_C:
-			r = dbc2cWrapper(dbc, outpath, argv[i], use_time_stamps,
+			r = dbc2cWrapper(dbc, outpath, dbcc_basename(argv[i]), use_time_stamps,
 				generate_print, generate_pack, generate_unpack);
+			break;
+		case CONVERT_TO_BSM:
+			r = dbc2bsmWrapper(dbc, outpath, use_time_stamps);
 			break;
 		case CONVERT_TO_XML:
 			r = dbc2xmlWrapper(dbc, outpath, use_time_stamps);
