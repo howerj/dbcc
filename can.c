@@ -38,8 +38,8 @@ static void can_msg_delete(can_msg_t *msg)
 	if(!msg)
 		return;
 	for(size_t i = 0; i < msg->signal_count; i++)
-        signal_delete(msg->signal_s[i]);
-    free(msg->signal_s);
+		signal_delete(msg->signal_s[i]);
+	free(msg->signal_s);
 	free(msg->name);
 	free(msg->ecu);
 	free(msg);

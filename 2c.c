@@ -174,7 +174,7 @@ static int comment(signal_t *sig, FILE *o)
 			sig->start_bit,
 			sig->bit_length,
 			sig->endianess == endianess_motorola_e ? "motorola" : "intel",
-	      		sig->scaling,
+			sig->scaling,
 			sig->offset);
 }
 
