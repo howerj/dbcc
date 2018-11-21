@@ -38,8 +38,8 @@ static void can_msg_delete(can_msg_t *msg)
 	if(!msg)
 		return;
 	for(size_t i = 0; i < msg->signal_count; i++)
-		signal_delete(msg->signals[i]);
-	free(msg->signals);
+		signal_delete(msg->signal_s[i]);
+	free(msg->signal_s);
 	free(msg->name);
 	free(msg->ecu);
 	free(msg);
@@ -176,19 +176,20 @@ static can_msg_t *ast2msg(mpc_ast_t *top, mpc_ast_t *ast)
 	r = sscanf(id->contents,  "%u", &c->id);
 	assert(r == 1);
 
-	signal_t **signals = allocate(sizeof(*signals));
+	/**@todo make test cases with no signals, and the like*/
+	signal_t **signal_s = allocate(sizeof(*signal_s));
 	size_t len = 1, j = 0;
 	for(int i = 0; i >= 0;) {
 		i = mpc_ast_get_index_lb(ast, "signal|>", i);
 		if(i >= 0) {
 			mpc_ast_t *sig_ast = mpc_ast_get_child_lb(ast, "signal|>", i);
-			signals = reallocator(signals, sizeof(*signals)*++len);
-			signals[j++] = ast2signal(top, sig_ast, c->id);
+			signal_s = reallocator(signal_s, sizeof(*signal_s)*++len);
+			signal_s[j++] = ast2signal(top, sig_ast, c->id);
 			i++;
 		}
 	}
 
-	c->signals = signals;
+	c->signal_s = signal_s;
 	c->signal_count = j;
 
 	if (c->signal_count > 1) { // Lets sort the signals so that their start_bit is asc (lowest number first)
@@ -196,10 +197,10 @@ static can_msg_t *ast2msg(mpc_ast_t *top, mpc_ast_t *ast)
 		do {
 			bFlip = false;
 			for (size_t i = 0; i < c->signal_count - 1; i++) {
-				if (c->signals[i]->start_bit > c->signals[i + 1]->start_bit) {
-					signal_t *tmp = c->signals[i];
-					c->signals[i] = c->signals[i + 1];
-					c->signals[i + 1] = tmp;
+				if (c->signal_s[i]->start_bit > c->signal_s[i + 1]->start_bit) {
+					signal_t *tmp = c->signal_s[i];
+					c->signal_s[i] = c->signal_s[i + 1];
+					c->signal_s[i + 1] = tmp;
 					bFlip = true;
 				}
 			}

@@ -22,3 +22,15 @@ dbcc.VC.db
 *.opendb
 
 Release/
+
+
+# QtCreator project files
+*.pro.user
+*.pro
+*.config
+*.files
+*.includes
+*.creator
+*.creator.user
+
+.directory
