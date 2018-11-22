@@ -18,7 +18,7 @@ static int msg2csv(can_msg_t *msg, FILE *o)
 	for(size_t i = 0; i < msg->signal_count; i++) {
 		char sv[64];
 		const char *multi = "N/A";
-		signal_t *sig = msg->signal_s[i];
+		signal_t *sig = msg->sigs[i];
 		if(sig->is_multiplexor) {
 			if(multiplexor) {
 				error("multiple multiplexor values detected (only one per CAN msg is allowed) for %s", msg->name);

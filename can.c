@@ -38,8 +38,8 @@ static void can_msg_delete(can_msg_t *msg)
 	if(!msg)
 		return;
 	for(size_t i = 0; i < msg->signal_count; i++)
-		signal_delete(msg->signal_s[i]);
-	free(msg->signal_s);
+		signal_delete(msg->sigs[i]);
+	free(msg->sigs);
 	free(msg->name);
 	free(msg->ecu);
 	free(msg);
@@ -189,7 +189,7 @@ static can_msg_t *ast2msg(mpc_ast_t *top, mpc_ast_t *ast)
 		}
 	}
 
-	c->signal_s = signal_s;
+	c->sigs = signal_s;
 	c->signal_count = j;
 
 	if (c->signal_count > 1) { // Lets sort the signals so that their start_bit is asc (lowest number first)
@@ -197,10 +197,10 @@ static can_msg_t *ast2msg(mpc_ast_t *top, mpc_ast_t *ast)
 		do {
 			bFlip = false;
 			for (size_t i = 0; i < c->signal_count - 1; i++) {
-				if (c->signal_s[i]->start_bit > c->signal_s[i + 1]->start_bit) {
-					signal_t *tmp = c->signal_s[i];
-					c->signal_s[i] = c->signal_s[i + 1];
-					c->signal_s[i + 1] = tmp;
+				if (c->sigs[i]->start_bit > c->sigs[i + 1]->start_bit) {
+					signal_t *tmp = c->sigs[i];
+					c->sigs[i] = c->sigs[i + 1];
+					c->sigs[i + 1] = tmp;
 					bFlip = true;
 				}
 			}
