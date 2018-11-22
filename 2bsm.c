@@ -194,7 +194,7 @@ static int msg2bsm(can_msg_t * msg, FILE * o, unsigned depth)
 
 	unsigned int padding_size = 0;	// Find how much we need to pad the data to, 8, 16, 24, or 32
 	for (size_t i = 0; i < msg->signal_count; i++) {
-		signal_t *sig = msg->signal_s[i];
+		signal_t *sig = msg->sigs[i];
 
 		if (last_bit < sig->start_bit) {
 			// We have a void, create a fake signal of UNKNOWN in the middle
@@ -222,7 +222,7 @@ static int msg2bsm(can_msg_t * msg, FILE * o, unsigned depth)
 	last_bit = 0;
 	signal_t *multiplexor = NULL;
 	for (size_t i = 0; i < msg->signal_count; i++) {
-		signal_t *sig = msg->signal_s[i];
+		signal_t *sig = msg->sigs[i];
 		if (sig->is_multiplexor) {
 			if (multiplexor) {
 				error ("multiple multiplexor values detected (only one per CAN msg is allowed) for %s", msg->name);
