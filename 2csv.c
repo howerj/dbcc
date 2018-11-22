@@ -51,6 +51,14 @@ static int msg2csv(can_msg_t *msg, FILE *o)
 			units = "none";
 		fprintf(o, "%s, ", units);
 		fprintf(o, "%s, ", multi);
+
+		const char *floating = "no";
+		if (sig->is_floating) {
+			assert(sig->sigval == 1 || sig->sigval == 2);
+			floating = (sig->sigval == 1) ? "single" : "double";
+		}
+
+		fprintf(o, "%s, ", floating);
 		fprintf(o, "\n");
 	}
 
@@ -61,7 +69,7 @@ int dbc2csv(dbc_t *dbc, FILE *output)
 {
 	assert(dbc);
 	assert(output);
-	fprintf(output, "MSG, ID, DLC, Signal, Start, Length, Endianess, Scaling, Offset, Minimum, Maximum, Signed, Units, Multiplexed\n");
+	fprintf(output, "MSG, ID, DLC, Signal, Start, Length, Endianess, Scaling, Offset, Minimum, Maximum, Signed, Units, Multiplexed, Floating,\n");
 	for(int i = 0; i < dbc->message_count; i++)
 		if(msg2csv(dbc->messages[i], output) < 0)
 			return -1;

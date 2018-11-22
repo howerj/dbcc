@@ -34,7 +34,6 @@ typedef struct {
 	unsigned start_bit;  /**< starting bit position in message */
 	endianess_e endianess; /**< endianess of message */
 	bool is_signed;      /**< if true, value is signed */
-	/**@todo fill in is_floating*/
 	bool is_floating;    /**< if true, value is a floating point number*/
 	unsigned sigval;     /**< 1 == float, 2 == double. is_floating implies sigval == 1 || sigval == 2 */
 	bool is_multiplexor; /**< true if this is a multiplexor */
@@ -46,7 +45,7 @@ typedef struct {
 typedef struct {
 	char *name;    /**< can message name */
 	char *ecu;     /**< name of ECU @todo check this makes sense */
-    signal_t **sigs; /**< signals that can decode/encode this message*/
+	signal_t **sigs; /**< signals that can decode/encode this message*/
 	uint64_t data; /**< data, up to eight bytes, not used for generation */
 	size_t signal_count; /**< number of signals */
 	unsigned dlc;  /**< length of CAN message 0-8 bytes */
