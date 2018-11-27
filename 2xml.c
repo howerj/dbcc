@@ -107,10 +107,10 @@ static int signal2xml(signal_t *sig, FILE *o, unsigned depth)
 	pnode(o, depth+1, "startbit",  "%u", sig->start_bit);
 	pnode(o, depth+1, "bitlength", "%u", sig->bit_length);
 	pnode(o, depth+1, "endianess", "%s", sig->endianess == endianess_motorola_e ? "motorola" : "intel");
-	pnode(o, depth+1, "scaling",   "%f", sig->scaling);
-	pnode(o, depth+1, "offset",    "%f", sig->offset);
-	pnode(o, depth+1, "minimum",   "%f", sig->minimum);
-	pnode(o, depth+1, "maximum",   "%f", sig->maximum);
+	pnode(o, depth+1, "scaling",   "%g", sig->scaling);
+	pnode(o, depth+1, "offset",    "%g", sig->offset);
+	pnode(o, depth+1, "minimum",   "%g", sig->minimum);
+	pnode(o, depth+1, "maximum",   "%g", sig->maximum);
 	pnode(o, depth+1, "signed",    "%s", sig->is_signed ? "true" : "false");
 	pnode(o, depth+1, "floating",  "%u", sig->is_floating ? sig->sigval : 0);
 
