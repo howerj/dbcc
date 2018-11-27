@@ -199,9 +199,6 @@ static int signal2deserializer(signal_t *sig, FILE *o)
 		assert(length == 32 || length == 64);
 		if(fprintf(o, "\tunpack->%s = unpack754_%d(x);\n", sig->name, length) < 0)
 			return -1;
-		/**@todo Make type-punned version optional */
-		//if(fprintf(o, "\tunpack->%s = *((%s*)&x);\n", sig->name, length == 32 ? "float" : "double") < 0)
-		//	return -1;
 		return 0;
 	}
 
@@ -252,12 +249,11 @@ static int signal2serializer(signal_t *sig, FILE *o)
 static int signal2print(signal_t *sig, unsigned id, FILE *o)
 {
 	/*super lazy*/
-
 	if(sig->is_floating)
-		return fprintf(o, "\tr = fprintf(data, \"%s = (wire: %%g)\\n\", (double)(print->%s));\n", sig->name, sig->name);
-	return fprintf(o, "\tr = fprintf(data, \"%s = (wire: %%.0f)\\n\", (double)(print->%s));\n", sig->name, sig->name);
+		return fprintf(o, "\tr = phelper(r, fprintf(data, \"%s = (wire: %%g)\\n\", (double)(print->%s)));\n", sig->name, sig->name);
+	return fprintf(o, "\tr = phelper(r, fprintf(data, \"%s = (wire: %%.0f)\\n\", (double)(print->%s)));\n", sig->name, sig->name);
 
-	/* NEVER REACHED */
+	/* ======= NEVER REACHED ======== */
 
 	/* @todo TODO Fix this, it should print out the encoded values as well */
 	fprintf(o, "\tscaled = decode_can_0x%03x_%s(print);\n", id, sig->name);
@@ -300,6 +296,30 @@ static bool signal_are_min_max_valid(signal_t *sig)
 	return sig->minimum != sig->maximum;
 }
 
+static uint64_t unsigned_max(signal_t *sig) 
+{
+	assert(sig);
+	if (sig->bit_length == 64)
+		return UINT64_MAX;
+	return (1uLL << (sig->bit_length)) - 1uLL;
+}
+
+static int64_t signed_max(signal_t *sig)
+{
+	assert(sig);
+	if (sig->bit_length == 64)
+		return INT64_MAX;
+	return ((1uLL << (sig->bit_length - 1)) - 1uLL);
+}
+
+static int64_t signed_min(signal_t *sig)
+{
+	assert(sig);
+	if (sig->bit_length == 64)
+		return INT64_MIN;
+	return ~signed_max(sig);
+}
+
 /**@todo more advanced type conversion could be done here */
 /**@todo better range generation code, for example the range checks can be
  * eliminated for encoding values where minimum and maximum values are the
@@ -319,7 +339,33 @@ static int signal2scaling_encode(const char *msgname, unsigned id, signal_t *sig
 	fputs("\n{\n", o);
 	fprintf(o, "\trecord->%s = 0;\n", sig->name); // cast!
 	if(signal_are_min_max_valid(sig)) {
-		fprintf(o, "\tif((in < %g) || (in > %g))\n\t\treturn false;\n", sig->minimum, sig->maximum);
+		bool gmax = true;
+		bool gmin = true;
+
+		if (sig->is_signed) {
+			gmin = sig->minimum > signed_min(sig);
+			gmax = sig->maximum < signed_max(sig);
+		} else {
+			gmin = sig->minimum > 0.0;
+			gmax = sig->maximum < unsigned_max(sig);
+		}
+		if (sig->is_floating) {
+			gmax = true;
+			gmax = true;
+		}
+
+	
+		if (gmin)
+			fprintf(o, "\tif(in < %g)\n\t\treturn false;\n", sig->minimum);
+		if (gmax)
+			fprintf(o, "\tif(in > %g)\n\t\treturn false;\n", sig->maximum);
+
+
+		/**@todo remove all pointless range checks */
+		/*if (!(sig->is_signed) && sig->minimum == 0.0)
+			fprintf(o, "\tif(in > %g)\n\t\treturn false;\n", sig->maximum);
+		else
+			fprintf(o, "\tif((in < %g) || (in > %g))\n\t\treturn false;\n", sig->minimum, sig->maximum);*/
 	}
 
 	if(sig->scaling == 0.0)
@@ -352,13 +398,42 @@ static int signal2scaling_decode(const char *msgname, unsigned id, signal_t *sig
 	if(sig->offset != 0.0)
 		fprintf(o, "\trval += %g;\n", sig->offset);
 	if(signal_are_min_max_valid(sig)) {
-		fprintf(o, "\tif((rval >= %g) && (rval <= %g)) {\n", sig->minimum, sig->maximum);
-		fputs("\t\t*out = rval;\n", o);
-		fputs("\t\treturn true;\n", o);
-		fputs("\t} else {\n", o);
-		fprintf(o, "\t\t*out = (%s)0;\n", type);
-		fputs("\t\treturn false;\n", o);
-		fputs("\t}\n", o);
+		bool gmax = true;
+		bool gmin = true;
+
+		if (sig->is_signed) { /**@warning comparison may fail because of limits of double size */
+			gmin = sig->minimum > signed_min(sig);
+			gmax = sig->maximum < signed_max(sig);
+		} else {
+			gmin = sig->minimum > 0.0;
+			gmax = sig->maximum < unsigned_max(sig);
+		}
+		if (sig->is_floating) {
+			gmax = true;
+			gmax = true;
+		}
+
+		if (!gmax && !gmin) {
+			fputs("\t*out = rval;\n", o);
+			fputs("\treturn true;\n", o);
+		} else {
+			if (gmin && gmax) {
+				fprintf(o, "\tif((rval >= %g) && (rval <= %g)) {\n", sig->minimum, sig->maximum);
+			} else if (gmax) {
+				fprintf(o, "\tif(rval <= %g) {\n", sig->maximum);
+			} else if (gmin) {
+				fprintf(o, "\tif(rval >= %g) {\n", sig->minimum);
+			}
+			fputs("\t\t*out = rval;\n", o);
+			fputs("\t\treturn true;\n", o);
+			fputs("\t} else {\n", o);
+			fprintf(o, "\t\t*out = (%s)0;\n", type);
+			fputs("\t\treturn false;\n", o);
+			fputs("\t}\n", o);
+
+		}
+	
+
 	} else {
 		fputs("\t*out = rval;\n", o);
 		fputs("\treturn true;\n", o);
@@ -594,7 +669,7 @@ static int msg2h(can_msg_t *msg, FILE *h, bool generate_print, bool generate_pac
 	char name[MAX_NAME_LENGTH] = {0};
 	make_name(name, MAX_NAME_LENGTH, msg->name, msg->id);
 
-	/**@todo add time stamp information to struct */
+	/**@todo add time stamp information of when the message arrived to struct */
 	fprintf(h, "typedef struct {\n" );
 
 	for(size_t i = 0; i < msg->signal_count; i++)
@@ -634,6 +709,10 @@ static const char *cfunctions =
 "\tx = (x & 0x0000FFFF0000FFFF) << 16 | (x & 0xFFFF0000FFFF0000) >> 16;\n"
 "\tx = (x & 0x00FF00FF00FF00FF) << 8  | (x & 0xFF00FF00FF00FF00) >> 8;\n"
 "\treturn x;\n"
+"}\n\n"
+"static inline int phelper(int r, int print_return_value)\n"
+"{\n"
+"	return ((r >= 0) && (print_return_value >= 0)) ? r + print_return_value : -1;\n"
 "}\n\n";
 
 static int message_compare_function(const void *a, const void *b)
