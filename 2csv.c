@@ -37,10 +37,10 @@ static int msg2csv(can_msg_t *msg, FILE *o)
 		fprintf(o, "%u, ", sig->start_bit);
 		fprintf(o, "%u, ", sig->bit_length);
 		fprintf(o, "%s, ", sig->endianess == endianess_motorola_e ? "motorola" : "intel");
-		fprintf(o, "%f, ", sig->scaling);
-		fprintf(o, "%f, ", sig->offset);
-		fprintf(o, "%f, ", sig->minimum);
-		fprintf(o, "%f, ", sig->maximum);
+		fprintf(o, "%g, ", sig->scaling);
+		fprintf(o, "%g, ", sig->offset);
+		fprintf(o, "%g, ", sig->minimum);
+		fprintf(o, "%g, ", sig->maximum);
 		fprintf(o, "%s, ", sig->is_signed ? "true" : "false");
 		bool have_units = false;
 		const char *units = sig->units;

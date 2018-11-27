@@ -167,7 +167,7 @@ static int comment(signal_t *sig, FILE *o)
 {
 	assert(sig);
 	assert(o);
-	return fprintf(o, "\t/* %s: start-bit %u, length %u, endianess %s, scaling %f, offset %f */\n",
+	return fprintf(o, "\t/* %s: start-bit %u, length %u, endianess %s, scaling %g, offset %g */\n",
 			sig->name,
 			sig->start_bit,
 			sig->bit_length,
@@ -254,7 +254,7 @@ static int signal2print(signal_t *sig, unsigned id, FILE *o)
 	/*super lazy*/
 
 	if(sig->is_floating)
-		return fprintf(o, "\tr = fprintf(data, \"%s = (wire: %%f)\\n\", (double)(print->%s));\n", sig->name, sig->name);
+		return fprintf(o, "\tr = fprintf(data, \"%s = (wire: %%g)\\n\", (double)(print->%s));\n", sig->name, sig->name);
 	return fprintf(o, "\tr = fprintf(data, \"%s = (wire: %%.0f)\\n\", (double)(print->%s));\n", sig->name, sig->name);
 
 	/* NEVER REACHED */
@@ -262,7 +262,7 @@ static int signal2print(signal_t *sig, unsigned id, FILE *o)
 	/* @todo TODO Fix this, it should print out the encoded values as well */
 	fprintf(o, "\tscaled = decode_can_0x%03x_%s(print);\n", id, sig->name);
 	if(sig->is_floating)
-		return fprintf(o, "\tr = fprintf(data, \"%s = %%.3f (wire: %%f)\\n\", scaled, (double)(print->%s));\n",
+		return fprintf(o, "\tr = fprintf(data, \"%s = %%.3f (wire: %%g)\\n\", scaled, (double)(print->%s));\n",
 				sig->name, sig->name);
 	return fprintf(o, "\tr = fprintf(data, \"%s = %%.3f (wire: %%.0f)\\n\", scaled, (double)(print->%s));\n",
 			sig->name, sig->name);
@@ -319,15 +319,15 @@ static int signal2scaling_encode(const char *msgname, unsigned id, signal_t *sig
 	fputs("\n{\n", o);
 	fprintf(o, "\trecord->%s = 0;\n", sig->name); // cast!
 	if(signal_are_min_max_valid(sig)) {
-		fprintf(o, "\tif((in < %f) || (in > %f))\n\t\treturn false;\n", sig->minimum, sig->maximum);
+		fprintf(o, "\tif((in < %g) || (in > %g))\n\t\treturn false;\n", sig->minimum, sig->maximum);
 	}
 
 	if(sig->scaling == 0.0)
 		error("invalid scaling factor (fix your DBC file)");
 	if(sig->offset != 0.0)
-		fprintf(o, "\tin += %f;\n", -1.0 * sig->offset);
+		fprintf(o, "\tin += %g;\n", -1.0 * sig->offset);
 	if(sig->scaling != 1.0)
-		fprintf(o, "\tin *= %f;\n", 1.0 / sig->scaling);
+		fprintf(o, "\tin *= %g;\n", 1.0 / sig->scaling);
 	fprintf(o, "\trecord->%s = in;\n", sig->name); // cast!
 	return fputs("\treturn true;\n}\n\n", o);
 }
@@ -348,11 +348,11 @@ static int signal2scaling_decode(const char *msgname, unsigned id, signal_t *sig
 	if(sig->scaling == 0.0)
 		error("invalid scaling factor (fix your DBC file)");
 	if(sig->scaling != 1.0)
-		fprintf(o, "\trval *= %f;\n", sig->scaling);
+		fprintf(o, "\trval *= %g;\n", sig->scaling);
 	if(sig->offset != 0.0)
-		fprintf(o, "\trval += %f;\n", sig->offset);
+		fprintf(o, "\trval += %g;\n", sig->offset);
 	if(signal_are_min_max_valid(sig)) {
-		fprintf(o, "\tif((rval >= %f) && (rval <= %f)) {\n", sig->minimum, sig->maximum);
+		fprintf(o, "\tif((rval >= %g) && (rval <= %g)) {\n", sig->minimum, sig->maximum);
 		fputs("\t\t*out = rval;\n", o);
 		fputs("\t\treturn true;\n", o);
 		fputs("\t} else {\n", o);
