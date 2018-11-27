@@ -48,10 +48,10 @@
         <xs:element name="startbit" type="startbit"/>
         <xs:element name="bitlength" type="bitlength"/>
         <xs:element name="endianess" type="endianess"/>
-        <xs:element name="scaling" type="xs:decimal"/>
-        <xs:element name="offset" type="xs:decimal"/>
-        <xs:element name="minimum" type="xs:decimal"/>
-        <xs:element name="maximum" type="xs:decimal"/>
+        <xs:element name="scaling" type="xs:float"/>
+        <xs:element name="offset" type="xs:float"/>
+        <xs:element name="minimum" type="xs:float"/>
+        <xs:element name="maximum" type="xs:float"/>
         <xs:element name="signed" type="xs:boolean"/>
         <xs:element name="floating" type="xs:unsignedInt"/>
 	<xs:element name="units" type="xs:string"/>
