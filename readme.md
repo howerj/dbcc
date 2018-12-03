@@ -41,6 +41,13 @@ conditions and invariants).
 * The tool should run on Windows and Linux with no modification.
 * No external dependencies should brought into the project.
 
+## Notes on generated code
+
+* If you want a specific format in the generated code, integrate [indent][]
+into you toolchain instead of trying to change the code generator.
+* The output of the generated code is not stable, it may change from commit to
+commit, download and maintain a specific version if you want stability.
+
 ## DBC file specification
 
 For a specification, as I understand it, of the DBC file format, see [dbc.md][]. 
@@ -55,13 +62,16 @@ There is a [Vim][] syntax file for DBC files in the project, called [dbc.vim][]
 As well as [C][], [XML][] can be generated, the project contains an [XSD][] and
 [XSLT][] file for the generated XML.
 
-## CSV Generation
-
-A flat CSV file can be generated, which is easier to import into Excel.
-
 ## BSM (beSTORM Module) Generation
 
 An XML based file that can be imported into Beyond Security's beSTORM and used to test CAN BUS infrastructure.
+
+* Note: May be replaced with an [XSLT][] in the future, deriving from the
+[XML][] output. The BSM output is itself and XML file.
+
+## CSV Generation
+
+A flat CSV file can be generated, which is easier to import into Excel.
 
 ## Operation
 
@@ -92,8 +102,9 @@ This affects numbers larger than 2^53.
 * Find/make more CAN database examples
 * There are two pieces of information that are useful to any CAN stack for
 received messages; the time stamp of the received message, and the status
-(error CRC/timeout, message okay, or message never set). These conditions are
-not accounted for.
+(error CRC/timeout, message okay, or message never set). This information could
+be included in the generated C code.
+
 
 [DBC]: http://vector.com/vi_candb_en.html
 [C]: https://en.wikipedia.org/wiki/C_%28programming_language%29
