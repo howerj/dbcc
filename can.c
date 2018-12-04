@@ -45,6 +45,17 @@ static void can_msg_delete(can_msg_t *msg)
 	free(msg);
 }
 
+static void val_delete(val_list_t *val)
+{
+    if(!val)
+        return;
+    for(size_t i = 0; i < val->val_list_item_count; i++) {
+        free(val->val_list_items[i]->name);
+        free(val->val_list_items[i]);
+    }
+    free(val);
+}
+
 static void y_mx_c(mpc_ast_t *ast, signal_t *sig)
 {
 	assert(ast && sig);
@@ -267,9 +278,11 @@ dbc_t *dbc_new(void)
 void dbc_delete(dbc_t *dbc)
 {
 	if(!dbc)
-		return;
-	for(int i = 0; i < dbc->message_count; i++)
-		can_msg_delete(dbc->messages[i]);
+        return;
+    for(int i = 0; i < dbc->message_count; i++)
+        can_msg_delete(dbc->messages[i]);
+    for(size_t i = 0; i < dbc->val_count; i++)
+        val_delete(dbc->vals[i]);
 	free(dbc);
 }
 
