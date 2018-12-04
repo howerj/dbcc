@@ -22,6 +22,18 @@ typedef enum {
 } numeric_e;
 
 typedef struct {
+	char *name;
+	unsigned value;
+} val_list_item_t;
+
+typedef struct {
+	size_t val_list_item_count;
+	val_list_item_t **val_list_items;
+	unsigned id;   /**< identifier, 11 or 29 bit */
+	char *name;
+} val_list_t;
+
+typedef struct {
 	size_t ecu_count;    /**< ECU count */
 	char *units;         /**< units used */
 	char **ecus;         /**< ECUs sending/receiving */
@@ -40,6 +52,7 @@ typedef struct {
 	bool is_multiplexed; /**< true if this is a multiplexed signal */
 	unsigned switchval;  /**< if is_multiplexed, this will contain the
 			       value that decodes this signal for the multiplexor */
+	val_list_t *val_list;
 } signal_t;
 
 typedef struct {
@@ -56,6 +69,9 @@ typedef struct {
 	bool use_float; /**< floating point conversion routines are needed */
 	int message_count;
 	can_msg_t **messages;
+
+	val_list_t **vals;
+	size_t val_count;
 } dbc_t;
 
 dbc_t *ast2dbc(mpc_ast_t *ast);
