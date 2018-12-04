@@ -204,8 +204,26 @@ static val_list_t *ast2val(mpc_ast_t *top, mpc_ast_t *ast)
 			i++;
 		}
 	}
+
 	val->val_list_item_count = j;
-	val->val_list_items = items;
+    val->val_list_items = items;
+
+    // sort the value items by value
+    if (val->val_list_item_count) {
+        bool bFlip = false;
+        do {
+            bFlip = false;
+            for (size_t i = 0; i < val->val_list_item_count - 1; i++) {
+                if (val->val_list_items[i]->value > val->val_list_items[i + 1]->value) {
+                    val_list_item_t *tmp = val->val_list_items[i];
+                    val->val_list_items[i] = val->val_list_items[i + 1];
+                    val->val_list_items[i + 1] = tmp;
+                    bFlip = true;
+                }
+            }
+        } while (bFlip);
+    }
+
 	return val;
 }
 
@@ -279,10 +297,14 @@ void dbc_delete(dbc_t *dbc)
 {
 	if(!dbc)
         return;
-    for(int i = 0; i < dbc->message_count; i++)
+    for(int i = 0; i < dbc->message_count; i++) {
         can_msg_delete(dbc->messages[i]);
-    for(size_t i = 0; i < dbc->val_count; i++)
+    }
+
+    for(size_t i = 0; i < dbc->val_count; i++) {
         val_delete(dbc->vals[i]);
+    }
+
 	free(dbc);
 }
 
@@ -304,7 +326,7 @@ dbc_t *ast2dbc(mpc_ast_t *ast)
 				d->vals[j++] = ast2val(ast, val_ast);
 				i++;
 			}
-		}
+        }
 	}
 
 	int index     = mpc_ast_get_index_lb(ast, "messages|>", 0);
