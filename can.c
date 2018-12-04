@@ -315,18 +315,20 @@ dbc_t *ast2dbc(mpc_ast_t *ast)
 	// find and store the vals into the dbc: they will be assigned to
 	// signals later
 	mpc_ast_t *vals_ast = mpc_ast_get_child_lb(ast, "vals|>", 0);
-	d->val_count = vals_ast->children_num;
-	d->vals = allocate(sizeof(*d->vals) * (d->val_count+1));
-	if (d->val_count) {
-		int j = 0;
-		for(int i = 0; i >= 0;) {
-			i = mpc_ast_get_index_lb(vals_ast, "val|>", i);
-			if(i >= 0) {
-				mpc_ast_t *val_ast = mpc_ast_get_child_lb(vals_ast, "val|>", i);
-				d->vals[j++] = ast2val(ast, val_ast);
-				i++;
+	if (vals_ast) {
+		d->val_count = vals_ast->children_num;
+		d->vals = allocate(sizeof(*d->vals) * (d->val_count+1));
+		if (d->val_count) {
+			int j = 0;
+			for(int i = 0; i >= 0;) {
+				i = mpc_ast_get_index_lb(vals_ast, "val|>", i);
+				if(i >= 0) {
+					mpc_ast_t *val_ast = mpc_ast_get_child_lb(vals_ast, "val|>", i);
+					d->vals[j++] = ast2val(ast, val_ast);
+					i++;
+				}
 			}
-        }
+		}
 	}
 
 	int index     = mpc_ast_get_index_lb(ast, "messages|>", 0);
