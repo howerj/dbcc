@@ -206,23 +206,23 @@ static val_list_t *ast2val(mpc_ast_t *top, mpc_ast_t *ast)
 	}
 
 	val->val_list_item_count = j;
-    val->val_list_items = items;
+	val->val_list_items = items;
 
-    // sort the value items by value
-    if (val->val_list_item_count) {
-        bool bFlip = false;
-        do {
-            bFlip = false;
-            for (size_t i = 0; i < val->val_list_item_count - 1; i++) {
-                if (val->val_list_items[i]->value > val->val_list_items[i + 1]->value) {
-                    val_list_item_t *tmp = val->val_list_items[i];
-                    val->val_list_items[i] = val->val_list_items[i + 1];
-                    val->val_list_items[i + 1] = tmp;
-                    bFlip = true;
-                }
-            }
-        } while (bFlip);
-    }
+	// sort the value items by value
+	if (val->val_list_item_count) {
+		bool bFlip = false;
+		do {
+			bFlip = false;
+			for (size_t i = 0; i < val->val_list_item_count - 1; i++) {
+				if (val->val_list_items[i]->value > val->val_list_items[i + 1]->value) {
+					val_list_item_t *tmp = val->val_list_items[i];
+					val->val_list_items[i] = val->val_list_items[i + 1];
+					val->val_list_items[i + 1] = tmp;
+					bFlip = true;
+				}
+			}
+		} while (bFlip);
+	}
 
 	return val;
 }
@@ -240,7 +240,7 @@ static can_msg_t *ast2msg(mpc_ast_t *top, mpc_ast_t *ast, dbc_t *dbc)
 	c->ecu  = duplicate(ecu->contents);
 	int r = sscanf(dlc->contents, "%u", &c->dlc);
 	assert(r == 1);
-	r = sscanf(id->contents,  "%u", &c->id);
+	r = sscanf(id->contents,  "%lu", &c->id);
 	assert(r == 1);
 
 	/**@todo make test cases with no signals, and the like*/
@@ -296,14 +296,12 @@ dbc_t *dbc_new(void)
 void dbc_delete(dbc_t *dbc)
 {
 	if(!dbc)
-        return;
-    for(int i = 0; i < dbc->message_count; i++) {
-        can_msg_delete(dbc->messages[i]);
-    }
+		return;
+	for (size_t i = 0; i < dbc->message_count; i++)
+		can_msg_delete(dbc->messages[i]);
 
-    for(size_t i = 0; i < dbc->val_count; i++) {
-        val_delete(dbc->vals[i]);
-    }
+	for (size_t i = 0; i < dbc->val_count; i++)
+		val_delete(dbc->vals[i]);
 
 	free(dbc);
 }

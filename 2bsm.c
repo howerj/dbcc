@@ -43,12 +43,12 @@ Add:
 "
 
 #define BSM_MESSAGE_PREFIX "\n\
-						<SP Name=\"CAN Send (%s - %d)\" Library=\"CAN Interface.dll\" Procedure=\"Write\">\n\
+						<SP Name=\"CAN Send (%s - %lu)\" Library=\"CAN Interface.dll\" Procedure=\"Write\">\n\
 							<S Name=\"HANDLE\">\n\
 								<PC Name=\"HANDLE\" ConditionedName=\"CAN Open\" Parameter=\"HANDLE\" />\n\
 							</S>\n\
 							<S Name=\"Identifier\">\n\
-								<C Name=\"Identifier\">%d</C>\n\
+								<C Name=\"Identifier\">%lu</C>\n\
 							</S>\n\
 							<S ParamName=\"Data\" Name=\"Message\">\n\
 								<BC Name=\"Message Bits\" PaddingSize=\"%d\" PaddingBit=\"0\">\n\
@@ -172,6 +172,7 @@ static int signal2bsm(signal_t * sig, FILE * o, unsigned depth)
 {
 	assert(sig);
 	assert(o);
+	UNUSED(depth); /**@todo use depth */
 
 	if (sig->bit_length > 16) {
 		// We need to split it into two, because we assume a <BB> is a 16 bit element (0xXX 0x00)
@@ -302,7 +303,7 @@ int dbc2bsm(dbc_t * dbc, FILE * output, bool use_time_stamps)
 	if (use_time_stamps)
 		comment(output, 0, "Generated on: %s", asctime(timeinfo));
 
-	for (int i = 0; i < dbc->message_count; i++) {
+	for (size_t i = 0; i < dbc->message_count; i++) {
 		if (msg2bsm(dbc->messages[i], output, 1) < 0) {
 			return -1;
 		}

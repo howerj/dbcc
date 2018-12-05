@@ -56,22 +56,21 @@ typedef struct {
 } signal_t;
 
 typedef struct {
-	char *name;    /**< can message name */
-	char *ecu;     /**< name of ECU @todo check this makes sense */
-	signal_t **sigs; /**< signals that can decode/encode this message*/
-	uint64_t data; /**< data, up to eight bytes, not used for generation */
+	char *name;          /**< can message name */
+	char *ecu;           /**< name of ECU @todo check this makes sense */
+	signal_t **sigs;     /**< signals that can decode/encode this message*/
+	uint64_t data;       /**< data, up to eight bytes, not used for generation */
 	size_t signal_count; /**< number of signals */
-	unsigned dlc;  /**< length of CAN message 0-8 bytes */
-	unsigned id;   /**< identifier, 11 or 29 bit */
+	unsigned dlc;        /**< length of CAN message 0-8 bytes */
+	unsigned long id;    /**< identifier, 11 or 29 bit */
 } can_msg_t;
 
 typedef struct {
-	bool use_float; /**< floating point conversion routines are needed */
-	int message_count;
-	can_msg_t **messages;
-
-	val_list_t **vals;
-	size_t val_count;
+	bool use_float;       /**< true if floating point conversion routines are needed */
+	size_t message_count; /**< count of messages */
+	can_msg_t **messages; /**< list of messages */
+	size_t val_count;     /**< count of vals */
+	val_list_t **vals;    /**< value list; used for enumerations in DBC file */
 } dbc_t;
 
 dbc_t *ast2dbc(mpc_ast_t *ast);

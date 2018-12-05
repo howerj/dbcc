@@ -203,7 +203,7 @@ int dbc2xml(dbc_t *dbc, FILE *output, bool use_time_stamps)
 		comment(output, 0, "Generated on: %s", asctime(timeinfo));
 
 	fprintf(output, "<candb>\n");
-	for(int i = 0; i < dbc->message_count; i++)
+	for (size_t i = 0; i < dbc->message_count; i++)
 		if(msg2xml(dbc->messages[i], output, 1) < 0)
 			return -1;
 	if(fprintf(output, "</candb>\n") < 0)
