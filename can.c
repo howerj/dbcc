@@ -49,13 +49,13 @@ static void can_msg_delete(can_msg_t *msg)
 
 static void val_delete(val_list_t *val)
 {
-    if(!val)
-        return;
-    for(size_t i = 0; i < val->val_list_item_count; i++) {
-        free(val->val_list_items[i]->name);
-        free(val->val_list_items[i]);
-    }
-    free(val);
+	if(!val)
+		return;
+	for(size_t i = 0; i < val->val_list_item_count; i++) {
+		free(val->val_list_items[i]->name);
+		free(val->val_list_items[i]);
+	}
+	free(val);
 }
 
 static void y_mx_c(mpc_ast_t *ast, signal_t *sig)
@@ -208,23 +208,23 @@ static val_list_t *ast2val(mpc_ast_t *top, mpc_ast_t *ast)
 	}
 
 	val->val_list_item_count = j;
-    val->val_list_items = items;
+	val->val_list_items = items;
 
-    // sort the value items by value
-    if (val->val_list_item_count) {
-        bool bFlip = false;
-        do {
-            bFlip = false;
-            for (size_t i = 0; i < val->val_list_item_count - 1; i++) {
-                if (val->val_list_items[i]->value > val->val_list_items[i + 1]->value) {
-                    val_list_item_t *tmp = val->val_list_items[i];
-                    val->val_list_items[i] = val->val_list_items[i + 1];
-                    val->val_list_items[i + 1] = tmp;
-                    bFlip = true;
-                }
-            }
-        } while (bFlip);
-    }
+	// sort the value items by value
+	if (val->val_list_item_count) {
+		bool bFlip = false;
+		do {
+			bFlip = false;
+			for (size_t i = 0; i < val->val_list_item_count - 1; i++) {
+				if (val->val_list_items[i]->value > val->val_list_items[i + 1]->value) {
+					val_list_item_t *tmp = val->val_list_items[i];
+					val->val_list_items[i] = val->val_list_items[i + 1];
+					val->val_list_items[i + 1] = tmp;
+					bFlip = true;
+				}
+			}
+		} while (bFlip);
+	}
 
 	return val;
 }
@@ -298,14 +298,14 @@ dbc_t *dbc_new(void)
 void dbc_delete(dbc_t *dbc)
 {
 	if(!dbc)
-        return;
-    for(int i = 0; i < dbc->message_count; i++) {
-        can_msg_delete(dbc->messages[i]);
-    }
+		return;
+	for(int i = 0; i < dbc->message_count; i++) {
+		can_msg_delete(dbc->messages[i]);
+	}
 
-    for(size_t i = 0; i < dbc->val_count; i++) {
-        val_delete(dbc->vals[i]);
-    }
+	for(size_t i = 0; i < dbc->val_count; i++) {
+		val_delete(dbc->vals[i]);
+	}
 
 	free(dbc);
 }
@@ -324,6 +324,16 @@ void assign_comment_to_signal(dbc_t *dbc, const char *comment, unsigned message_
 	}
 }
 
+void assign_comment_to_message(dbc_t *dbc, const char *comment, unsigned message_id)
+{
+	for (int i = 0; i<dbc->message_count; i++) {
+		if (dbc->messages[i]->id == message_id) {
+			dbc->messages[i]->comment = duplicate(comment);
+			return;
+		}
+	}
+}
+
 dbc_t *ast2dbc(mpc_ast_t *ast)
 {
 	dbc_t *d = dbc_new();
@@ -336,7 +346,7 @@ dbc_t *ast2dbc(mpc_ast_t *ast)
 		d->vals = allocate(sizeof(*d->vals) * (d->val_count+1));
 		if (d->val_count) {
 			int j = 0;
-            for(int i = 0; i >= 0;) {
+			for(int i = 0; i >= 0;) {
 				i = mpc_ast_get_index_lb(vals_ast, "val|>", i);
 				if(i >= 0) {
 					mpc_ast_t *val_ast = mpc_ast_get_child_lb(vals_ast, "val|>", i);
@@ -388,23 +398,31 @@ dbc_t *ast2dbc(mpc_ast_t *ast)
 					mpc_ast_t *comment_ast = mpc_ast_get_child_lb(comments_ast, "comment|>", i);
 					if (comments_ast
 						&& comments_ast->children_num > 3) {
-						if (strcmp(comment_ast->children[2]->contents, "SG_") == 0) {
-							// comment assigned to a signal
+						bool to_message = (strcmp(comment_ast->children[2]->contents, "BO_") == 0);
+						bool to_signal = (strcmp(comment_ast->children[2]->contents, "SG_") == 0);
+						if (to_signal || to_message) {
+
 							mpc_ast_t *id   = mpc_ast_get_child(comment_ast, "id|integer|regex");
 							unsigned message_id;
 							int r = sscanf(id->contents, "%u", &message_id);
 							assert(r == 1);
 
 							mpc_ast_t *comment = mpc_ast_get_child(comment_ast, "comment_string|string|>");
-							mpc_ast_t *name = mpc_ast_get_child(comment_ast, "name|ident|regex");
-
-							assign_comment_to_signal(d,
-									comment->children[1]->contents,
-									message_id,
-									name->contents
-									);
-						} else if (strcmp(comment_ast->children[2]->contents, "BO_") == 0) {
-							// comment assigned to a message
+							if (to_signal) {
+								// comment assigned to a signal
+								mpc_ast_t *signal_name = mpc_ast_get_child(comment_ast, "name|ident|regex");
+								assign_comment_to_signal(d,
+										comment->children[1]->contents,
+										message_id,
+										signal_name->contents
+										);
+							} else  {
+								// comment assigned to a message
+								assign_comment_to_message(d,
+										comment->children[1]->contents,
+										message_id
+										);
+							}
 						}
 					}
 					i++;
