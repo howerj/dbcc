@@ -286,9 +286,17 @@ static int signal2type(signal_t *sig, FILE *o)
 		type = length == 64 ? "double" : "float";
 	}
 
-	return fprintf(o, "\t%s %s; /*scaling %.1f, offset %.1f, units %s %s*/\n",
-			type, sig->name, sig->scaling, sig->offset, sig->units[0] ? sig->units : "none",
-			sig->is_floating ? ", floating" : "");
+	if (sig->comment) {
+		fprintf(o, "\t/* %s: %s */\n", sig->name, sig->comment);
+		return fprintf(o, "\t/* scaling %.1f, offset %.1f, units %s %s */\n\t%s %s;\n",
+				sig->scaling, sig->offset, sig->units[0] ? sig->units : "none",
+				sig->is_floating ? ", floating" : "",
+				type, sig->name);
+	} else {
+		return fprintf(o, "\t%s %s; /* scaling %.1f, offset %.1f, units %s %s */\n",
+				type, sig->name, sig->scaling, sig->offset, sig->units[0] ? sig->units : "none",
+				sig->is_floating ? ", floating" : "");
+	}
 }
 
 static bool signal_are_min_max_valid(signal_t *sig) 
@@ -759,6 +767,10 @@ static int msg2h_types(dbc_t *dbc, FILE *h)
 		can_msg_t *msg = dbc->messages[i];
 		char name[MAX_NAME_LENGTH] = {0};
 		make_name(name, MAX_NAME_LENGTH, msg->name, msg->id);
+
+		if (msg->comment)
+			fprintf(h, "/* %s */\n", msg->comment);
+
 		fprintf(h, "typedef struct {\n" );
 		for (size_t i = 0; i < msg->signal_count; i++)
 			if (signal2type(msg->sigs[i], h) < 0)
