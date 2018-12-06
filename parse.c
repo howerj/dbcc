@@ -46,7 +46,7 @@ static mpc_ast_t *_parse_dbc_file_by_handle(const char *name, FILE *handle);
 	X(attribute_definition, "attribute_definition")\
 	X(attribute_value,      "attribute_value")\
 	X(comment,              "comment")\
-    X(comments,             "comments")\
+	X(comments,             "comments")\
 	X(comment_string,       "comment_string")\
 	X(dbc,                  "dbc")
 
@@ -92,8 +92,8 @@ static const char *dbc_grammar =
 " types                : <s>* <ident> (<whatever>|<s>)+ ';' <n> ; \n"
 " values               : \"VAL_TABLE_\" (<whatever>|<s>)* ';' <n> ; \n" /**@note don't care about this, for now*/
 " val_cnt              : <integer> ; \n"
-" val_name			   : <string> ; \n"
-" val_index			   : <integer> ; \n"
+" val_name             : <string> ; \n"
+" val_index            : <integer> ; \n"
 " attribute_definition : \"BA_DEF_\" (<whatever>|<s>|',')* ';' <n> ; \n" /**@note don't care about this, for now*/
 " attribute_value      : \"BA_\" (<whatever>|<s>|',')* ';' <n> ; \n" /**@note don't care about this, for now*/
 " val_item             : (<integer> <s>+ <string> <s>+) ; \n"

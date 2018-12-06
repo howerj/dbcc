@@ -21,8 +21,7 @@ TARGET  := dbcc
 all: ${TARGET}
 
 %.o: %.c
-	@echo cc ${CFLAGS} ${INCLUDES} $< -c -o $@
-	@${CC} ${CFLAGS} ${INCLUDES} $< -c -o $@
+	${CC} ${CFLAGS} ${INCLUDES} $< -c -o $@
 
 %.1: %.md
 	pandoc --standalone --to man -o$@ $<
@@ -34,8 +33,7 @@ all: ${TARGET}
 	pandoc -o $@ $<
 
 ${TARGET}: ${OBJECTS}
-	@echo ${CC} ${CFLAGS} $^ ${LDFLAGS} $< -o $@
-	@${CC} ${CFLAGS} $^ ${LDFLAGS} -o $@
+	${CC} ${CFLAGS} $^ ${LDFLAGS} -o $@
 
 ${OUTDIR}/%.xml: %.dbc ${TARGET}
 	./${TARGET} ${DBCCFLAGS} -x -o ${OUTDIR} $<
