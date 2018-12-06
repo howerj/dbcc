@@ -25,6 +25,7 @@ static void signal_delete(signal_t *signal)
 	free(signal->name);
 	free(signal->ecus);
 	free(signal->units);
+	free(signal->comment);
 	free(signal);
 }
 
@@ -42,18 +43,19 @@ static void can_msg_delete(can_msg_t *msg)
 	free(msg->sigs);
 	free(msg->name);
 	free(msg->ecu);
+	free(msg->comment);
 	free(msg);
 }
 
 static void val_delete(val_list_t *val)
 {
-    if(!val)
-        return;
-    for(size_t i = 0; i < val->val_list_item_count; i++) {
-        free(val->val_list_items[i]->name);
-        free(val->val_list_items[i]);
-    }
-    free(val);
+	if(!val)
+		return;
+	for(size_t i = 0; i < val->val_list_item_count; i++) {
+		free(val->val_list_items[i]->name);
+		free(val->val_list_items[i]);
+	}
+	free(val);
 }
 
 static void y_mx_c(mpc_ast_t *ast, signal_t *sig)
@@ -306,6 +308,30 @@ void dbc_delete(dbc_t *dbc)
 	free(dbc);
 }
 
+void assign_comment_to_signal(dbc_t *dbc, const char *comment, unsigned message_id, const char * signal_name)
+{
+	for (size_t i = 0; i<dbc->message_count; i++) {
+		if (dbc->messages[i]->id == message_id) {
+			for (size_t j = 0; j<dbc->messages[i]->signal_count; j++) {
+				if (strcmp(dbc->messages[i]->sigs[j]->name, signal_name) == 0) {
+					dbc->messages[i]->sigs[j]->comment = duplicate(comment);
+					return;
+				}
+			}
+		}
+	}
+}
+
+void assign_comment_to_message(dbc_t *dbc, const char *comment, unsigned message_id)
+{
+	for (size_t i = 0; i<dbc->message_count; i++) {
+		if (dbc->messages[i]->id == message_id) {
+			dbc->messages[i]->comment = duplicate(comment);
+			return;
+		}
+	}
+}
+
 dbc_t *ast2dbc(mpc_ast_t *ast)
 {
 	dbc_t *d = dbc_new();
@@ -358,6 +384,50 @@ dbc_t *ast2dbc(mpc_ast_t *ast)
 	int i = mpc_ast_get_index_lb(ast, "sigval|>", 0);
 	if (i >= 0)
 		d->use_float = true;
+
+	// find and store the vals into the dbc: they will be assigned to
+	// signals later
+	mpc_ast_t *comments_ast = mpc_ast_get_child_lb(ast, "comments|>", 0);
+	if (comments_ast) {
+		if (comments_ast->children_num) {
+			for(int i = 0; i >= 0;) {
+				i = mpc_ast_get_index_lb(comments_ast, "comment|>", i);
+				if(i >= 0) {
+					mpc_ast_t *comment_ast = mpc_ast_get_child_lb(comments_ast, "comment|>", i);
+					if (comments_ast
+						&& comments_ast->children_num > 3) {
+						bool to_message = (strcmp(comment_ast->children[2]->contents, "BO_") == 0);
+						bool to_signal = (strcmp(comment_ast->children[2]->contents, "SG_") == 0);
+						if (to_signal || to_message) {
+
+							mpc_ast_t *id   = mpc_ast_get_child(comment_ast, "id|integer|regex");
+							unsigned message_id;
+							int r = sscanf(id->contents, "%u", &message_id);
+							assert(r == 1);
+
+							mpc_ast_t *comment = mpc_ast_get_child(comment_ast, "comment_string|string|>");
+							if (to_signal) {
+								// comment assigned to a signal
+								mpc_ast_t *signal_name = mpc_ast_get_child(comment_ast, "name|ident|regex");
+								assign_comment_to_signal(d,
+										comment->children[1]->contents,
+										message_id,
+										signal_name->contents
+										);
+							} else  {
+								// comment assigned to a message
+								assign_comment_to_message(d,
+										comment->children[1]->contents,
+										message_id
+										);
+							}
+						}
+					}
+					i++;
+				}
+			}
+		}
+	}
 
 	return d;
 }

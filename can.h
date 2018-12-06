@@ -53,6 +53,7 @@ typedef struct {
 	unsigned switchval;  /**< if is_multiplexed, this will contain the
 			       value that decodes this signal for the multiplexor */
 	val_list_t *val_list;
+	char *comment;
 } signal_t;
 
 typedef struct {
@@ -63,6 +64,7 @@ typedef struct {
 	size_t signal_count; /**< number of signals */
 	unsigned dlc;        /**< length of CAN message 0-8 bytes */
 	unsigned long id;    /**< identifier, 11 or 29 bit */
+	char *comment;
 } can_msg_t;
 
 typedef struct {
