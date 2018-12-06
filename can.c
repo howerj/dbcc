@@ -310,7 +310,7 @@ void dbc_delete(dbc_t *dbc)
 
 void assign_comment_to_signal(dbc_t *dbc, const char *comment, unsigned message_id, const char * signal_name)
 {
-	for (int i = 0; i<dbc->message_count; i++) {
+	for (size_t i = 0; i<dbc->message_count; i++) {
 		if (dbc->messages[i]->id == message_id) {
 			for (size_t j = 0; j<dbc->messages[i]->signal_count; j++) {
 				if (strcmp(dbc->messages[i]->sigs[j]->name, signal_name) == 0) {
@@ -324,7 +324,7 @@ void assign_comment_to_signal(dbc_t *dbc, const char *comment, unsigned message_
 
 void assign_comment_to_message(dbc_t *dbc, const char *comment, unsigned message_id)
 {
-	for (int i = 0; i<dbc->message_count; i++) {
+	for (size_t i = 0; i<dbc->message_count; i++) {
 		if (dbc->messages[i]->id == message_id) {
 			dbc->messages[i]->comment = duplicate(comment);
 			return;
