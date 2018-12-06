@@ -242,7 +242,7 @@ static can_msg_t *ast2msg(mpc_ast_t *top, mpc_ast_t *ast, dbc_t *dbc)
 	c->ecu  = duplicate(ecu->contents);
 	int r = sscanf(dlc->contents, "%u", &c->dlc);
 	assert(r == 1);
-	r = sscanf(id->contents,  "%u", &c->id);
+	r = sscanf(id->contents,  "%lu", &c->id);
 	assert(r == 1);
 
 	/**@todo make test cases with no signals, and the like*/
@@ -299,13 +299,11 @@ void dbc_delete(dbc_t *dbc)
 {
 	if(!dbc)
 		return;
-	for(int i = 0; i < dbc->message_count; i++) {
+	for (size_t i = 0; i < dbc->message_count; i++)
 		can_msg_delete(dbc->messages[i]);
-	}
 
-	for(size_t i = 0; i < dbc->val_count; i++) {
+	for (size_t i = 0; i < dbc->val_count; i++)
 		val_delete(dbc->vals[i]);
-	}
 
 	free(dbc);
 }

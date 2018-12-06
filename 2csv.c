@@ -32,7 +32,7 @@ static int msg2csv(can_msg_t *msg, FILE *o)
 		}
 
 		/* "MSG, ID, DLC, Signal, Start, Length, Endianess, Scaling, Offset, Minimum, Maximum, Signed, Units, Multiplexed */
-		fprintf(o, "%s, %u, %u, ", msg->name, msg->id, msg->dlc);
+		fprintf(o, "%s, %lu, %u, ", msg->name, msg->id, msg->dlc);
 		fprintf(o, "%s, ", sig->name);
 		fprintf(o, "%u, ", sig->start_bit);
 		fprintf(o, "%u, ", sig->bit_length);
@@ -70,7 +70,7 @@ int dbc2csv(dbc_t *dbc, FILE *output)
 	assert(dbc);
 	assert(output);
 	fprintf(output, "MSG, ID, DLC, Signal, Start, Length, Endianess, Scaling, Offset, Minimum, Maximum, Signed, Units, Multiplexed, Floating,\n");
-	for(int i = 0; i < dbc->message_count; i++)
+	for (size_t i = 0; i < dbc->message_count; i++)
 		if(msg2csv(dbc->messages[i], output) < 0)
 			return -1;
 	return 0;

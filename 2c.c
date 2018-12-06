@@ -742,11 +742,11 @@ static int switch_function(FILE *c, dbc_t *dbc, char *function, bool unpack, boo
 		return fprintf(c, ";\n");
 	fprintf(c, "\n{\n");
 	fprintf(c, "\tswitch(id) {\n");
-	for (int i = 0; i < dbc->message_count; i++) {
+	for (size_t i = 0; i < dbc->message_count; i++) {
 		can_msg_t *msg = dbc->messages[i];
 		char name[MAX_NAME_LENGTH] = {0};
 		make_name(name, MAX_NAME_LENGTH, msg->name, msg->id);
-		fprintf(c, "\tcase 0x%03x: return %s_%s(&%s_data, data%s);\n",
+		fprintf(c, "\tcase 0x%03lx: return %s_%s(&%s_data, data%s);\n",
 				msg->id,
 				function,
 				name,
@@ -763,7 +763,7 @@ static int msg2h_types(dbc_t *dbc, FILE *h)
 	assert(dbc);
 
 	/**@todo add time stamp information of when the message arrived to struct */
-	for (int i = 0; i < dbc->message_count; i++) {
+	for (size_t i = 0; i < dbc->message_count; i++) {
 		can_msg_t *msg = dbc->messages[i];
 		char name[MAX_NAME_LENGTH] = {0};
 		make_name(name, MAX_NAME_LENGTH, msg->name, msg->id);
@@ -790,7 +790,7 @@ static int msg2h_god_object(dbc_t *dbc, FILE *h, const char *name)
 	for (size_t i = 0; i < object_name_len; i++)
 		object_name[i] = (isalnum(object_name[i])) ?  tolower(object_name[i]) : '_';
 	fprintf(h, "typedef struct {\n");
-	for (int i = 0; i < dbc->message_count; i++) {
+	for (size_t i = 0; i < dbc->message_count; i++) {
 		fputc('\t', h);
 		if (msg_data_type(h, dbc->messages[i], false) < 0) {
 			r = -1;
@@ -828,7 +828,7 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps,
 	qsort(dbc->messages, dbc->message_count, sizeof(dbc->messages[0]), message_compare_function);
 
 	/* sort by size for better struct packing */
-	for (int i = 0; i < dbc->message_count; i++) {
+	for (size_t i = 0; i < dbc->message_count; i++) {
 		can_msg_t *msg = dbc->messages[i];
 		qsort(msg->sigs, msg->signal_count, sizeof(msg->sigs[0]), signal_compare_function);
 	}
@@ -870,7 +870,7 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps,
 
 	fputs("\n", h);
 
-	for (int i = 0; i < dbc->message_count; i++)
+	for (size_t i = 0; i < dbc->message_count; i++)
 		if (msg2h(dbc->messages[i], h,  generate_print,  generate_pack,  generate_unpack) < 0)
 			return -1;
 
@@ -898,7 +898,7 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps,
 		fputs(float_pack, c);
 
 	if (generate_pack || generate_unpack || generate_print) {
-		for (int i = 0; i < dbc->message_count; i++)
+		for (size_t i = 0; i < dbc->message_count; i++)
 			if (msg_data_type(c, dbc->messages[i], true) < 0)
 				return -1;
 		fputc('\n', c);
@@ -913,7 +913,7 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps,
 	if (generate_print)
 		switch_function(c, dbc, "print", true, false, "FILE*", false);
 
-	for (int i = 0; i < dbc->message_count; i++)
+	for (size_t i = 0; i < dbc->message_count; i++)
 		if (msg2c(dbc->messages[i], c, generate_print, generate_pack, generate_unpack) < 0)
 			return -1;
 
