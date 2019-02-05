@@ -470,6 +470,22 @@ static void make_name(char *newname, size_t maxlen, const char *name, unsigned i
 	snprintf(newname, maxlen-1, "can_0x%03x_%s", id, name);
 }
 
+static signal_t *find_multiplexor(can_msg_t *msg) {
+	assert(msg);
+	signal_t *multiplexor = NULL;
+	for (size_t i = 0; i < msg->signal_count; i++) {
+		signal_t *sig = msg->sigs[i];
+		if (sig->is_multiplexor) {
+			if (multiplexor)
+				error("multiple multiplexor values detected (only one per CAN msg is allowed) for %s", msg->name);
+			multiplexor = sig;
+		}
+		if (sig->is_multiplexed)
+			continue;
+	}
+	return multiplexor;
+}
+
 static signal_t *process_signals_and_find_multiplexer(can_msg_t *msg, FILE *c, const char *name, bool serialize)
 {
 	assert(msg);
@@ -625,6 +641,23 @@ static int msg_print(can_msg_t *msg, FILE *c, const char *name)
 	return 0;
 }
 
+static int msg_dlc_check(can_msg_t *msg) {
+	assert(msg);
+	const unsigned bits = msg->dlc * 8;
+	unsigned used = 0;
+	if (find_multiplexor(msg)) // skip multiplexed messages for now
+		return 0;
+	for (size_t i = 0; i < msg->signal_count; i++) {
+		signal_t *s = msg->sigs[i];
+		used += s->bit_length;
+	}
+	if (used > bits) {
+		warning("Too many signals, not enough bytes (DLC is too low, fix your DBC file): %s", msg->name);
+		return -1;
+	}
+	return 0;
+}
+
 static int msg2c(can_msg_t *msg, FILE *c, bool generate_print, bool generate_pack, bool generate_unpack)
 {
 	assert(msg);
@@ -639,6 +672,11 @@ static int msg2c(can_msg_t *msg, FILE *c, bool generate_print, bool generate_pac
 			motorola_used = true;
 		else
 			intel_used = true;
+
+	/* sanity checks against messages should go here, we could check for;
+	 * - odd min/max values given scaling
+	 * - duplicate signals and messages */
+	msg_dlc_check(msg);
 
 	if (generate_pack && msg_pack(msg, c, name, motorola_used, intel_used) < 0)
 		return -1;

@@ -17,8 +17,8 @@ The current grammar for the DBC parser is as follows:
 	 range     : '[' ( <float> | <integer> ) '|' ( <float> | <integer> ) ']' ;
 	 node      : <ident> ;
 	 nodes     : <node> <s>* ( ',' <s>* <node>)* ;
-	 string    : '"' /[^"]*/ '"'
-	;  unit      : <string> ;
+	 string    : '"' /[^"]*/ '"' ;  
+	 unit      : <string> ;
 	 startbit  : <integer> ;
 	 endianess : '0' | '1' ;
 	 y_mx_c    : '(' <factor> ',' <offset> ')' ;
