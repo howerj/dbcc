@@ -8,12 +8,11 @@
  * and the pack/unpack functions should use data structures instead of
  * big functions with switch statements.
  * @todo Signal status; signal should be set to unknown first, or when there
- * is a timeout. A timestamp should also be processed
+ * is a timeout. A timestamp should also be processed.
  * @todo MISRA C Compliance
- * @todo More intelligence code generation (use 'double' less)
- * @todo Group functionality together, eg: function declarations, variable
- * instantiations, ...
- * @todo Optional variable instantiation
+ * @todo Add (optional) generation of 'asserts' into code, so pointers can
+ * be asserted to be non-NULL, DLCs within range (0-8), ID within ranges (29-bit),
+ * and other properties.
  *
  * This file is quite a mess, but that is not going to change, it is also
  * quite short and seems to do the job. A better solution would be to make a
@@ -51,8 +50,7 @@
 
 static char *float_pack = "\
 /* pack754() -- pack a floating point number into IEEE-754 format */ \n\
-static uint64_t pack754(double f, unsigned bits, unsigned expbits)\n\
-{\n\
+static uint64_t pack754(double f, unsigned bits, unsigned expbits) {\n\
 	if (f == 0.0) /* get this special case out of the way */\n\
 		return signbit(f) ? (1uLL << (bits - 1)) :  0;\n\
 	if (f != f) /* NaN, encoded as Exponent == all-bits-set, Mantissa != 0, Signbit == Do not care */\n\
@@ -91,8 +89,7 @@ static inline uint64_t   pack754_64(double f)   { return   pack754(f, 64, 11); }
 
 static char *float_unpack = "\
 /* unpack754() -- unpack a floating point number from IEEE-754 format */ \n\
-static double unpack754(uint64_t i, unsigned bits, unsigned expbits)\n\
-{\n\
+static double unpack754(uint64_t i, unsigned bits, unsigned expbits) {\n\
 	if (i == 0) return 0.0;\n\
 \n\
 	const uint64_t expset = ((1uLL << expbits) - 1uLL) << (bits - expbits - 1);\n\
@@ -251,8 +248,8 @@ static int signal2print(signal_t *sig, unsigned id, FILE *o)
 {
 	/*super lazy*/
 	if (sig->is_floating)
-		return fprintf(o, "\tr = phelper(r, fprintf(data, \"%s = (wire: %%g)\\n\", (double)(print->%s)));\n", sig->name, sig->name);
-	return fprintf(o, "\tr = phelper(r, fprintf(data, \"%s = (wire: %%.0f)\\n\", (double)(print->%s)));\n", sig->name, sig->name);
+		return fprintf(o, "\tr = print_helper(r, fprintf(data, \"%s = (wire: %%g)\\n\", (double)(print->%s)));\n", sig->name, sig->name);
+	return fprintf(o, "\tr = print_helper(r, fprintf(data, \"%s = (wire: %%.0f)\\n\", (double)(print->%s)));\n", sig->name, sig->name);
 
 	/* ======= NEVER REACHED ======== */
 
@@ -334,7 +331,7 @@ static int64_t signed_min(signal_t *sig)
  * eliminated for encoding values where minimum and maximum values are the
  * same as the integral type used for a given signal. Not only that, but
  * integers should be used instead of floats where possible */
-static int signal2scaling_encode(const char *msgname, unsigned id, signal_t *sig, FILE *o, bool header) 
+static int signal2scaling_encode(const char *msgname, unsigned id, signal_t *sig, FILE *o, bool header, const char *god) 
 {
 	assert(msgname);
 	assert(sig);
@@ -342,10 +339,10 @@ static int signal2scaling_encode(const char *msgname, unsigned id, signal_t *sig
 	const char *type = determine_type(sig->bit_length, sig->is_signed);
 	if (sig->scaling != 1.0 || sig->offset != 0.0)
 		type = "double";
-	fprintf(o, "bool encode_can_0x%03x_%s(%s_t *record, %s in)", id, sig->name, msgname, type);
+	fprintf(o, "int encode_can_0x%03x_%s(can_obj_%s_t *o, %s in)", id, sig->name, god, type);
 	if (header)
 		return fputs(";\n", o);
-	fputs("\n{\n", o);
+	fputs(" {\n", o);
 	if (signal_are_min_max_valid(sig)) {
 		bool gmax = true;
 		bool gmin = true;
@@ -363,11 +360,11 @@ static int signal2scaling_encode(const char *msgname, unsigned id, signal_t *sig
 		}
 
 		if (gmin || gmax)
-			fprintf(o, "\trecord->%s = 0;\n", sig->name); // cast!
+			fprintf(o, "\to->%s.%s = 0;\n", msgname, sig->name); // cast!
 		if (gmin)
-			fprintf(o, "\tif (in < %g)\n\t\treturn false;\n", sig->minimum);
+			fprintf(o, "\tif (in < %g)\n\t\treturn -1;\n", sig->minimum);
 		if (gmax)
-			fprintf(o, "\tif (in > %g)\n\t\treturn false;\n", sig->maximum);
+			fprintf(o, "\tif (in > %g)\n\t\treturn -1;\n", sig->maximum);
 	}
 
 	if (sig->scaling == 0.0)
@@ -376,11 +373,11 @@ static int signal2scaling_encode(const char *msgname, unsigned id, signal_t *sig
 		fprintf(o, "\tin += %g;\n", -1.0 * sig->offset);
 	if (sig->scaling != 1.0)
 		fprintf(o, "\tin *= %g;\n", 1.0 / sig->scaling);
-	fprintf(o, "\trecord->%s = in;\n", sig->name); // cast!
-	return fputs("\treturn true;\n}\n\n", o);
+	fprintf(o, "\to->%s.%s = in;\n", msgname, sig->name); // cast!
+	return fputs("\treturn 0;\n}\n\n", o);
 }
 
-static int signal2scaling_decode(const char *msgname, unsigned id, signal_t *sig, FILE *o, bool header) 
+static int signal2scaling_decode(const char *msgname, unsigned id, signal_t *sig, FILE *o, bool header, const char *god) 
 {
 	assert(msgname);
 	assert(sig);
@@ -388,11 +385,11 @@ static int signal2scaling_decode(const char *msgname, unsigned id, signal_t *sig
 	const char *type = determine_type(sig->bit_length, sig->is_signed);
 	if (sig->scaling != 1.0 || sig->offset != 0.0)
 		type = "double";
-	fprintf(o, "bool decode_can_0x%03x_%s(%s_t *record, %s *out)", id, sig->name, msgname, type);
+	fprintf(o, "int decode_can_0x%03x_%s(can_obj_%s_t *o, %s *out)", id, sig->name, god, type);
 	if (header)
 		return fputs(";\n", o);
-	fputs("\n{\n", o);
-	fprintf(o, "\t%s rval = (%s)(record->%s);\n", type, type, sig->name);
+	fputs(" {\n", o);
+	fprintf(o, "\t%s rval = (%s)(o->%s.%s);\n", type, type, msgname, sig->name);
 	if (sig->scaling == 0.0)
 		error("invalid scaling factor (fix your DBC file)");
 	if (sig->scaling != 1.0)
@@ -417,7 +414,7 @@ static int signal2scaling_decode(const char *msgname, unsigned id, signal_t *sig
 
 		if (!gmax && !gmin) {
 			fputs("\t*out = rval;\n", o);
-			fputs("\treturn true;\n", o);
+			fputs("\treturn 0;\n", o);
 		} else {
 			if (gmin && gmax) {
 				fprintf(o, "\tif ((rval >= %g) && (rval <= %g)) {\n", sig->minimum, sig->maximum);
@@ -427,10 +424,10 @@ static int signal2scaling_decode(const char *msgname, unsigned id, signal_t *sig
 				fprintf(o, "\tif (rval >= %g) {\n", sig->minimum);
 			}
 			fputs("\t\t*out = rval;\n", o);
-			fputs("\t\treturn true;\n", o);
+			fputs("\t\treturn 0;\n", o);
 			fputs("\t} else {\n", o);
 			fprintf(o, "\t\t*out = (%s)0;\n", type);
-			fputs("\t\treturn false;\n", o);
+			fputs("\t\treturn -1;\n", o);
 			fputs("\t}\n", o);
 
 		}
@@ -438,16 +435,16 @@ static int signal2scaling_decode(const char *msgname, unsigned id, signal_t *sig
 
 	} else {
 		fputs("\t*out = rval;\n", o);
-		fputs("\treturn true;\n", o);
+		fputs("\treturn 0;\n", o);
 	}
 	return fputs("}\n\n", o);
 }
 
-static int signal2scaling(const char *msgname, unsigned id, signal_t *sig, FILE *o, bool decode, bool header)
+static int signal2scaling(const char *msgname, unsigned id, signal_t *sig, FILE *o, bool decode, bool header, const char *god)
 {
 	if (decode)
-		return signal2scaling_decode(msgname, id, sig, o, header);
-	return signal2scaling_encode(msgname, id, sig, o, header);
+		return signal2scaling_decode(msgname, id, sig, o, header, god);
+	return signal2scaling_encode(msgname, id, sig, o, header, god);
 }
 
 static int print_function_name(FILE *out, const char *prefix, const char *name, const char *postfix, bool in, char *datatype, bool dlc)
@@ -561,7 +558,7 @@ static int msg_pack(can_msg_t *msg, FILE *c, const char *name, bool motorola_use
 	assert(c);
 	assert(name);
 	const bool message_has_signals = motorola_used || intel_used;
-	print_function_name(c, "pack", name, "\n{\n", false, "uint64_t", false);
+	print_function_name(c, "pack", name, " {\n", false, "uint64_t", false);
 	if (message_has_signals)
 		fprintf(c, "\tregister uint64_t x;\n");
 	if (motorola_used)
@@ -594,7 +591,7 @@ static int msg_unpack(can_msg_t *msg, FILE *c, const char *name, bool motorola_u
 	assert(c);
 	assert(name);
 	const bool message_has_signals = motorola_used || intel_used;
-	print_function_name(c, "unpack", name, "\n{\n", true, "uint64_t", true);
+	print_function_name(c, "unpack", name, " {\n", true, "uint64_t", true);
 	if (message_has_signals)
 		fprintf(c, "\tregister uint64_t x;\n");
 	if (motorola_used)
@@ -625,7 +622,7 @@ static int msg_print(can_msg_t *msg, FILE *c, const char *name)
 	assert(msg);
 	assert(c);
 	assert(name);
-	print_function_name(c, "print", name, "\n{\n", false, "FILE", false);
+	print_function_name(c, "print", name, " {\n", false, "FILE", false);
 	if (msg->signal_count)
 		fprintf(c, "\tint r = 0;\n"); //fprintf(c, "\tdouble scaled;\n\tint r = 0;\n");
 	else
@@ -658,10 +655,11 @@ static int msg_dlc_check(can_msg_t *msg) {
 	return 0;
 }
 
-static int msg2c(can_msg_t *msg, FILE *c, bool generate_print, bool generate_pack, bool generate_unpack)
+static int msg2c(can_msg_t *msg, FILE *c, bool generate_print, bool generate_pack, bool generate_unpack, char *god)
 {
 	assert(msg);
 	assert(c);
+	assert(god);
 	char name[MAX_NAME_LENGTH] = {0};
 	make_name(name, MAX_NAME_LENGTH, msg->name, msg->id);
 	bool motorola_used = false;
@@ -675,7 +673,9 @@ static int msg2c(can_msg_t *msg, FILE *c, bool generate_print, bool generate_pac
 
 	/* sanity checks against messages should go here, we could check for;
 	 * - odd min/max values given scaling
-	 * - duplicate signals and messages */
+	 * - duplicate signals and messages
+	 * They really should go into a semantic analysis phase after reading
+	 * in the DBC file and parsing it. Oh Well. */
 	msg_dlc_check(msg);
 
 	if (generate_pack && msg_pack(msg, c, name, motorola_used, intel_used) < 0)
@@ -686,10 +686,10 @@ static int msg2c(can_msg_t *msg, FILE *c, bool generate_print, bool generate_pac
 
 	for (size_t i = 0; i < msg->signal_count; i++) {
 		if (generate_unpack)
-			if (signal2scaling(name, msg->id, msg->sigs[i], c, true, false) < 0)
+			if (signal2scaling(name, msg->id, msg->sigs[i], c, true, false, god) < 0)
 				return -1;
 		if (generate_pack)
-			if (signal2scaling(name, msg->id, msg->sigs[i], c, false, false) < 0)
+			if (signal2scaling(name, msg->id, msg->sigs[i], c, false, false, god) < 0)
 				return -1;
 	}
 
@@ -699,14 +699,12 @@ static int msg2c(can_msg_t *msg, FILE *c, bool generate_print, bool generate_pac
 	return 0;
 }
 
-static int msg2h(can_msg_t *msg, FILE *h, bool generate_print, bool generate_pack, bool generate_unpack)
+static int msg2h(can_msg_t *msg, FILE *h, bool generate_print, bool generate_pack, bool generate_unpack, const char *god)
 {
 	assert(msg);
 	assert(h);
 	char name[MAX_NAME_LENGTH] = {0};
 	make_name(name, MAX_NAME_LENGTH, msg->name, msg->id);
-
-	fprintf(h, "extern %s_t %s_data;\n", name, name);
 
 	if (generate_pack)
 		print_function_name(h, "pack", name, ";\n", false, "uint64_t", false);
@@ -716,10 +714,10 @@ static int msg2h(can_msg_t *msg, FILE *h, bool generate_print, bool generate_pac
 
 	for (size_t i = 0; i < msg->signal_count; i++) {
 		if (generate_unpack)
-			if (signal2scaling(name, msg->id, msg->sigs[i], h, true, true) < 0)
+			if (signal2scaling(name, msg->id, msg->sigs[i], h, true, true, god) < 0)
 				return -1;
 		if (generate_pack)
-			if (signal2scaling(name, msg->id, msg->sigs[i], h, false, true) < 0)
+			if (signal2scaling(name, msg->id, msg->sigs[i], h, false, true, god) < 0)
 				return -1;
 	}
 
@@ -732,15 +730,14 @@ static int msg2h(can_msg_t *msg, FILE *h, bool generate_print, bool generate_pac
 }
 
 static const char *cfunctions =
-"static inline uint64_t reverse_byte_order(uint64_t x)\n"
-"{\n"
+"static inline uint64_t reverse_byte_order(uint64_t x) {\n"
 "\tx = (x & 0x00000000FFFFFFFF) << 32 | (x & 0xFFFFFFFF00000000) >> 32;\n"
 "\tx = (x & 0x0000FFFF0000FFFF) << 16 | (x & 0xFFFF0000FFFF0000) >> 16;\n"
 "\tx = (x & 0x00FF00FF00FF00FF) << 8  | (x & 0xFF00FF00FF00FF00) >> 8;\n"
 "\treturn x;\n"
-"}\n\n"
-"static inline int phelper(int r, int print_return_value)\n"
-"{\n"
+"}\n\n";
+static const char *cfunctions_print_only = 
+"static inline int print_helper(int r, int print_return_value) {\n"
 "	return ((r >= 0) && (print_return_value >= 0)) ? r + print_return_value : -1;\n"
 "}\n\n";
 
@@ -768,23 +765,24 @@ static int signal_compare_function(const void *a, const void *b)
 	return 0;
 }
 
-static int switch_function(FILE *c, dbc_t *dbc, char *function, bool unpack, bool prototype, char *datatype, bool dlc)
+static int switch_function(FILE *c, dbc_t *dbc, char *function, bool unpack, bool prototype, char *datatype, bool dlc, char *god)
 {
 	assert(c);
 	assert(dbc);
 	assert(function);
-	fprintf(c, "int %s_message(unsigned id, %s %sdata%s)",
-			function, datatype, unpack ? "" : "*",
+	assert(god);
+	fprintf(c, "int %s_message(can_obj_%s_t *o, unsigned id, %s %sdata%s)",
+			function, god, datatype, unpack ? "" : "*",
 			dlc ? ", uint8_t dlc" : "");
 	if (prototype)
 		return fprintf(c, ";\n");
-	fprintf(c, "\n{\n");
+	fprintf(c, " {\n");
 	fprintf(c, "\tswitch(id) {\n");
 	for (size_t i = 0; i < dbc->message_count; i++) {
 		can_msg_t *msg = dbc->messages[i];
 		char name[MAX_NAME_LENGTH] = {0};
 		make_name(name, MAX_NAME_LENGTH, msg->name, msg->id);
-		fprintf(c, "\tcase 0x%03lx: return %s_%s(&%s_data, data%s);\n",
+		fprintf(c, "\tcase 0x%03lx: return %s_%s(&o->%s, data%s);\n",
 				msg->id,
 				function,
 				name,
@@ -818,11 +816,10 @@ static int msg2h_types(dbc_t *dbc, FILE *h)
 	return 0;
 }
 
-static int msg2h_god_object(dbc_t *dbc, FILE *h, const char *name)
+static char *msg2h_god_object(dbc_t *dbc, FILE *h, const char *name)
 {
 	assert(h);
 	assert(dbc);
-	int r = 0;
 	char *object_name = duplicate(name);
 	const size_t object_name_len = strlen(object_name);
 	for (size_t i = 0; i < object_name_len; i++)
@@ -831,14 +828,12 @@ static int msg2h_god_object(dbc_t *dbc, FILE *h, const char *name)
 	for (size_t i = 0; i < dbc->message_count; i++) {
 		fputc('\t', h);
 		if (msg_data_type(h, dbc->messages[i], false) < 0) {
-			r = -1;
-			goto end;
+			free(object_name);
+			return NULL;
 		}
 	}
 	fprintf(h, "} can_obj_%s_t;\n\n", object_name);
-end:
-	free(object_name);
-	return r;
+	return object_name;
 }
 
 int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps,
@@ -849,9 +844,10 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps,
 	assert(c);
 	assert(h);
 	assert(name);
+	int rv = 0;
 	time_t rawtime = time(NULL);
 	struct tm *timeinfo = localtime(&rawtime); // This is not considered safe on Visual Studio
-
+	char *god = NULL;
 	char *file_guard = duplicate(name);
 	const size_t file_guard_len = strlen(file_guard);
 
@@ -881,35 +877,40 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps,
 		"#ifndef %s\n"
 		"#define %s\n\n"
 		"#include <stdint.h>\n"
-		"#include <stdbool.h>\n"
-		"#include <stdio.h>\n\n"
+		"%s\n\n"
 		"#ifdef __cplusplus\n"
 		"extern \"C\" { \n"
 		"#endif\n\n",
 		file_guard, 
-		/*generate_print ? "#include <stdio.h>" : "", */
-		file_guard);
+		file_guard,
+		generate_print ? "#include <stdio.h>" : ""
+		);
 
 
-	if (msg2h_types(dbc, h) < 0)
-		return -1;
+	if (msg2h_types(dbc, h) < 0) {
+		rv = -1;
+		goto fail;
+	}
 
-	if (msg2h_god_object(dbc, h, name) < 0)
-		return -1;
+	god = msg2h_god_object(dbc, h, name);
+	if (!god) {
+		rv = -1;
+		goto fail;
+	}
 
 	if (generate_unpack)
-		switch_function(h, dbc, "unpack", true, true, "uint64_t", true);
+		switch_function(h, dbc, "unpack", true, true, "uint64_t", true, god);
 
 	if (generate_pack)
-		switch_function(h, dbc, "pack", false, true, "uint64_t", false);
+		switch_function(h, dbc, "pack", false, true, "uint64_t", false, god);
 
 	if (generate_print)
-		switch_function(h, dbc, "print", true, true, "FILE*", false);
+		switch_function(h, dbc, "print", true, true, "FILE*", false, god);
 
 	fputs("\n", h);
 
 	for (size_t i = 0; i < dbc->message_count; i++)
-		if (msg2h(dbc->messages[i], h,  generate_print,  generate_pack,  generate_unpack) < 0)
+		if (msg2h(dbc->messages[i], h,  generate_print,  generate_pack,  generate_unpack, god) < 0)
 			return -1;
 
 	fputs(
@@ -929,33 +930,32 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps,
 	fputc('\n', c);
 	fprintf(c, "#define UNUSED(X) ((void)(X))\n\n");
 	fputs(cfunctions, c);
+	if (generate_print)
+		fputs(cfunctions_print_only, c);
 
 	if (generate_unpack && dbc->use_float)
 		fputs(float_unpack, c);
 	if (generate_pack && dbc->use_float)
 		fputs(float_pack, c);
 
-	if (generate_pack || generate_unpack || generate_print) {
-		for (size_t i = 0; i < dbc->message_count; i++)
-			if (msg_data_type(c, dbc->messages[i], true) < 0)
-				return -1;
-		fputc('\n', c);
-	}
-
 	if (generate_unpack)
-		switch_function(c, dbc, "unpack", true, false, "uint64_t", true);
+		switch_function(c, dbc, "unpack", true, false, "uint64_t", true, god);
 
 	if (generate_pack)
-		switch_function(c, dbc, "pack", false, false, "uint64_t", false);
+		switch_function(c, dbc, "pack", false, false, "uint64_t", false, god);
 
 	if (generate_print)
-		switch_function(c, dbc, "print", true, false, "FILE*", false);
+		switch_function(c, dbc, "print", true, false, "FILE*", false, god);
 
 	for (size_t i = 0; i < dbc->message_count; i++)
-		if (msg2c(dbc->messages[i], c, generate_print, generate_pack, generate_unpack) < 0)
-			return -1;
+		if (msg2c(dbc->messages[i], c, generate_print, generate_pack, generate_unpack, god) < 0) {
+			rv = -1;
+			goto fail;
+		}
 
+fail:
 	free(file_guard);
-	return 0;
+	free(god);
+	return rv;
 }
 

@@ -388,43 +388,29 @@ dbc_t *ast2dbc(mpc_ast_t *ast)
 	// find and store the vals into the dbc: they will be assigned to
 	// signals later
 	mpc_ast_t *comments_ast = mpc_ast_get_child_lb(ast, "comments|>", 0);
-	if (comments_ast) {
-		if (comments_ast->children_num) {
-			for(int i = 0; i >= 0;) {
-				i = mpc_ast_get_index_lb(comments_ast, "comment|>", i);
-				if(i >= 0) {
-					mpc_ast_t *comment_ast = mpc_ast_get_child_lb(comments_ast, "comment|>", i);
-					if (comments_ast
-						&& comments_ast->children_num > 3) {
-						bool to_message = (strcmp(comment_ast->children[2]->contents, "BO_") == 0);
-						bool to_signal = (strcmp(comment_ast->children[2]->contents, "SG_") == 0);
-						if (to_signal || to_message) {
-
-							mpc_ast_t *id   = mpc_ast_get_child(comment_ast, "id|integer|regex");
-							unsigned message_id;
-							int r = sscanf(id->contents, "%u", &message_id);
-							assert(r == 1);
-
-							mpc_ast_t *comment = mpc_ast_get_child(comment_ast, "comment_string|string|>");
-							if (to_signal) {
-								// comment assigned to a signal
-								mpc_ast_t *signal_name = mpc_ast_get_child(comment_ast, "name|ident|regex");
-								assign_comment_to_signal(d,
-										comment->children[1]->contents,
-										message_id,
-										signal_name->contents
-										);
-							} else  {
-								// comment assigned to a message
-								assign_comment_to_message(d,
-										comment->children[1]->contents,
-										message_id
-										);
-							}
+	if (comments_ast && comments_ast->children_num) {
+		for(int i = 0; i >= 0;) {
+			i = mpc_ast_get_index_lb(comments_ast, "comment|>", i);
+			if(i >= 0) {
+				mpc_ast_t *comment_ast = mpc_ast_get_child_lb(comments_ast, "comment|>", i);
+				if (comments_ast && comments_ast->children_num > 3) {
+					bool to_message = strcmp(comment_ast->children[2]->contents, "BO_") == 0;
+					bool to_signal = strcmp(comment_ast->children[2]->contents, "SG_") == 0;
+					if (to_signal || to_message) {
+						mpc_ast_t *id   = mpc_ast_get_child(comment_ast, "id|integer|regex");
+						unsigned message_id;
+						int r = sscanf(id->contents, "%u", &message_id);
+						assert(r == 1);
+						mpc_ast_t *comment = mpc_ast_get_child(comment_ast, "comment_string|string|>");
+						if (to_signal) {
+							mpc_ast_t *signal_name = mpc_ast_get_child(comment_ast, "name|ident|regex");
+							assign_comment_to_signal(d, comment->children[1]->contents, message_id, signal_name->contents);
+						} else  {
+							assign_comment_to_message(d, comment->children[1]->contents, message_id);
 						}
 					}
-					i++;
 				}
+				i++;
 			}
 		}
 	}

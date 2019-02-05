@@ -86,7 +86,7 @@ static const char *dbc_grammar =
 " ecus                 : \"BU_\" <s>* ':' (<ident>|<s>)* <n> ; \n"
 " symbols              : \"NS_\" <s>* ':' <s>* <n> ('\t' <ident> <n>)* <n> ; \n"
 " sigtype              : <integer>  ;\n"
-" sigval               : <s>* \"SIG_VALTYPE_\" <s>+ <id> <s>+ <name> <s>* \"           :\" <s>* <sigtype> <s>* ';' <n>* ; \n"
+" sigval               : <s>* \"SIG_VALTYPE_\" <s>+ <id> <s>+ <name> <s>* \":\" <s>* <sigtype> <s>* ';' <n>* ; \n"
 " whatever             : (<ident>|<string>|<integer>|<float>) ; \n"
 " bs                   : \"BS_\" <s>* ':' <n>+ ; "
 " types                : <s>* <ident> (<whatever>|<s>)+ ';' <n> ; \n"
@@ -110,7 +110,11 @@ static const char *dbc_grammar =
 "                        |    <comment_string> "
 "                        ) <s>* ';' <n> ;\n "
 " comments              : <comment>* ; "
-" dbc                   : <version> <symbols> <bs> <ecus> <values>* <n>* <messages> <comments> <attribute_definition>* <attribute_value>* <vals> ; \n" ;
+" dbc       : <version> <symbols> <bs> <ecus> <values>* <n>* <messages> (<sigval>|<types>)*  ; \n" ;
+/* @bug This breaks floating point support, the comment handling part of the
+ grammar needs fixing:
+  " dbc                   : <version> <symbols> <bs> <ecus> <values>* <n>* <messages> <comments> <attribute_definition>* <attribute_value>* <vals> ; \n" ;
+*/
 
 const char *parse_get_grammar(void)
 {
