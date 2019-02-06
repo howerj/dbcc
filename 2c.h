@@ -8,8 +8,13 @@ extern "C" {
 #include "can.h"
 #include <stdbool.h>
 
-int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, bool use_time_stamps,
-          bool generate_print, bool generate_pack, bool generate_unpack);
+typedef struct {
+	bool use_time_stamps;
+	bool generate_print, generate_pack, generate_unpack;
+	bool generate_asserts;
+} dbc2c_options_t;
+
+int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, dbc2c_options_t *copts);
 
 #ifdef __cplusplus
 }

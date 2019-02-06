@@ -45,6 +45,7 @@ Options:\n\
 \t-p     generate only print code\n\
 \t-k     generate only pack code\n\
 \t-u     generate only unpack code\n\
+\t-s     disable assert generation\n\
 \tfile   process a DBC file\n\
 \n\
 Files must come after the arguments have been processed.\n\
@@ -73,10 +74,8 @@ static char *replace_file_type(const char *file, const char *suffix)
 	return name;
 }
 
-static int dbc2cWrapper(dbc_t *dbc, const char *dbc_file, const char *file_only, bool use_time_stamps,
-				bool generate_print, bool generate_pack, bool generate_unpack)
+static int dbc2cWrapper(dbc_t *dbc, const char *dbc_file, const char *file_only, dbc2c_options_t *copts)
 {
-
 	assert(dbc);
 	assert(dbc_file);
 	assert(file_only);
@@ -85,9 +84,7 @@ static int dbc2cWrapper(dbc_t *dbc, const char *dbc_file, const char *file_only,
 	char *fname = replace_file_type(file_only, "h");
 	FILE *c = fopen_or_die(cname, "wb");
 	FILE *h = fopen_or_die(hname, "wb");
-
-	int r = dbc2c(dbc, c, h, fname, use_time_stamps,
-				generate_print, generate_pack, generate_unpack);
+	const int r = dbc2c(dbc, c, h, fname, copts);
 	fclose(c);
 	fclose(h);
 	free(cname);
@@ -137,14 +134,17 @@ int main(int argc, char **argv)
 	log_level_e log_level = get_log_level();
 	conversion_type_e convert = CONVERT_TO_C;
 	const char *outdir = NULL;
-	bool use_time_stamps = false;
-	bool generate_print = false;
-	bool generate_pack = false;
-	bool generate_unpack = false;
+	dbc2c_options_t copts = {
+		.use_time_stamps  = false,
+		.generate_print   = false,
+		.generate_pack    = false,
+		.generate_unpack  = false,
+		.generate_asserts = true,
+	};
 
 	int opt;
 
-	while ((opt = dbcc_getopt(argc, argv, "hvbgxCtpuko:")) != -1) {
+	while ((opt = dbcc_getopt(argc, argv, "hvbgxCtpukso:")) != -1) {
 		switch (opt) {
 		case 'h':
 			usage(argv[0]);
@@ -166,24 +166,28 @@ int main(int argc, char **argv)
 			convert = CONVERT_TO_CSV;
 			break;
 		case 't':
-			use_time_stamps = true;
+			copts.use_time_stamps = true;
 			debug("using time stamps");
 			break;
 		case 'p':
-			generate_print = true;
+			copts.generate_print = true;
 			debug("generate code for print");
 			break;
 		case 'u':
-			generate_unpack = true;
+			copts.generate_unpack = true;
 			debug("generate code for unpack");
 			break;
 		case 'k':
-			generate_pack = true;
+			copts.generate_pack = true;
 			debug("generate code for pack");
 			break;
 		case 'o':
 			outdir = dbcc_optarg;
 			debug("output directory: %s", outdir);
+			break;
+		case 's':
+			copts.generate_asserts = false;
+			debug("asserts disabled - apparently you think silent corruption is a good thing", outdir);
 			break;
 		default:
 			fprintf(stderr, "invalid options\n");
@@ -193,10 +197,10 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (!generate_unpack && !generate_pack && !generate_print) {
-		generate_print  = true;
-		generate_pack   = true;
-		generate_unpack = true;
+	if (!copts.generate_unpack && !copts.generate_pack && !copts.generate_print) {
+		copts.generate_print  = true;
+		copts.generate_pack   = true;
+		copts.generate_unpack = true;
 	}
 
 	for(int i = dbcc_optind; i < argc; i++) {
@@ -222,17 +226,16 @@ int main(int argc, char **argv)
 		int r = 0;
 		switch(convert) {
 		case CONVERT_TO_C:
-			r = dbc2cWrapper(dbc, outpath, dbcc_basename(argv[i]), use_time_stamps,
-				generate_print, generate_pack, generate_unpack);
+			r = dbc2cWrapper(dbc, outpath, dbcc_basename(argv[i]), &copts);
 			break;
 		case CONVERT_TO_BSM:
-			r = dbc2bsmWrapper(dbc, outpath, use_time_stamps);
+			r = dbc2bsmWrapper(dbc, outpath, copts.use_time_stamps);
 			break;
 		case CONVERT_TO_XML:
-			r = dbc2xmlWrapper(dbc, outpath, use_time_stamps);
+			r = dbc2xmlWrapper(dbc, outpath, copts.use_time_stamps);
 			break;
 		case CONVERT_TO_CSV:
-			if(use_time_stamps)
+			if(copts.use_time_stamps)
 				error("Cannot use time stamps when specifying CSV option");
 			r = dbc2csvWrapper(dbc, outpath);
 			break;

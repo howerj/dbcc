@@ -38,7 +38,8 @@ To build, an executable called 'dbcc' is produced. To test run the tests,
 * Use tabs, not spaces for formatting
 * Use assertions where possible (not for error checking, for checking pre/post
 conditions and invariants).
-* The tool should run on Windows and Linux with no modification.
+* The tool should run on Windows and Linux with no modification. The project is
+written in pure [C][].
 * No external dependencies should brought into the project.
 
 ## Notes on generated code
@@ -47,6 +48,77 @@ conditions and invariants).
 into you toolchain instead of trying to change the code generator.
 * The output of the generated code is not stable, it may change from commit to
 commit, download and maintain a specific version if you want stability.
+
+## How to use the generated code
+
+The code generator can make code to unpack a message (turn some bytes into a
+data structure), decode a message (apply a scaling/offset minimum and maximum
+values to the values in a data structure), and the inverse can be done
+(pack/encode).
+
+You can look at the code generated from the DBC files within the project to get
+an understanding of how it should work. 
+
+If you want to process a CAN message that you have received you will need to
+call the 'unpack\_message'. The code generate is agnostic to the CPUs byte
+order, it takes a 'uint64\_t' value containing a single CAN packet (along with
+the CAN ID and the DLC for the that packet) and unpacks that into a structure
+it generates. The first byte of the CAN packet should be put in the least
+significant byte of the 'uint64\_t'.
+
+You can use the following functions to convert to/from a CAN message:
+
+	static uint64_t u64_from_can_msg(const uint8_t m[8]) {
+		return ((uint64_t)m[7] << 54) | ((uint64_t)m[6] << 48) | ((uint64_t)m[5] << 40) | ((uint64_t)m[4] << 32) 
+			| ((uint64_t)m[3] << 24) | ((uint64_t)m[2] << 16) | ((uint64_t)m[1] << 8) | ((uint64_t)m[0] << 0);
+	}
+
+	static void u64_to_can_msg(const uint64_t u, uint8_t m[8]) {
+		m[7] = u >> 54;
+		m[6] = u >> 48;
+		m[5] = u >> 40;
+		m[4] = u >> 32;
+		m[3] = u >> 24;
+		m[2] = u >> 16;
+		m[1] = u >>  8;
+		m[0] = u >>  0;
+	}
+
+The code generator will make a structure based on the file name of the DBC
+file, so for the example DBC file 'ex1.dbc' a data structure called
+'can\_obj\_ex1\_h\_t' is made. This structure contains all of the CAN message
+structures, which in turn contain all of the signals. Having all of the
+messages/signals in one structure has advantages and disadvantages, one of the
+things it makes easier is defining the data structures needed.
+
+	/* reminder of the 'unpack_message' prototype */
+	int unpack_message(can_obj_ex1_h_t *o, const unsigned long id, uint64_t data, uint8_t dlc);
+
+	static can_obj_ex1_h_t ex1;
+
+	uint8_t can_message_raw[8];
+	unsigned long id = 0;
+	uint8_t dlc = 0;
+	your_function_to_receive_a_can_message(can_message_raw, &id, &dlc);
+	if (unpack_message(&ex1, id, can_message_u64, dlc) < 0) {
+		// Error Condition; something went wrong
+		return -1;
+	}
+
+'unpack\_message' calls the correct unpack function for that ID, as an example
+for ID '0x020':
+
+	case 0x020: return unpack_can_0x020_MagicCanNode1RBootloaderAddress(&o->can_0x020_MagicCanNode1RBootloaderAddress, data, dlc);
+
+The unpack function populates the message object in the 'can\_obj\_ex1\_h\_t'
+structure for that ID. The individual signals can then be decoded with the
+appropriate functions for that signal.
+
+	int decode_can_0x020_MagicNode1R_BLAddy(const can_obj_ex1_h_t *o, uint16_t *out);
+
+To transmit a message, each signal has to be encoded, then the pack function
+will return a packed message.
+
 
 ## DBC file specification
 
@@ -104,7 +176,9 @@ This affects numbers larger than 2^53.
 received messages; the time stamp of the received message, and the status
 (error CRC/timeout, message okay, or message never set). This information could
 be included in the generated C code.
-
+* The code generator makes code for packing/encoding and unpacking/decoding,
+this could be done in one step to simplify the code and data structures, it
+means decoded/encoded values do not need to recalculated.
 
 [DBC]: http://vector.com/vi_candb_en.html
 [C]: https://en.wikipedia.org/wiki/C_%28programming_language%29
