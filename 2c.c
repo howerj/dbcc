@@ -9,7 +9,6 @@
  * big functions with switch statements.
  * @todo Signal status; signal should be set to unknown first, or when there
  * is a timeout. A timestamp should also be processed.
- * @todo MISRA C Compliance
  * @todo Add (optional) generation of 'asserts' into code, so pointers can
  * be asserted to be non-NULL, DLCs within range (0-8), ID within ranges (29-bit),
  * and other properties.
@@ -174,9 +173,10 @@ static int comment(signal_t *sig, FILE *o)
 			sig->offset);
 }
 
-static int signal2deserializer(signal_t *sig, FILE *o)
+static int signal2deserializer(signal_t *sig, const char *msg_name, FILE *o)
 {
 	assert(sig);
+	assert(msg_name);
 	assert(o);
 	const bool motorola   = (sig->endianess == endianess_motorola_e);
 	const unsigned start  = fix_start_bit(motorola, sig->start_bit, sig->bit_length);
@@ -195,7 +195,7 @@ static int signal2deserializer(signal_t *sig, FILE *o)
 
 	if (sig->is_floating) {
 		assert(length == 32 || length == 64);
-		if (fprintf(o, "\tunpack->%s = unpack754_%d(x);\n", sig->name, length) < 0)
+		if (fprintf(o, "\to->%s.%s = unpack754_%d(x);\n", msg_name, sig->name, length) < 0)
 			return -1;
 		return 0;
 	}
@@ -213,11 +213,11 @@ static int signal2deserializer(signal_t *sig, FILE *o)
 			fprintf(o, "\tx = x & 0x%"PRIx64" ? x | 0x%"PRIx64" : x; \n", top, negative);
 	}
 
-	fprintf(o, "\tunpack->%s = x;\n", sig->name);
+	fprintf(o, "\to->%s.%s = x;\n", msg_name, sig->name);
 	return 0;
 }
 
-static int signal2serializer(signal_t *sig, FILE *o)
+static int signal2serializer(signal_t *sig, const char *msg_name, FILE *o)
 {
 	assert(sig);
 	assert(o);
@@ -233,11 +233,9 @@ static int signal2serializer(signal_t *sig, FILE *o)
 
 	if (sig->is_floating) {
 		assert(sig->bit_length == 32 || sig->bit_length == 64);
-		/**@todo Add option for type punning version */
-		fprintf(o, "\tx = pack754_%u(pack->%s) & 0x%"PRIx64";\n", sig->bit_length, sig->name, mask);
+		fprintf(o, "\tx = pack754_%u(o->%s.%s) & 0x%"PRIx64";\n", sig->bit_length, msg_name, sig->name, mask);
 	} else {
-		//fprintf(o, "\tx = (*(%s*)(&pack->%s)) & 0x%"PRIx64";\n", determine_unsigned_type(sig->bit_length), sig->name, mask);
-		fprintf(o, "\tx = ((%s)(pack->%s)) & 0x%"PRIx64";\n", determine_unsigned_type(sig->bit_length), sig->name, mask);
+		fprintf(o, "\tx = ((%s)(o->%s.%s)) & 0x%"PRIx64";\n", determine_unsigned_type(sig->bit_length), msg_name, sig->name, mask);
 	}
 	if (start)
 		fprintf(o, "\tx <<= %u; \n", start);
@@ -245,12 +243,12 @@ static int signal2serializer(signal_t *sig, FILE *o)
 	return 0;
 }
 
-static int signal2print(signal_t *sig, unsigned id, FILE *o)
+static int signal2print(signal_t *sig, unsigned id, const char *msg_name, FILE *o)
 {
 	/*super lazy*/
 	if (sig->is_floating)
-		return fprintf(o, "\tr = print_helper(r, fprintf(output, \"%s = (wire: %%g)\\n\", (double)(print->%s)));\n", sig->name, sig->name);
-	return fprintf(o, "\tr = print_helper(r, fprintf(output, \"%s = (wire: %%.0f)\\n\", (double)(print->%s)));\n", sig->name, sig->name);
+		return fprintf(o, "\tr = print_helper(r, fprintf(output, \"%s = (wire: %%g)\\n\", (double)(o->%s.%s)));\n", sig->name, msg_name, sig->name);
+	return fprintf(o, "\tr = print_helper(r, fprintf(output, \"%s = (wire: %%.0f)\\n\", (double)(o->%s.%s)));\n", sig->name, msg_name, sig->name);
 
 	/* ======= NEVER REACHED ======== */
 
@@ -327,11 +325,6 @@ static int64_t signed_min(signal_t *sig)
 	return ~signed_max(sig);
 }
 
-/**@todo more advanced type conversion could be done here */
-/**@todo better range generation code, for example the range checks can be
- * eliminated for encoding values where minimum and maximum values are the
- * same as the integral type used for a given signal. Not only that, but
- * integers should be used instead of floats where possible */
 static int signal2scaling_encode(const char *msgname, unsigned id, signal_t *sig, FILE *o, bool header, const char *god, dbc2c_options_t *copts) 
 {
 	assert(msgname);
@@ -458,16 +451,17 @@ static int signal2scaling(const char *msgname, unsigned id, signal_t *sig, FILE 
 	return signal2scaling_encode(msgname, id, sig, o, header, god, copts);
 }
 
-static int print_function_name(FILE *out, const char *prefix, const char *name, const char *postfix, bool in, char *datatype, bool dlc)
+static int print_function_name(FILE *out, const char *prefix, const char *name, const char *postfix, bool in, char *datatype, bool dlc, const char *god)
 {
 	assert(out);
 	assert(prefix); 
 	assert(name); 
+	assert(god); 
 	assert(postfix);
-	return fprintf(out, "int %s_%s(%s_t *%s, %s %sdata%s)%s",
-			prefix, name, name, prefix, datatype,
+	return fprintf(out, "static int %s_%s(can_obj_%s_t *o, %s %sdata%s)%s",
+			prefix, name, god, datatype,
 			in ? "" : "*",
-			dlc ? ", uint8_t dlc" : "",
+			dlc ? ", uint8_t dlc, dbcc_time_stamp_t time_stamp" : "",
 			postfix);
 }
 
@@ -510,7 +504,7 @@ static signal_t *process_signals_and_find_multiplexer(can_msg_t *msg, FILE *c, c
 		}
 		if (sig->is_multiplexed)
 			continue;
-		if ((serialize ? signal2serializer(sig, c) : signal2deserializer(sig, c)) < 0)
+		if ((serialize ? signal2serializer(sig, name, c) : signal2deserializer(sig, name, c)) < 0)
 			error("%s failed", serialize ? "serialization" : "deserialization");
 	}
 	return multiplexor;
@@ -527,12 +521,12 @@ static int cmp_signal(const void *lhs, const void *rhs)
 		ret = 1;
 	return ret;
 }
-static int multiplexor_switch(can_msg_t *msg, signal_t *multiplexor, FILE *c, bool serialize)
+static int multiplexor_switch(can_msg_t *msg, signal_t *multiplexor, FILE *c, const char *msg_name, bool serialize)
 {
 	assert(msg);
 	assert(multiplexor);
 	assert(c);
-	fprintf(c, "\tswitch(%s->%s) {\n", serialize ? "pack" : "unpack", multiplexor->name);
+	fprintf(c, "\tswitch (o->%s.%s) {\n", msg_name, multiplexor->name);
 	qsort(msg->sigs, msg->signal_count, sizeof(*msg->sigs), cmp_signal);
 	for (size_t i = 0; i < msg->signal_count; i++) {
 		signal_t *sig = msg->sigs[i];
@@ -543,7 +537,7 @@ static int multiplexor_switch(can_msg_t *msg, signal_t *multiplexor, FILE *c, bo
 		for (; j < msg->signal_count && msg->sigs[i]->switchval == msg->sigs[j]->switchval; j++) {
 			assert(j < msg->signal_count);
 			signal_t* sig = msg->sigs[j];
-			if ((serialize ? signal2serializer(sig, c) : signal2deserializer(sig, c)) < 0)
+			if ((serialize ? signal2serializer(sig, msg_name, c) : signal2deserializer(sig, msg_name, c)) < 0)
 				return -1;
 		}
 		i = j - 1;
@@ -579,19 +573,19 @@ static int msg_data_type_time_stamp(FILE *c, can_msg_t *msg) {
 	assert(msg);
 	char name[MAX_NAME_LENGTH] = {0};
 	make_name(name, MAX_NAME_LENGTH, msg->name, msg->id);
-	return fprintf(c, "\ttime_stamp_t %s_timestamp;\n", name);
+	return fprintf(c, "\tdbcc_time_stamp_t %s_time_stamp_rx;\n", name);
 }
 
-static int msg_pack(can_msg_t *msg, FILE *c, const char *name, bool motorola_used, bool intel_used, dbc2c_options_t *copts)
+static int msg_pack(can_msg_t *msg, FILE *c, const char *name, bool motorola_used, bool intel_used, const char *god, dbc2c_options_t *copts)
 {
 	assert(msg);
 	assert(c);
 	assert(name);
 	assert(copts);
 	const bool message_has_signals = motorola_used || intel_used;
-	print_function_name(c, "pack", name, " {\n", false, "uint64_t", false);
+	print_function_name(c, "pack", name, " {\n", false, "uint64_t", false, god);
 	if (copts->generate_asserts) {
-		fprintf(c, "\tassert(pack);\n");
+		fprintf(c, "\tassert(o);\n");
 		fprintf(c, "\tassert(data);\n");
 	}
 	if (message_has_signals)
@@ -601,11 +595,11 @@ static int msg_pack(can_msg_t *msg, FILE *c, const char *name, bool motorola_use
 	if (intel_used)
 		fprintf(c, "\tregister uint64_t i = 0;\n");
 	if (!message_has_signals)
-		fprintf(c, "\tUNUSED(data);\n\tUNUSED(pack);\n");
+		fprintf(c, "\tUNUSED(o);\n\tUNUSED(data);\n");
 	signal_t *multiplexor = process_signals_and_find_multiplexer(msg, c, name, true);
 
 	if (multiplexor)
-		if (multiplexor_switch(msg, multiplexor, c, true) < 0)
+		if (multiplexor_switch(msg, multiplexor, c, name, true) < 0)
 			return -1;
 
 	if (message_has_signals) {
@@ -616,20 +610,21 @@ static int msg_pack(can_msg_t *msg, FILE *c, const char *name, bool motorola_use
 			(!swap_motorola && intel_used) ? "reverse_byte_order" : "",
 			intel_used ? "(i)" : "");
 	}
+	fprintf(c, "\to->%s_tx = 1;\n", name);
 	fprintf(c, "\treturn 0;\n}\n\n");
 	return 0;
 }
 
-static int msg_unpack(can_msg_t *msg, FILE *c, const char *name, bool motorola_used, bool intel_used, dbc2c_options_t *copts)
+static int msg_unpack(can_msg_t *msg, FILE *c, const char *name, bool motorola_used, bool intel_used, const char *god, dbc2c_options_t *copts)
 {
 	assert(msg);
 	assert(c);
 	assert(name);
 	assert(copts);
 	const bool message_has_signals = motorola_used || intel_used;
-	print_function_name(c, "unpack", name, " {\n", true, "uint64_t", true);
+	print_function_name(c, "unpack", name, " {\n", true, "uint64_t", true, god);
 	if (copts->generate_asserts) {
-		fprintf(c, "\tassert(unpack);\n");
+		fprintf(c, "\tassert(o);\n");
 		fprintf(c, "\tassert(dlc <= 8);\n");
 	}
 	if (message_has_signals)
@@ -639,11 +634,7 @@ static int msg_unpack(can_msg_t *msg, FILE *c, const char *name, bool motorola_u
 	if (intel_used)
 		fprintf(c, "\tregister uint64_t i = %s(data);\n", swap_motorola ? "" : "reverse_byte_order");
 	if (!message_has_signals)
-		fprintf(c, "\tUNUSED(data);\n\tUNUSED(unpack);\n");
-
-	/**@note This generated check might be best to be made optional, as nodes have
-	 * could be sending the wrong DLC out, decoding should be attempted
-	 * regardless (but an error logged, or something). */
+		fprintf(c, "\tUNUSED(o);\n\tUNUSED(data);\n");
 	if (msg->dlc)
 		fprintf(c, "\tif (dlc < %u)\n\t\treturn -1;\n", msg->dlc);
 	else
@@ -651,21 +642,24 @@ static int msg_unpack(can_msg_t *msg, FILE *c, const char *name, bool motorola_u
 
 	signal_t *multiplexor = process_signals_and_find_multiplexer(msg, c, name, false);
 	if (multiplexor)
-		if (multiplexor_switch(msg, multiplexor, c, false) < 0)
+		if (multiplexor_switch(msg, multiplexor, c, name, false) < 0)
 			return -1;
+	fprintf(c, "\to->%s_rx = 1;\n", name);
+	fprintf(c, "\to->%s_time_stamp_rx = time_stamp;\n", name);
 	fprintf(c, "\treturn 0;\n}\n\n");
 	return 0;
 }
 
-static int msg_print(can_msg_t *msg, FILE *c, const char *name, dbc2c_options_t *copts)
+static int msg_print(can_msg_t *msg, FILE *c, const char *name, const char *god, dbc2c_options_t *copts)
 {
 	assert(msg);
 	assert(c);
 	assert(name);
+	assert(god);
 	assert(copts);
-	fprintf(c, "int print_%s(const %s_t *print, FILE *output) {\n", name, name);
+	fprintf(c, "int print_%s(const can_obj_%s_t *o, FILE *output) {\n", name, god);
 	if (copts->generate_asserts) {
-		fputs("\tassert(print);\n", c);
+		fputs("\tassert(o);\n", c);
 		fputs("\tassert(output);\n", c);
 		/* you may note the UNUSED macro may be generated, we should
 		 * still assert we are passed the correct things */
@@ -673,9 +667,9 @@ static int msg_print(can_msg_t *msg, FILE *c, const char *name, dbc2c_options_t 
 	if (msg->signal_count)
 		fprintf(c, "\tint r = 0;\n"); //fprintf(c, "\tdouble scaled;\n\tint r = 0;\n");
 	else
-		fprintf(c, "\tUNUSED(print);\n\tUNUSED(output);\n");
+		fprintf(c, "\tUNUSED(o);\n\tUNUSED(output);\n");
 	for (size_t i = 0; i < msg->signal_count; i++) {
-		if (signal2print(msg->sigs[i], msg->id, c) < 0)
+		if (signal2print(msg->sigs[i], msg->id, name, c) < 0)
 			return -1;
 	}
 	if (msg->signal_count)
@@ -726,10 +720,10 @@ static int msg2c(can_msg_t *msg, FILE *c, dbc2c_options_t *copts, char *god)
 	 * in the DBC file and parsing it. Oh Well. */
 	msg_dlc_check(msg);
 
-	if (copts->generate_pack && msg_pack(msg, c, name, motorola_used, intel_used, copts) < 0)
+	if (copts->generate_pack && msg_pack(msg, c, name, motorola_used, intel_used, god, copts) < 0)
 		return -1;
 
-	if (copts->generate_unpack && msg_unpack(msg, c, name, motorola_used, intel_used, copts) < 0)
+	if (copts->generate_unpack && msg_unpack(msg, c, name, motorola_used, intel_used, god, copts) < 0)
 		return -1;
 
 	for (size_t i = 0; i < msg->signal_count; i++) {
@@ -741,7 +735,7 @@ static int msg2c(can_msg_t *msg, FILE *c, dbc2c_options_t *copts, char *god)
 				return -1;
 	}
 
-	if (copts->generate_print && msg_print(msg, c, name, copts) < 0)
+	if (copts->generate_print && msg_print(msg, c, name, god, copts) < 0)
 		return -1;
 
 	return 0;
@@ -756,12 +750,6 @@ static int msg2h(can_msg_t *msg, FILE *h, dbc2c_options_t *copts, const char *go
 	char name[MAX_NAME_LENGTH] = {0};
 	make_name(name, MAX_NAME_LENGTH, msg->name, msg->id);
 
-	if (copts->generate_pack)
-		print_function_name(h, "pack", name, ";\n", false, "uint64_t", false);
-
-	if (copts->generate_unpack)
-		print_function_name(h, "unpack", name, ";\n\n", true, "uint64_t", true);
-
 	for (size_t i = 0; i < msg->signal_count; i++) {
 		if (copts->generate_unpack)
 			if (signal2scaling(name, msg->id, msg->sigs[i], h, true, true, god, copts) < 0)
@@ -770,12 +758,7 @@ static int msg2h(can_msg_t *msg, FILE *h, dbc2c_options_t *copts, const char *go
 			if (signal2scaling(name, msg->id, msg->sigs[i], h, false, true, god, copts) < 0)
 				return -1;
 	}
-
-	if (copts->generate_print)
-		fprintf(h, "int print_%s(const %s_t *print, FILE *output);\n", name, name);
-
 	fputs("\n\n", h);
-
 	return 0;
 }
 
@@ -828,7 +811,7 @@ static int switch_function(FILE *c, dbc_t *dbc, char *function, bool unpack,
 	assert(copts);
 	fprintf(c, "int %s_message(can_obj_%s_t *o, const unsigned long id, %s %sdata%s)",
 			function, god, datatype, unpack ? "" : "*",
-			dlc ? ", uint8_t dlc" : "");
+			dlc ? ", uint8_t dlc, dbcc_time_stamp_t time_stamp" : "");
 	if (prototype)
 		return fprintf(c, ";\n");
 	fprintf(c, " {\n");
@@ -844,12 +827,11 @@ static int switch_function(FILE *c, dbc_t *dbc, char *function, bool unpack,
 		can_msg_t *msg = dbc->messages[i];
 		char name[MAX_NAME_LENGTH] = {0};
 		make_name(name, MAX_NAME_LENGTH, msg->name, msg->id);
-		fprintf(c, "\tcase 0x%03lx: return %s_%s(&o->%s, data%s);\n",
+		fprintf(c, "\tcase 0x%03lx: return %s_%s(o, data%s);\n",
 				msg->id,
 				function,
 				name,
-				name,
-				dlc ? ", dlc" : "");
+				dlc ? ", dlc, time_stamp" : "");
 	}
 	fprintf(c, "\tdefault: break; \n\t}\n");
 	return fprintf(c, "\treturn -1; \n}\n\n");
@@ -876,11 +858,7 @@ static int switch_function_print(FILE *c, dbc_t *dbc, bool prototype, const char
 		can_msg_t *msg = dbc->messages[i];
 		char name[MAX_NAME_LENGTH] = {0};
 		make_name(name, MAX_NAME_LENGTH, msg->name, msg->id);
-		fprintf(c, "\tcase 0x%03lx: return print_%s(&o->%s, output);\n",
-				msg->id,
-				name,
-				name);
-				
+		fprintf(c, "\tcase 0x%03lx: return print_%s(o, output);\n", msg->id, name);
 	}
 	fprintf(c, "\tdefault: break; \n\t}\n");
 	return fprintf(c, "\treturn -1; \n}\n\n");
@@ -985,8 +963,19 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, dbc2c_options_t *copts
 		copts->generate_print   ? "#include <stdio.h>"  : "",
 		copts->generate_asserts ? "#include <assert.h>" : "");
 
-	fprintf(h, "typedef uint32_t time_stamp_t;\n");
+	fprintf(h, "#ifndef DBCC_TIME_STAMP\n");
+	fprintf(h, "#define DBCC_TIME_STAMP\n");
+	fprintf(h, "typedef uint32_t dbcc_time_stamp_t; /* Time stamp for message; you decide on units */\n");
+	fprintf(h, "#endif\n\n");
 
+	fprintf(h, "#ifndef DBCC_STATUS_ENUM\n");
+	fprintf(h, "#define DBCC_STATUS_ENUM\n");
+	fprintf(h, "typedef enum {\n");
+	fprintf(h, "\tDBCC_SIG_STAT_UNINITIALIZED_E = 0, /* Message never sent/received */\n");
+	fprintf(h, "\tDBCC_SIG_STAT_OK_E            = 1, /* Message ok */\n");
+	fprintf(h, "\tDBCC_SIG_STAT_ERROR_E         = 2, /* Encode/Decode/Timestamp/Any error */\n");
+	fprintf(h, "} dbcc_signal_status_e;\n");
+	fprintf(h, "#endif\n\n");
 
 	if (msg2h_types(dbc, h) < 0) {
 		rv = -1;
@@ -1039,6 +1028,12 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, dbc2c_options_t *copts
 	if (copts->generate_pack && dbc->use_float)
 		fputs(float_pack, c);
 
+	for (size_t i = 0; i < dbc->message_count; i++)
+		if (msg2c(dbc->messages[i], c, copts, god) < 0) {
+			rv = -1;
+			goto fail;
+		}
+
 	if (copts->generate_unpack)
 		switch_function(c, dbc, "unpack", true, false, "uint64_t", true, god, copts);
 
@@ -1047,12 +1042,6 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, dbc2c_options_t *copts
 
 	if (copts->generate_print)
 		switch_function_print(c, dbc, false, god, copts);
-
-	for (size_t i = 0; i < dbc->message_count; i++)
-		if (msg2c(dbc->messages[i], c, copts, god) < 0) {
-			rv = -1;
-			goto fail;
-		}
 
 fail:
 	free(file_guard);

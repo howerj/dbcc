@@ -112,12 +112,15 @@ for ID '0x020':
 
 The unpack function populates the message object in the 'can\_obj\_ex1\_h\_t'
 structure for that ID. The individual signals can then be decoded with the
-appropriate functions for that signal.
+appropriate functions for that signal. For example:
 
-	int decode_can_0x020_MagicNode1R_BLAddy(const can_obj_ex1_h_t *o, uint16_t *out);
+	uint16_t b = 0;
+	if (decode_can_0x020_MagicNode1R_BLAddy(o, &b)) {
+		/* error */
+	}
 
 To transmit a message, each signal has to be encoded, then the pack function
-will return a packed message.
+will return a packed message. 
 
 
 ## DBC file specification
