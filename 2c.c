@@ -160,11 +160,12 @@ static const char *determine_type(unsigned length, bool is_signed)
 		determine_unsigned_type(length);
 }
 
-static int comment(signal_t *sig, FILE *o)
+static int comment(signal_t *sig, FILE *o, const char *indent)
 {
 	assert(sig);
 	assert(o);
-	return fprintf(o, "\t/* %s: start-bit %u, length %u, endianess %s, scaling %g, offset %g */\n",
+	return fprintf(o, "%s/* %s: start-bit %u, length %u, endianess %s, scaling %g, offset %g */\n",
+			indent,
 			sig->name,
 			sig->start_bit,
 			sig->bit_length,
@@ -173,7 +174,7 @@ static int comment(signal_t *sig, FILE *o)
 			sig->offset);
 }
 
-static int signal2deserializer(signal_t *sig, const char *msg_name, FILE *o)
+static int signal2deserializer(signal_t *sig, const char *msg_name, FILE *o, const char *indent)
 {
 	assert(sig);
 	assert(msg_name);
@@ -185,17 +186,17 @@ static int signal2deserializer(signal_t *sig, const char *msg_name, FILE *o)
 		0xFFFFFFFFFFFFFFFFuLL :
 		(1uLL << length) - 1uLL;
 
-	if (comment(sig, o) < 0)
+	if (comment(sig, o, indent) < 0)
 		return -1;
 
 	if (start)
-		fprintf(o, "\tx = (%c >> %d) & 0x%"PRIx64";\n", motorola ? 'm' : 'i', start, mask);
+		fprintf(o, "%sx = (%c >> %d) & 0x%"PRIx64";\n", indent, motorola ? 'm' : 'i', start, mask);
 	else
-		fprintf(o, "\tx = %c & 0x%"PRIx64";\n", motorola ? 'm' : 'i',  mask);
+		fprintf(o, "%sx = %c & 0x%"PRIx64";\n", indent, motorola ? 'm' : 'i',  mask);
 
 	if (sig->is_floating) {
 		assert(length == 32 || length == 64);
-		if (fprintf(o, "\to->%s.%s = unpack754_%d(x);\n", msg_name, sig->name, length) < 0)
+		if (fprintf(o, "%so->%s.%s = unpack754_%d(x);\n", indent, msg_name, sig->name, length) < 0)
 			return -1;
 		return 0;
 	}
@@ -210,14 +211,14 @@ static int signal2deserializer(signal_t *sig, const char *msg_name, FILE *o)
 		if (length <= 8)
 			negative &= 0xFF;
 		if (negative)
-			fprintf(o, "\tx = x & 0x%"PRIx64" ? x | 0x%"PRIx64" : x; \n", top, negative);
+			fprintf(o, "%sx = x & 0x%"PRIx64" ? x | 0x%"PRIx64" : x; \n", indent, top, negative);
 	}
 
-	fprintf(o, "\to->%s.%s = x;\n", msg_name, sig->name);
+	fprintf(o, "%so->%s.%s = x;\n", indent, msg_name, sig->name);
 	return 0;
 }
 
-static int signal2serializer(signal_t *sig, const char *msg_name, FILE *o)
+static int signal2serializer(signal_t *sig, const char *msg_name, FILE *o, const char *indent)
 {
 	assert(sig);
 	assert(o);
@@ -228,18 +229,18 @@ static int signal2serializer(signal_t *sig, const char *msg_name, FILE *o)
 		0xFFFFFFFFFFFFFFFFuLL :
 		(1uLL << sig->bit_length) - 1uLL;
 
-	if (comment(sig, o) < 0)
+	if (comment(sig, o, indent) < 0)
 		return -1;
 
 	if (sig->is_floating) {
 		assert(sig->bit_length == 32 || sig->bit_length == 64);
-		fprintf(o, "\tx = pack754_%u(o->%s.%s) & 0x%"PRIx64";\n", sig->bit_length, msg_name, sig->name, mask);
+		fprintf(o, "%sx = pack754_%u(o->%s.%s) & 0x%"PRIx64";\n", indent, sig->bit_length, msg_name, sig->name, mask);
 	} else {
-		fprintf(o, "\tx = ((%s)(o->%s.%s)) & 0x%"PRIx64";\n", determine_unsigned_type(sig->bit_length), msg_name, sig->name, mask);
+		fprintf(o, "%sx = ((%s)(o->%s.%s)) & 0x%"PRIx64";\n", indent, determine_unsigned_type(sig->bit_length), msg_name, sig->name, mask);
 	}
 	if (start)
-		fprintf(o, "\tx <<= %u; \n", start);
-	fprintf(o, "\t%c |= x;\n", motorola ? 'm' : 'i');
+		fprintf(o, "%sx <<= %u; \n", indent, start);
+	fprintf(o, "%s%c |= x;\n", indent, motorola ? 'm' : 'i');
 	return 0;
 }
 
@@ -504,7 +505,7 @@ static signal_t *process_signals_and_find_multiplexer(can_msg_t *msg, FILE *c, c
 		}
 		if (sig->is_multiplexed)
 			continue;
-		if ((serialize ? signal2serializer(sig, name, c) : signal2deserializer(sig, name, c)) < 0)
+		if ((serialize ? signal2serializer(sig, name, c, "\t") : signal2deserializer(sig, name, c, "\t")) < 0)
 			error("%s failed", serialize ? "serialization" : "deserialization");
 	}
 	return multiplexor;
@@ -537,14 +538,14 @@ static int multiplexor_switch(can_msg_t *msg, signal_t *multiplexor, FILE *c, co
 		for (; j < msg->signal_count && msg->sigs[i]->switchval == msg->sigs[j]->switchval; j++) {
 			assert(j < msg->signal_count);
 			signal_t* sig = msg->sigs[j];
-			if ((serialize ? signal2serializer(sig, msg_name, c) : signal2deserializer(sig, msg_name, c)) < 0)
+			if ((serialize ? signal2serializer(sig, msg_name, c, "\t\t") : signal2deserializer(sig, msg_name, c, "\t\t")) < 0)
 				return -1;
 		}
 		i = j - 1;
 		assert(i < msg->signal_count);
-		fprintf(c, "\tbreak;\n");
+		fprintf(c, "\t\tbreak;\n");
 	}
-	fprintf(c, "\tdefault:\n\t\treturn -1;\n}");
+	fprintf(c, "\tdefault:\n\t\treturn -1;\n\t}\n");
 	return 0;
 }
 
