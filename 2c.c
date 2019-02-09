@@ -879,11 +879,11 @@ static int msg2h_types(dbc_t *dbc, FILE *h)
 		if (msg->comment)
 			fprintf(h, "/* %s */\n", msg->comment);
 
-		fprintf(h, "typedef struct {\n" );
+		fprintf(h, "typedef PREPACK struct {\n" );
 		for (size_t i = 0; i < msg->signal_count; i++)
 			if (signal2type(msg->sigs[i], h) < 0)
 				return -1;
-		fprintf(h, "} %s_t;\n\n", name);
+		fprintf(h, "} POSTPACK %s_t;\n\n", name);
 	}
 	return 0;
 }
@@ -896,7 +896,7 @@ static char *msg2h_god_object(dbc_t *dbc, FILE *h, const char *name)
 	const size_t object_name_len = strlen(object_name);
 	for (size_t i = 0; i < object_name_len; i++)
 		object_name[i] = (isalnum(object_name[i])) ?  tolower(object_name[i]) : '_';
-	fprintf(h, "typedef struct {\n");
+	fprintf(h, "typedef PREPACK struct {\n");
 	for (size_t i = 0; i < dbc->message_count; i++)
 		if (msg_data_type_time_stamp(h, dbc->messages[i]) < 0)
 			goto fail;
@@ -906,7 +906,7 @@ static char *msg2h_god_object(dbc_t *dbc, FILE *h, const char *name)
 	for (size_t i = 0; i < dbc->message_count; i++)
 		if (msg_data_type(h, dbc->messages[i], false) < 0)
 			goto fail;
-	fprintf(h, "} can_obj_%s_t;\n\n", object_name);
+	fprintf(h, "} POSTPACK can_obj_%s_t;\n\n", object_name);
 	return object_name;
 fail:
 	free(object_name);
@@ -955,14 +955,20 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, dbc2c_options_t *copts
 		"#define %s\n\n"
 		"#include <stdint.h>\n"
 		"%s\n\n"
-		"%s\n\n"
 		"#ifdef __cplusplus\n"
 		"extern \"C\" { \n"
 		"#endif\n\n",
 		file_guard, 
 		file_guard,
-		copts->generate_print   ? "#include <stdio.h>"  : "",
-		copts->generate_asserts ? "#include <assert.h>" : "");
+		copts->generate_print   ? "#include <stdio.h>"  : "");
+
+	fprintf(h, "#ifndef PREPACK\n");
+	fprintf(h, "#define PREPACK\n");
+	fprintf(h, "#endif\n\n");
+
+	fprintf(h, "#ifndef POSTPACK\n");
+	fprintf(h, "#define POSTPACK\n");
+	fprintf(h, "#endif\n\n");
 
 	fprintf(h, "#ifndef DBCC_TIME_STAMP\n");
 	fprintf(h, "#define DBCC_TIME_STAMP\n");
@@ -1018,6 +1024,8 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, dbc2c_options_t *copts
 	fprintf(c, "#include <inttypes.h>\n");
 	if (dbc->use_float)
 		fprintf(c, "#include <math.h> /* uses macros NAN, INFINITY, signbit, no need for -lm */\n");
+	if (copts->generate_asserts)
+		fprintf(c, "#include <assert.h>\n");
 	fputc('\n', c);
 	fprintf(c, "#define UNUSED(X) ((void)(X))\n\n");
 	fputs(cfunctions, c);
