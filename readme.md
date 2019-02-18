@@ -69,12 +69,12 @@ significant byte of the 'uint64\_t'.
 You can use the following functions to convert to/from a CAN message:
 
 	static uint64_t u64_from_can_msg(const uint8_t m[8]) {
-		return ((uint64_t)m[7] << 54) | ((uint64_t)m[6] << 48) | ((uint64_t)m[5] << 40) | ((uint64_t)m[4] << 32) 
+		return ((uint64_t)m[7] << 56) | ((uint64_t)m[6] << 48) | ((uint64_t)m[5] << 40) | ((uint64_t)m[4] << 32) 
 			| ((uint64_t)m[3] << 24) | ((uint64_t)m[2] << 16) | ((uint64_t)m[1] << 8) | ((uint64_t)m[0] << 0);
 	}
 
 	static void u64_to_can_msg(const uint64_t u, uint8_t m[8]) {
-		m[7] = u >> 54;
+		m[7] = u >> 56;
 		m[6] = u >> 48;
 		m[5] = u >> 40;
 		m[4] = u >> 32;
