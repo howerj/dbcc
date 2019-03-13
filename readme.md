@@ -182,6 +182,24 @@ be included in the generated C code.
 * The code generator makes code for packing/encoding and unpacking/decoding,
 this could be done in one step to simplify the code and data structures, it
 means decoded/encoded values do not need to recalculated.
+* It would be possible to generate nice (ASCII ART) images that show how a message is
+structured, which helps in understanding the message in question, and is useful
+for documentation purposes, for example, something like:
+
+	Message Name: Example-1
+	Message ID: 0x10, 16
+	DLC: 1 (8-bits)
+	+-----+-----.-----.-----.-----+-----.-----+-----+
+	|     |                       |           |     |
+	|     |                       |           |     |
+	+-----+-----.-----.-----.-----+-----.-----+-----+
+	   0     1     2     3     4     5     6     7
+	Bit     0: Signal-Name-1, 1 bit signal, scalar 1.0, offset 0
+	Bits  1-2: Signal-Name-2, 4 bit signal, signed, Motorola, ...
+	... etcetera ...
+
+Or something similar. This would be another output module.
+
 
 [DBC]: http://vector.com/vi_candb_en.html
 [C]: https://en.wikipedia.org/wiki/C_%28programming_language%29
