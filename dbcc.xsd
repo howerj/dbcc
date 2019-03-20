@@ -105,7 +105,7 @@
   <xs:simpleType name="can-id">
     <xs:restriction base="xs:integer">
       <xs:minInclusive value="0"/>
-      <xs:maxInclusive value="3221225472 "/> <!-- Maximum ID should be '536870911', some DBCs do not abide by this -->
+      <xs:maxInclusive value="3221225472"/> <!-- Maximum ID should be '536870911', some DBCs do not abide by this -->
     </xs:restriction>
   </xs:simpleType>
   <!-- DLC 0-8 are valid values -->
