@@ -169,6 +169,7 @@ make it so.
 should be packed/unpacked correctly, however the encode/decode and printing
 functions will not as they use doubles for calculations (pack/unpack do not).
 This affects numbers larger than 2^53. 
+* FYI AUTOSAR sucks.
 * Allow the merging of multiple DBC files
 * Write unit tests to cover the converter and the generated code.
 * Basic sanity checking of the DBC files could be built in.
@@ -182,9 +183,12 @@ be included in the generated C code.
 * The code generator makes code for packing/encoding and unpacking/decoding,
 this could be done in one step to simplify the code and data structures, it
 means decoded/encoded values do not need to recalculated.
-* It would be possible to generate nice (ASCII ART) images that show how a message is
+
+It would be possible to generate nice (ASCII ART) images that show how a message is
 structured, which helps in understanding the message in question, and is useful
 for documentation purposes, for example, something like:
+
+
 
 	Message Name: Example-1
 	Message ID: 0x10, 16
@@ -197,6 +201,8 @@ for documentation purposes, for example, something like:
 	Bit     0: Signal-Name-1, 1 bit signal, scalar 1.0, offset 0
 	Bits  1-2: Signal-Name-2, 4 bit signal, signed, Motorola, ...
 	... etcetera ...
+
+
 
 Or something similar. This would be another output module.
 
