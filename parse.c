@@ -84,11 +84,11 @@ static const char *dbc_grammar =
 " messages             : (<message> <n>*)* ; \n"
 " version              : \"VERSION\" <s> <string> <n>+ ; \n"
 " ecus                 : \"BU_\" <s>* ':' (<ident>|<s>)* <n> ; \n"
-" symbols              : \"NS_\" <s>* ':' <s>* <n> ('\t' <ident> <n>)* <n> ; \n"
+" symbols              : \"NS_\" <s>* ':' <s>* <n> ('\t'|' '* <ident> <n>)* <n> ; \n"
 " sigtype              : <integer>  ;\n"
 " sigval               : <s>* \"SIG_VALTYPE_\" <s>+ <id> <s>+ <name> <s>* \":\" <s>* <sigtype> <s>* ';' <n>* ; \n"
 " whatever             : (<ident>|<string>|<integer>|<float>) ; \n"
-" bs                   : \"BS_\" <s>* ':' <n>+ ; "
+" bs                   : \"BS_\" <s>* ':' <s>* <n>+ ; "
 " types                : <s>* <ident> (<whatever>|<s>)+ ';' <n> ; \n"
 " values               : \"VAL_TABLE_\" (<whatever>|<s>)* ';' <n> ; \n" /**@note don't care about this, for now*/
 " val_cnt              : <integer> ; \n"
