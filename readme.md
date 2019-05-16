@@ -148,6 +148,10 @@ An XML based file that can be imported into Beyond Security's beSTORM and used t
 
 A flat CSV file can be generated, which is easier to import into Excel.
 
+## JSON Generation
+
+A JSON file can be generated, which is what all the cool kids use nowadays.
+
 ## Operation
 
 Consult the [manual page][] for more information about the precise operation of the

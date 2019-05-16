@@ -34,3 +34,6 @@ Release/
 *.creator.user
 
 .directory
+.project
+
+*.json

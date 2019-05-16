@@ -1,14 +1,14 @@
 .\" Manpage for dbcc
 .\" Contact howe.r.j.89@gmail.com to correct errors or typos.
-.TH dbcc 1 "06 Oct 2016" "0.1.0" "dbcc man page"
+.TH dbcc 1 "16 May 2019" "1.0.0" "dbcc man page"
 .SH NAME
 dbcc \- Compile DBC files into C code
 .SH SYNOPSIS
-dbcc [-] [-h] [-v] [-g] [-t] [-x] [-C] [-o dir] file*
+dbcc [-] [-h] [-v] [-g] [-t] [-x] [-j] [-C] [-o dir] file*
 .SH DESCRIPTION
 Given a DBC file containing descriptions of CAN messages this program will parse
 that file and generate C functions that can serialize and deserialize those
-messages. Optionally it can produce XML, or a CSV file, instead of C.
+messages. Optionally it can produce XML, JSON, or a CSV file, instead of C.
 
 .SH OPTIONS
 
@@ -36,11 +36,15 @@ Add timestamps to the generated files.
 
 .TP
 .B -x
-Produce an XML file instead of a C and header file
+Produce an XML file instead of a C code and header file.
+
+.TP
+.B -j
+Produce a JSON file instead of a C code and header file.
 
 .TP
 .B -C
-Produce an CSV file instead of a C and header file
+Produce a CSV file instead of a C code and header file.
 
 .TP
 .B -b     

@@ -8,10 +8,11 @@
 #include "util.h"
 #include "can.h"
 #include "parse.h"
-#include "2xml.h"
-#include "2bsm.h"
-#include "2csv.h"
 #include "2c.h"
+#include "2xml.h"
+#include "2csv.h"
+#include "2bsm.h"
+#include "2json.h"
 #include "options.h"
 
 typedef enum {
@@ -19,12 +20,13 @@ typedef enum {
 	CONVERT_TO_XML,
 	CONVERT_TO_CSV,
 	CONVERT_TO_BSM,
+	CONVERT_TO_JSON,
 } conversion_type_e;
 
 static void usage(const char *arg0)
 {
 	assert(arg0);
-	fprintf(stderr, "%s: [-] [-hvgtxpku] [-o dir] file*\n", arg0);
+	fprintf(stderr, "%s: [-] [-hvjgtxpku] [-o dir] file*\n", arg0);
 }
 
 static void help(void)
@@ -39,8 +41,9 @@ Options:\n\
 \t-g     print out the grammar used to parse the DBC files\n\
 \t-t     add timestamps to the generated files\n\
 \t-x     convert output to XML instead of the default C code\n\
-\t-b     convert output to BSM (beSTORM) instead of the default C code\n\
 \t-C     convert output to CSV instead of the default C code\n\
+\t-b     convert output to BSM (beSTORM) instead of the default C code\n\
+\t-j     convert output to JSON instead of the default C code\n\
 \t-o dir set the output directory\n\
 \t-p     generate only print code\n\
 \t-k     generate only pack code\n\
@@ -93,18 +96,6 @@ static int dbc2cWrapper(dbc_t *dbc, const char *dbc_file, const char *file_only,
 	return r;
 }
 
-static int dbc2bsmWrapper(dbc_t *dbc, const char *dbc_file, bool use_time_stamps)
-{
-	assert(dbc);
-	assert(dbc_file);
-	char *name = replace_file_type(dbc_file, "bsm");
-	FILE *o = fopen_or_die(name, "wb");
-	const int r = dbc2bsm(dbc, o, use_time_stamps);
-	fclose(o);
-	free(name);
-	return r;
-}
-
 static int dbc2xmlWrapper(dbc_t *dbc, const char *dbc_file, bool use_time_stamps)
 {
 	assert(dbc);
@@ -129,6 +120,30 @@ static int dbc2csvWrapper(dbc_t *dbc, const char *dbc_file)
 	return r;
 }
 
+static int dbc2bsmWrapper(dbc_t *dbc, const char *dbc_file, bool use_time_stamps)
+{
+	assert(dbc);
+	assert(dbc_file);
+	char *name = replace_file_type(dbc_file, "bsm");
+	FILE *o = fopen_or_die(name, "wb");
+	const int r = dbc2bsm(dbc, o, use_time_stamps);
+	fclose(o);
+	free(name);
+	return r;
+}
+
+static int dbc2jsonWrapper(dbc_t *dbc, const char *dbc_file, bool use_time_stamps)
+{
+	assert(dbc);
+	assert(dbc_file);
+	char *name = replace_file_type(dbc_file, "json");
+	FILE *o = fopen_or_die(name, "wb");
+	const int r = dbc2json(dbc, o, use_time_stamps);
+	fclose(o);
+	free(name);
+	return r;
+}
+
 int main(int argc, char **argv)
 {
 	log_level_e log_level = get_log_level();
@@ -144,7 +159,7 @@ int main(int argc, char **argv)
 
 	int opt;
 
-	while ((opt = dbcc_getopt(argc, argv, "hvbgxCtpukso:")) != -1) {
+	while ((opt = dbcc_getopt(argc, argv, "hvbjgxCtpukso:")) != -1) {
 		switch (opt) {
 		case 'h':
 			usage(argv[0]);
@@ -158,6 +173,9 @@ int main(int argc, char **argv)
 			return printf("DBCC Grammar =>\n%s\n", parse_get_grammar()) < 0;
 		case 'b':
 			convert = CONVERT_TO_BSM;
+			break;
+		case 'j':
+			convert = CONVERT_TO_JSON;
 			break;
 		case 'x':
 			convert = CONVERT_TO_XML;
@@ -228,9 +246,6 @@ int main(int argc, char **argv)
 		case CONVERT_TO_C:
 			r = dbc2cWrapper(dbc, outpath, dbcc_basename(argv[i]), &copts);
 			break;
-		case CONVERT_TO_BSM:
-			r = dbc2bsmWrapper(dbc, outpath, copts.use_time_stamps);
-			break;
 		case CONVERT_TO_XML:
 			r = dbc2xmlWrapper(dbc, outpath, copts.use_time_stamps);
 			break;
@@ -238,6 +253,12 @@ int main(int argc, char **argv)
 			if(copts.use_time_stamps)
 				error("Cannot use time stamps when specifying CSV option");
 			r = dbc2csvWrapper(dbc, outpath);
+			break;
+		case CONVERT_TO_BSM:
+			r = dbc2bsmWrapper(dbc, outpath, copts.use_time_stamps);
+			break;
+		case CONVERT_TO_JSON:
+			r = dbc2jsonWrapper(dbc, outpath, copts.use_time_stamps);
 			break;
 		default:
 			error("invalid conversion type: %d", convert);
