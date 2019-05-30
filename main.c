@@ -151,14 +151,14 @@ int main(int argc, char **argv)
 	conversion_type_e convert = CONVERT_TO_C;
 	const char *outdir = NULL;
 	dbc2c_options_t copts = {
-		.use_time_stamps  = false,
-		.generate_print   = false,
-		.generate_pack    = false,
-		.generate_unpack  = false,
-		.generate_asserts = true,
+		.use_time_stamps           =  false,
+		.use_doubles_for_encoding  =  false,
+		.generate_print            =  false,
+		.generate_pack             =  false,
+		.generate_unpack           =  false,
+		.generate_asserts          =  true,
 	};
-
-	int opt;
+	int opt = 0;
 
 	while ((opt = dbcc_getopt(argc, argv, "hvbjgxCtDpukso:")) != -1) {
 		switch (opt) {

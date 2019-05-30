@@ -122,6 +122,12 @@ appropriate functions for that signal. For example:
 To transmit a message, each signal has to be encoded, then the pack function
 will return a packed message. 
 
+Some other notes:
+
+* Asserts can be disabled with a command line option
+* An option to force the encode/decode function to only use the double width
+floating point type has been added, so different function types do not have to be
+dealt with by the programmer.
 
 ## DBC file specification
 
