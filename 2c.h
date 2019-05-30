@@ -10,6 +10,7 @@ extern "C" {
 
 typedef struct {
 	bool use_time_stamps;
+	bool use_doubles_for_encoding;
 	bool generate_print, generate_pack, generate_unpack;
 	bool generate_asserts;
 } dbc2c_options_t;

@@ -26,7 +26,7 @@ typedef enum {
 static void usage(const char *arg0)
 {
 	assert(arg0);
-	fprintf(stderr, "%s: [-] [-hvjgtxpku] [-o dir] file*\n", arg0);
+	fprintf(stderr, "%s: [-] [-hvjgtxpkuDC] [-o dir] file*\n", arg0);
 }
 
 static void help(void)
@@ -44,6 +44,7 @@ Options:\n\
 \t-C     convert output to CSV instead of the default C code\n\
 \t-b     convert output to BSM (beSTORM) instead of the default C code\n\
 \t-j     convert output to JSON instead of the default C code\n\
+\t-D     use 'double' for the encode/decode type messages\n\
 \t-o dir set the output directory\n\
 \t-p     generate only print code\n\
 \t-k     generate only pack code\n\
@@ -159,7 +160,7 @@ int main(int argc, char **argv)
 
 	int opt;
 
-	while ((opt = dbcc_getopt(argc, argv, "hvbjgxCtpukso:")) != -1) {
+	while ((opt = dbcc_getopt(argc, argv, "hvbjgxCtDpukso:")) != -1) {
 		switch (opt) {
 		case 'h':
 			usage(argv[0]);
@@ -186,6 +187,10 @@ int main(int argc, char **argv)
 		case 't':
 			copts.use_time_stamps = true;
 			debug("using time stamps");
+			break;
+		case 'D':
+			copts.use_doubles_for_encoding = true;
+			debug("using doubles for encoding");
 			break;
 		case 'p':
 			copts.generate_print = true;
