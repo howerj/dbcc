@@ -14,7 +14,7 @@ static int print_escaped(FILE *o, const char *string)
 	assert(string);
 	char c;
 	int r = 0;
-	while((c = *(string)++)) {
+	while ((c = *(string)++)) {
 		switch(c) {
 		case '"':  r = fputs("&quot;", o); break;
 		case '\'': r = fputs("&apos;", o); break;
@@ -22,7 +22,7 @@ static int print_escaped(FILE *o, const char *string)
 		case '>':  r = fputs("&gt;",   o); break;
 		case '&':  r = fputs("&amp;",  o); break;
 		default:
-			   r = fputc(c, o);
+			r = fputc(c, o);
 		}
 		if (r < 0)
 			return -1;
@@ -33,7 +33,7 @@ static int print_escaped(FILE *o, const char *string)
 static int indent(FILE *o, unsigned depth)
 {
 	assert(o);
-	while(depth--)
+	while (depth--)
 		if (fputc('\t', o) != '\t')
 			return -1;
 	return 0;
@@ -67,12 +67,13 @@ warn:
 	return -1;
 }
 
-static int signal2json(signal_t *sig, FILE *o, unsigned depth)
+static int signal2json(signal_t *sig, FILE *o, unsigned depth, int multiplexed, int selector, int is_value)
 {
 	assert(sig);
 	assert(o);
-	indent(o, depth);
-	fprintf(o, "\"signal\" : {\n");
+	if (!is_value)
+		indent(o, depth);
+	fprintf(o, "{\n");
 	pfield(o, depth+1, false, STRING, "name",      "%s", sig->name);
 	pfield(o, depth+1, false, INT,    "startbit",  "%u", sig->start_bit);
 	pfield(o, depth+1, false, INT,    "bitlength", "%u", sig->bit_length);
@@ -83,6 +84,8 @@ static int signal2json(signal_t *sig, FILE *o, unsigned depth)
 	pfield(o, depth+1, false, FLOAT,  "maximum",   "%g", sig->maximum);
 	pfield(o, depth+1, false, BOOL,   "signed",    "%s", sig->is_signed ? "true" : "false");
 	pfield(o, depth+1, false, INT,    "floating",  "%u", sig->is_floating ? sig->sigval : 0);
+	if (multiplexed)
+		pfield(o, depth+1, false, STRING, "selector",      "%u", selector);
 
 	indent(o, depth+1);
 	fprintf(o, "\"units\" : \"");
@@ -103,9 +106,11 @@ static int msg2json(can_msg_t *msg, FILE *o, unsigned depth)
 	fprintf(o, "{\n");
 	pfield(o, depth+1, false, STRING, "name", "%s", msg->name);
 	pfield(o, depth+1, false, INT,    "id",   "%u", msg->id);
-	pfield(o, depth+1, !(msg->signal_count), INT,    "dlc",  "%u", msg->dlc);
+	pfield(o, depth+1, false, INT,    "dlc",  "%u", msg->dlc);
 
 	signal_t *multiplexor = NULL;
+	indent(o, depth+1);
+	fprintf(o, "\"signals\": [\n");
 	for (size_t i = 0; i < msg->signal_count; i++) {
 		signal_t *sig = msg->sigs[i];
 		if (sig->is_multiplexor) {
@@ -118,23 +123,23 @@ static int msg2json(can_msg_t *msg, FILE *o, unsigned depth)
 		}
 		if (sig->is_multiplexed)
 			continue;
-		if (signal2json(sig, o, depth+1) < 0)
+		if (signal2json(sig, o, depth+2, 0, 0, 0) < 0)
 			return -1;
-		if ((msg->signal_count && i < (msg->signal_count - 1)) || multiplexor)
+		if ((msg->signal_count && i < (msg->signal_count - 1)))// || multiplexor)
 			fprintf(o, ",");
 		fprintf(o, "\n");
 	}
+	indent(o, depth+1);
+	fprintf(o, "]%s\n", multiplexor ? "," : "");
 
 	if (multiplexor) {
 		indent(o, depth+1);
 		fprintf(o, "\"multiplexor-group\" : {\n");
 		indent(o, depth+2);
-		fprintf(o, "\"multiplexor\" : {\n");
-		if (signal2json(multiplexor, o, depth+3) < 0)
+		fprintf(o, "\"multiplexor\" : ");
+		if (signal2json(multiplexor, o, depth+3, 0, 0, 1) < 0)
 			return -1;
-		fprintf(o, "\n");
-		indent(o, depth+2);
-		fprintf(o, "}%s\n", msg->signal_count ? "," : "");
+		fprintf(o, "%s\n", msg->signal_count ? "," : "");
 		size_t multiplexed_count = 0;
 		for (size_t i = 0; i < msg->signal_count; i++) {
 			signal_t *sig = msg->sigs[i];
@@ -142,24 +147,23 @@ static int msg2json(can_msg_t *msg, FILE *o, unsigned depth)
 				multiplexed_count++;
 		}
 
+		indent(o, depth+2);
+		fprintf(o, "\"multiplexed\" : [\n");
 		for (size_t i = 0, j = 0; i < msg->signal_count; i++) {
 			signal_t *sig = msg->sigs[i];
 			if (!(sig->is_multiplexed))
 				continue;
 			j++;
-			indent(o, depth+2);
-			fprintf(o, "\"multiplexed\" : {\n");
-			pfield(o, depth+3, false, INT, "multiplexed-on", "%u",  sig->switchval);
-			if (signal2json(sig, o, depth+3) < 0)
+			if (signal2json(sig, o, depth+3, 1, sig->switchval, 0) < 0)
 				return -1;
-			fprintf(o, "\n");
-			indent(o, depth+2);
-			fprintf(o, "}");
 			if (multiplexed_count && j < multiplexed_count)
 				fprintf(o, ",");
 			fprintf(o, "\n");
 
 		}
+		indent(o, depth+2);
+		fprintf(o, "]\n");
+
 		indent(o, depth+1);
 		fprintf(o, "}\n");
 	}
