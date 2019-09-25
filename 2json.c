@@ -67,12 +67,12 @@ warn:
 	return -1;
 }
 
-static int signal2json(signal_t *sig, FILE *o, unsigned depth)
+static int signal2json(signal_t *sig, FILE *o, unsigned depth, size_t signal_count)
 {
 	assert(sig);
 	assert(o);
 	indent(o, depth);
-	fprintf(o, "\"signal\" : {\n");
+	fprintf(o, "\"signal%lu\" : {\n", signal_count);
 	pfield(o, depth+1, false, STRING, "name",      "%s", sig->name);
 	pfield(o, depth+1, false, INT,    "startbit",  "%u", sig->start_bit);
 	pfield(o, depth+1, false, INT,    "bitlength", "%u", sig->bit_length);
@@ -118,7 +118,7 @@ static int msg2json(can_msg_t *msg, FILE *o, unsigned depth)
 		}
 		if (sig->is_multiplexed)
 			continue;
-		if (signal2json(sig, o, depth+1) < 0)
+		if (signal2json(sig, o, depth+1, i+1) < 0)
 			return -1;
 		if ((msg->signal_count && i < (msg->signal_count - 1)) || multiplexor)
 			fprintf(o, ",");
@@ -130,7 +130,7 @@ static int msg2json(can_msg_t *msg, FILE *o, unsigned depth)
 		fprintf(o, "\"multiplexor-group\" : {\n");
 		indent(o, depth+2);
 		fprintf(o, "\"multiplexor\" : {\n");
-		if (signal2json(multiplexor, o, depth+3) < 0)
+		if (signal2json(multiplexor, o, depth+3, 0) < 0)
 			return -1;
 		fprintf(o, "\n");
 		indent(o, depth+2);
@@ -150,7 +150,7 @@ static int msg2json(can_msg_t *msg, FILE *o, unsigned depth)
 			indent(o, depth+2);
 			fprintf(o, "\"multiplexed\" : {\n");
 			pfield(o, depth+3, false, INT, "multiplexed-on", "%u",  sig->switchval);
-			if (signal2json(sig, o, depth+3) < 0)
+			if (signal2json(sig, o, depth+3, i+1) < 0)
 				return -1;
 			fprintf(o, "\n");
 			indent(o, depth+2);
