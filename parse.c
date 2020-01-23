@@ -110,7 +110,7 @@ static const char *dbc_grammar =
 "                        |    <comment_string> "
 "                        ) <s>* ';' <n> ;\n "
 " comments              : <comment>* ; "
-" dbc       : <version> <symbols> <bs> <ecus> <values>* <n>* <messages> (<sigval>|<types>)*  ; \n" ;
+" dbc       : <version> <symbols> <bs> <ecus> <values>* <n>* <messages> (<n>|<sigval>|<types>)*  ; \n" ;
 /* @bug This breaks floating point support, the comment handling part of the
  grammar needs fixing:
   " dbc                   : <version> <symbols> <bs> <ecus> <values>* <n>* <messages> <comments> <attribute_definition>* <attribute_value>* <vals> ; \n" ;

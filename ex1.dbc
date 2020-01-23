@@ -212,6 +212,9 @@ BO_ 786 Cells_9_12: 8 Vector__XXX
  SG_ Cell11_bal : 47|1@1+ (1,0) [0|1] "" Vector__XXX
  SG_ Cell12_bal : 63|1@1+ (1,0) [0|1] "" Vector__XXX
 
+BO_ 139467056 Odometer_Velocity: 6 iMAR
+ SG_ Odometer_Velocity : 7|32@0- (1,0) [0|0] "m/s" Vector__XXX
+
 BO_ 787 Cells_13_16: 8 Vector__XXX
  SG_ Cell13 : 0|15@1- (1,0) [-16384|16383] "" Vector__XXX
  SG_ Cell14 : 16|15@1- (1,0) [-16384|16383] "" Vector__XXX
@@ -766,4 +769,4 @@ SIG_VALTYPE_ 277 GravityZ : 1;
 SIG_VALTYPE_ 278 Yaw : 1;
 SIG_VALTYPE_ 278 Pitch : 1;
 SIG_VALTYPE_ 279 Roll : 1;
-
+SIG_VALTYPE_ 139467056 Odometer_Velocity : 0;

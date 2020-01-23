@@ -20,7 +20,7 @@ The sources file [mpc.c][] and [mpc.h][] originate from a parser combinator
 written in [C][] called [MPC][] and are licensed under the [3 Clause BSD][] 
 license.
 
-To build, you only need a C (C99) compiler and Make (probably GNU make, I make not
+To build, you only need a C (C99) compiler and Make (probably GNU make, I make no
 effort to support other Make implementations). The dbcc program itself it
 written in what should be portable C with the only external dependency being
 your platforms C library.
@@ -190,6 +190,7 @@ This affects numbers larger than 2^53.
 received messages; the time stamp of the received message, and the status
 (error CRC/timeout, message okay, or message never set). This information could
 be included in the generated C code.
+* Generate a manual page from this 'readme.md' file using pandoc.
 * The code generator makes code for packing/encoding and unpacking/decoding,
 this could be done in one step to simplify the code and data structures, it
 means decoded/encoded values do not need to recalculated.
