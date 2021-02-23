@@ -30,7 +30,7 @@ int dbcc_getopt(int nargc, char *const nargv[], const char *ostr)
 			place = EMSG;
 			return -1;
 		}
-	}			
+	}
 	if ((dbcc_optopt = (int)*place++) == (int)':' || !(oli = strchr(ostr, dbcc_optopt))) { /* option letter okay? */
 		/* if the user didn't specify '-' as an option, assume it means -1. */
 		if (dbcc_optopt == (int)'-')

@@ -258,7 +258,7 @@ static int msg2bsm(can_msg_t * msg, FILE * o, unsigned depth)
 	}
 
 	/*// We don't support multiplexor for now
-	   if (0 && multiplexor) { 
+	   if (0 && multiplexor) {
 	   indent(o, depth + 1);
 	   fprintf(o, "<multiplexor-group>\n");
 	   indent(o, depth + 2);

@@ -29,9 +29,9 @@
 
 #define MAX_NAME_LENGTH (512u)
 
-/* The float packing and unpacking is stolen and modified from 
- * <https://beej.us/guide/bgnet/examples/pack2b.c>! 
- * (It's public domain code as far as I know, from Beej's guide to network 
+/* The float packing and unpacking is stolen and modified from
+ * <https://beej.us/guide/bgnet/examples/pack2b.c>!
+ * (It's public domain code as far as I know, from Beej's guide to network
  * programming).
  *
  * The following link provides a calculator you can use to see what
@@ -296,13 +296,13 @@ static int signal2type(signal_t *sig, FILE *o)
 	}
 }
 
-static bool signal_are_min_max_valid(signal_t *sig) 
+static bool signal_are_min_max_valid(signal_t *sig)
 {
 	assert(sig);
 	return sig->minimum != sig->maximum;
 }
 
-static uint64_t unsigned_max(signal_t *sig) 
+static uint64_t unsigned_max(signal_t *sig)
 {
 	assert(sig);
 	if (sig->bit_length == 64)
@@ -326,7 +326,7 @@ static int64_t signed_min(signal_t *sig)
 	return ~signed_max(sig);
 }
 
-static int signal2scaling_encode(const char *msgname, unsigned id, signal_t *sig, FILE *o, bool header, const char *god, dbc2c_options_t *copts) 
+static int signal2scaling_encode(const char *msgname, unsigned id, signal_t *sig, FILE *o, bool header, const char *god, dbc2c_options_t *copts)
 {
 	assert(msgname);
 	assert(sig);
@@ -376,7 +376,7 @@ static int signal2scaling_encode(const char *msgname, unsigned id, signal_t *sig
 	return fputs("\treturn 0;\n}\n\n", o);
 }
 
-static int signal2scaling_decode(const char *msgname, unsigned id, signal_t *sig, FILE *o, bool header, const char *god, dbc2c_options_t *copts) 
+static int signal2scaling_decode(const char *msgname, unsigned id, signal_t *sig, FILE *o, bool header, const char *god, dbc2c_options_t *copts)
 {
 	assert(msgname);
 	assert(sig);
@@ -435,7 +435,7 @@ static int signal2scaling_decode(const char *msgname, unsigned id, signal_t *sig
 			fputs("\t}\n", o);
 
 		}
-	
+
 
 	} else {
 		fputs("\t*out = rval;\n", o);
@@ -455,9 +455,9 @@ static int signal2scaling(const char *msgname, unsigned id, signal_t *sig, FILE 
 static int print_function_name(FILE *out, const char *prefix, const char *name, const char *postfix, bool in, char *datatype, bool dlc, const char *god)
 {
 	assert(out);
-	assert(prefix); 
-	assert(name); 
-	assert(god); 
+	assert(prefix);
+	assert(name);
+	assert(god);
 	assert(postfix);
 	return fprintf(out, "static int %s_%s(can_obj_%s_t *o, %s %sdata%s)%s",
 			prefix, name, god, datatype,
@@ -511,7 +511,7 @@ static signal_t *process_signals_and_find_multiplexer(can_msg_t *msg, FILE *c, c
 	return multiplexor;
 }
 
-static int cmp_signal(const void *lhs, const void *rhs) 
+static int cmp_signal(const void *lhs, const void *rhs)
 {
 	assert(lhs);
 	assert(rhs);
@@ -770,7 +770,7 @@ static const char *cfunctions =
 "\tx = (x & 0x00FF00FF00FF00FF) << 8  | (x & 0xFF00FF00FF00FF00) >> 8;\n"
 "\treturn x;\n"
 "}\n\n";
-static const char *cfunctions_print_only = 
+static const char *cfunctions_print_only =
 "static inline int print_helper(int r, int print_return_value) {\n"
 "\treturn ((r >= 0) && (print_return_value >= 0)) ? r + print_return_value : -1;\n"
 "}\n\n";
@@ -802,7 +802,7 @@ static int signal_compare_function(const void *a, const void *b)
 /**@todo add 'const' to print and pack switch functions
  * @todo set tx/rx, timestamp and status fields
  * @todo pack should return a DLC */
-static int switch_function(FILE *c, dbc_t *dbc, char *function, bool unpack, 
+static int switch_function(FILE *c, dbc_t *dbc, char *function, bool unpack,
 		bool prototype, const char *datatype, bool dlc, const char *god, const dbc2c_options_t *copts)
 {
 	assert(c);
@@ -865,7 +865,7 @@ static int switch_function_print(FILE *c, dbc_t *dbc, bool prototype, const char
 	return fprintf(c, "\treturn -1; \n}\n\n");
 }
 
-static int msg2h_types(dbc_t *dbc, FILE *h) 
+static int msg2h_types(dbc_t *dbc, FILE *h)
 {
 	assert(h);
 	assert(dbc);
@@ -958,7 +958,7 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, dbc2c_options_t *copts
 		"#ifdef __cplusplus\n"
 		"extern \"C\" { \n"
 		"#endif\n\n",
-		file_guard, 
+		file_guard,
 		file_guard,
 		copts->generate_print   ? "#include <stdio.h>"  : "");
 
