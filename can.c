@@ -80,13 +80,6 @@ static void range(mpc_ast_t *ast, signal_t *sig)
 	assert(r == 1);
 }
 
-/**@todo implement nodes function
-static void nodes(mpc_ast_t *ast, signal_t *sig)
-{
-	assert(ast && sig);
-}
-*/
-
 static void units(mpc_ast_t *ast, signal_t *sig)
 {
 	assert(ast && sig);
@@ -245,7 +238,6 @@ static can_msg_t *ast2msg(mpc_ast_t *top, mpc_ast_t *ast, dbc_t *dbc)
 	r = sscanf(id->contents,  "%lu", &c->id);
 	assert(r == 1);
 
-	/**@todo make test cases with no signals, and the like*/
 	signal_t **signal_s = allocate(sizeof(*signal_s));
 	size_t len = 1, j = 0;
 	for(int i = 0; i >= 0;) {

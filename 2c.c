@@ -4,15 +4,6 @@
  * @copyright Richard James Howe (2018)
  * @license MIT
  *
- * @todo A data driven version would be better, data should be centralized
- * and the pack/unpack functions should use data structures instead of
- * big functions with switch statements.
- * @todo Signal status; signal should be set to unknown first, or when there
- * is a timeout. A timestamp should also be processed.
- * @todo Add (optional) generation of 'asserts' into code, so pointers can
- * be asserted to be non-NULL, DLCs within range (0-8), ID within ranges (29-bit),
- * and other properties.
- *
  * This file is quite a mess, but that is not going to change, it is also
  * quite short and seems to do the job. A better solution would be to make a
  * template tool, or a macro processor, suited for the task of generating C
@@ -246,21 +237,11 @@ static int signal2serializer(signal_t *sig, const char *msg_name, FILE *o, const
 
 static int signal2print(signal_t *sig, unsigned id, const char *msg_name, FILE *o)
 {
+	UNUSED(id);
 	/*super lazy*/
 	if (sig->is_floating)
 		return fprintf(o, "\tr = print_helper(r, fprintf(output, \"%s = (wire: %%g)\\n\", (double)(o->%s.%s)));\n", sig->name, msg_name, sig->name);
 	return fprintf(o, "\tr = print_helper(r, fprintf(output, \"%s = (wire: %%.0f)\\n\", (double)(o->%s.%s)));\n", sig->name, msg_name, sig->name);
-
-	/* ======= NEVER REACHED ======== */
-
-	/* @todo TODO Fix this, it should print out the encoded values as well */
-	fprintf(o, "\tscaled = decode_can_0x%03x_%s(print);\n", id, sig->name);
-	if (sig->is_floating)
-		return fprintf(o, "\tr = fprintf(data, \"%s = %%.3f (wire: %%g)\\n\", scaled, (double)(print->%s));\n",
-				sig->name, sig->name);
-	return fprintf(o, "\tr = fprintf(data, \"%s = %%.3f (wire: %%.0f)\\n\", scaled, (double)(print->%s));\n",
-			sig->name, sig->name);
-	/*fprintf(o, "\tif (r < 0)\n\t\treturn r;");*/
 }
 
 static int signal2type(signal_t *sig, FILE *o)
@@ -799,9 +780,6 @@ static int signal_compare_function(const void *a, const void *b)
 	return 0;
 }
 
-/**@todo add 'const' to print and pack switch functions
- * @todo set tx/rx, timestamp and status fields
- * @todo pack should return a DLC */
 static int switch_function(FILE *c, dbc_t *dbc, char *function, bool unpack,
 		bool prototype, const char *datatype, bool dlc, const char *god, const dbc2c_options_t *copts)
 {
@@ -870,7 +848,6 @@ static int msg2h_types(dbc_t *dbc, FILE *h)
 	assert(h);
 	assert(dbc);
 
-	/**@todo add time stamp information of when the message arrived to struct */
 	for (size_t i = 0; i < dbc->message_count; i++) {
 		can_msg_t *msg = dbc->messages[i];
 		char name[MAX_NAME_LENGTH] = {0};
@@ -915,7 +892,6 @@ fail:
 
 int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, dbc2c_options_t *copts)
 {
-	/**@todo print out ECU node information */
 	assert(dbc);
 	assert(c);
 	assert(h);
@@ -923,7 +899,7 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, dbc2c_options_t *copts
 	assert(copts);
 	int rv = 0;
 	time_t rawtime = time(NULL);
-	struct tm *timeinfo = localtime(&rawtime); // This is not considered safe on Visual Studio
+	struct tm *timeinfo = localtime(&rawtime); /* This is not considered safe on Visual Studio */
 	char *god = NULL;
 	char *file_guard = duplicate(name);
 	const size_t file_guard_len = strlen(file_guard);

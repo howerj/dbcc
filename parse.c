@@ -50,10 +50,6 @@ static mpc_ast_t *_parse_dbc_file_by_handle(const char *name, FILE *handle);
 	X(comment_string,       "comment_string")\
 	X(dbc,                  "dbc")
 
-/**@todo This grammar needs expanding and fixing, one addition would be comment lines,
- * which certain tools allow. This consists of a '//' with the rest of the line ignored.
- * Ideally the grammar would be rewritten, to follow Vectors documentation on it. */
-
 static const char *dbc_grammar =
 " s                    : /[ \\t]/ ; \n"
 " n                    : /\\r?\\n/ ; \n"
@@ -90,12 +86,12 @@ static const char *dbc_grammar =
 " whatever             : (<ident>|<string>|<integer>|<float>) ; \n"
 " bs                   : \"BS_\" <s>* ':' <s>* <n>+ ; "
 " types                : <s>* <ident> (<whatever>|<s>)+ ';' <n> ; \n"
-" values               : \"VAL_TABLE_\" (<whatever>|<s>)* ';' <n> ; \n" /**@note don't care about this, for now*/
+" values               : \"VAL_TABLE_\" (<whatever>|<s>)* ';' <n> ; \n"
 " val_cnt              : <integer> ; \n"
 " val_name             : <string> ; \n"
 " val_index            : <integer> ; \n"
-" attribute_definition : \"BA_DEF_\" (<whatever>|<s>|',')* ';' <n> ; \n" /**@note don't care about this, for now*/
-" attribute_value      : \"BA_\" (<whatever>|<s>|',')* ';' <n> ; \n" /**@note don't care about this, for now*/
+" attribute_definition : \"BA_DEF_\" (<whatever>|<s>|',')* ';' <n> ; \n"
+" attribute_value      : \"BA_\" (<whatever>|<s>|',')* ';' <n> ; \n"
 " val_item             : (<integer> <s>+ <string> <s>+) ; \n"
 " val                  : \"VAL_\" <s>+ <id> <s>+ <name> <s>+ <val_item>* ';' <n> ; \n"
 " vals                 : <val>* ; \n"
@@ -111,10 +107,6 @@ static const char *dbc_grammar =
 "                        ) <s>* ';' <n> ;\n "
 " comments              : <comment>* ; "
 " dbc       : <version> <symbols> <bs> <ecus> <values>* <n>* <messages> (<n>|<sigval>|<types>)*  ; \n" ;
-/* @bug This breaks floating point support, the comment handling part of the
- grammar needs fixing:
-  " dbc                   : <version> <symbols> <bs> <ecus> <values>* <n>* <messages> <comments> <attribute_definition>* <attribute_value>* <vals> ; \n" ;
-*/
 
 const char *parse_get_grammar(void)
 {
@@ -177,7 +169,6 @@ static mpc_ast_t *_parse_dbc_string(const char *file_name, const char *string)
 	X_MACRO_PARSE_VARS
 	#undef X
 
-	/**@todo process more of the DBC format */
 	#define X(CVAR, NAME) CVAR,
 	mpc_err_t *language_error = mpca_lang(MPCA_LANG_WHITESPACE_SENSITIVE, dbc_grammar, X_MACRO_PARSE_VARS NULL);
 	#undef X

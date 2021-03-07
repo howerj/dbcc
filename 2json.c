@@ -178,7 +178,6 @@ int dbc2json(dbc_t *dbc, FILE *output, bool use_time_stamps)
 {
 	assert(dbc);
 	assert(output);
-	/**@todo print out ECU node information, and the standard XML header */
 	time_t rawtime = time(NULL);
 	struct tm *timeinfo = localtime(&rawtime);
 

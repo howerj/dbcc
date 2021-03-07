@@ -172,25 +172,16 @@ program.
   - Timeouts 
   - Error frames
   - ...
-* The generated C code has not been tested that much (it is probably incorrect). The
-generated code is also not [MISRA C][] compliant, but it would not take too much to
-make it so.
+* The generated code is not [MISRA C][] compliant.
 * Integers that cannot be represented in a double width floating point number
 should be packed/unpacked correctly, however the encode/decode and printing
 functions will not as they use doubles for calculations (pack/unpack do not).
 This affects numbers larger than 2^53. 
 * FYI AUTOSAR sucks.
-* Allow the merging of multiple DBC files
-* Write unit tests to cover the converter and the generated code.
-* Basic sanity checking of the DBC files could be built in.
-  - The easiest way to check this is by generating an XML file and verifying it
-  with an XSD file
-* Find/make more CAN database examples
 * There are two pieces of information that are useful to any CAN stack for
 received messages; the time stamp of the received message, and the status
 (error CRC/timeout, message okay, or message never set). This information could
 be included in the generated C code.
-* Generate a manual page from this 'readme.md' file using pandoc.
 * The code generator makes code for packing/encoding and unpacking/decoding,
 this could be done in one step to simplify the code and data structures, it
 means decoded/encoded values do not need to recalculated.
@@ -212,8 +203,6 @@ for documentation purposes, for example, something like:
 	Bit     0: Signal-Name-1, 1 bit signal, scalar 1.0, offset 0
 	Bits  1-2: Signal-Name-2, 4 bit signal, signed, Motorola, ...
 	... etcetera ...
-
-
 
 Or something similar. This would be another output module.
 

@@ -58,7 +58,7 @@ typedef struct {
 
 typedef struct {
 	char *name;          /**< can message name */
-	char *ecu;           /**< name of ECU @todo check this makes sense */
+	char *ecu;           /**< name of ECU */
 	signal_t **sigs;     /**< signals that can decode/encode this message*/
 	uint64_t data;       /**< data, up to eight bytes, not used for generation */
 	size_t signal_count; /**< number of signals */
