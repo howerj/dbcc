@@ -114,7 +114,7 @@ BO_ 1036 WS200DSPBoardTemp: 8 WS200
 
 BO_ 1037 WS200PhaseCTemp: 8 WS200
  SG_ IMPPhaseCTemp : 32|32@1- (1,0) [0|0] "" Vector__XXX
- SG_ Reserved : 0|32@1- (1,0) [0|0] "" Vector__XXX
+ SG_ Reserved1 : 0|32@1- (1,0) [0|0] "" Vector__XXX
 
 BO_ 1038 WS200BusAmpHours: 8 WS200
  SG_ DCBusAmpHours : 32|32@1- (1,0) [0|0] "" Vector__XXX
@@ -122,7 +122,7 @@ BO_ 1038 WS200BusAmpHours: 8 WS200
 
 BO_ 1047 WS200SlipSpeed: 8 WS200
  SG_ SlipSpeed : 0|32@1- (1,0) [0|0] "" Vector__XXX
- SG_ Reserved : 32|32@1- (1,0) [0|0] "" Vector__XXX
+ SG_ Reserved2 : 32|32@1- (1,0) [0|0] "" Vector__XXX
 
 
 CM_ SG_ 1025 ActiveMotor "[0,10]";

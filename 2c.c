@@ -144,8 +144,10 @@ static const char *determine_signed_type(unsigned length)
 	return type;
 }
 
-static const char *determine_type(unsigned length, bool is_signed)
+static const char *determine_type(unsigned length, bool is_signed, bool is_floating)
 {
+	if (is_floating)
+		return length == 64 ? "double" : "float";
 	return is_signed ?
 		determine_signed_type(length) :
 		determine_unsigned_type(length);
@@ -249,7 +251,7 @@ static int signal2type(signal_t *sig, FILE *o)
 	assert(sig);
 	assert(o);
 	const unsigned length = sig->bit_length;
-	const char *type = determine_type(length, sig->is_signed);
+	const char *type = determine_type(length, sig->is_signed, sig->is_floating);
 
 	if (length == 0) {
 		warning("signal %s has bit length of 0 (fix the dbc file)");
@@ -261,7 +263,6 @@ static int signal2type(signal_t *sig, FILE *o)
 			warning("signal %s is floating point number but has length %u (fix the dbc file)", sig->name, length);
 			return -1;
 		}
-		type = length == 64 ? "double" : "float";
 	}
 
 	if (sig->comment) {
@@ -313,10 +314,14 @@ static int signal2scaling_encode(const char *msgname, unsigned id, signal_t *sig
 	assert(sig);
 	assert(o);
 	assert(copts);
-	const char *type = determine_type(sig->bit_length, sig->is_signed);
+	const char *type = determine_type(sig->bit_length, sig->is_signed, sig->is_floating);
 	if (sig->scaling != 1.0 || sig->offset != 0.0)
 		type = "double";
-	fprintf(o, "int encode_can_0x%03x_%s(can_obj_%s_t *o, %s in)", id, sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
+	if (copts->use_id_in_name)
+		fprintf(o, "int encode_can_0x%03x_%s(can_obj_%s_t *o, %s in)", id, sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
+	else
+		fprintf(o, "int encode_can_%s(can_obj_%s_t *o, %s in)", sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
+
 	if (header)
 		return fputs(";\n", o);
 	fputs(" {\n", o);
@@ -363,10 +368,13 @@ static int signal2scaling_decode(const char *msgname, unsigned id, signal_t *sig
 	assert(sig);
 	assert(o);
 	assert(copts);
-	const char *type = determine_type(sig->bit_length, sig->is_signed);
+	const char *type = determine_type(sig->bit_length, sig->is_signed, sig->is_floating);
 	if (sig->scaling != 1.0 || sig->offset != 0.0)
 		type = "double";
-	fprintf(o, "int decode_can_0x%03x_%s(const can_obj_%s_t *o, %s *out)", id, sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
+	if (copts->use_id_in_name)
+		fprintf(o, "int decode_can_0x%03x_%s(const can_obj_%s_t *o, %s *out)", id, sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
+	else
+		fprintf(o, "int decode_can_%s(const can_obj_%s_t *o, %s *out)", sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
 	if (header)
 		return fputs(";\n", o);
 	fputs(" {\n", o);
@@ -447,11 +455,15 @@ static int print_function_name(FILE *out, const char *prefix, const char *name, 
 			postfix);
 }
 
-static void make_name(char *newname, size_t maxlen, const char *name, unsigned id)
+static void make_name(char *newname, size_t maxlen, const char *name, unsigned id, dbc2c_options_t *copts)
 {
 	assert(newname);
 	assert(name);
-	snprintf(newname, maxlen-1, "can_0x%03x_%s", id, name);
+	assert(copts);
+	if (copts->use_id_in_name)
+		snprintf(newname, maxlen-1, "can_0x%03x_%s", id, name);
+	else
+		snprintf(newname, maxlen-1, "can_%s", name);
 }
 
 static signal_t *find_multiplexor(can_msg_t *msg) {
@@ -530,31 +542,34 @@ static int multiplexor_switch(can_msg_t *msg, signal_t *multiplexor, FILE *c, co
 	return 0;
 }
 
-static int msg_data_type(FILE *c, can_msg_t *msg, bool data)
+static int msg_data_type(FILE *c, can_msg_t *msg, bool data, dbc2c_options_t *copts)
 {
 	assert(c);
 	assert(msg);
+	assert(copts);
 	char name[MAX_NAME_LENGTH] = {0};
-	make_name(name, MAX_NAME_LENGTH, msg->name, msg->id);
+	make_name(name, MAX_NAME_LENGTH, msg->name, msg->id, copts);
 	return fprintf(c, "\t%s_t %s%s;\n", name, name, data ? "_data" : "");
 }
 
 
-static int msg_data_type_bitfields(FILE *c, can_msg_t *msg) {
+static int msg_data_type_bitfields(FILE *c, can_msg_t *msg, dbc2c_options_t *copts) {
 	assert(c);
 	assert(msg);
+	assert(copts);
 	char name[MAX_NAME_LENGTH] = {0};
-	make_name(name, MAX_NAME_LENGTH, msg->name, msg->id);
+	make_name(name, MAX_NAME_LENGTH, msg->name, msg->id, copts);
 	fprintf(c, "\tunsigned %s_status : 2;\n", name); /* uninitialized, present, faulty (range/crc/timeout/other) */
 	fprintf(c, "\tunsigned %s_tx : 1;\n", name); /* have we packed this message? */
 	return fprintf(c, "\tunsigned %s_rx : 1;\n", name); /* have we unpacked this message? */
 }
 
-static int msg_data_type_time_stamp(FILE *c, can_msg_t *msg) {
+static int msg_data_type_time_stamp(FILE *c, can_msg_t *msg, dbc2c_options_t *copts) {
 	assert(c);
 	assert(msg);
+	assert(copts);
 	char name[MAX_NAME_LENGTH] = {0};
-	make_name(name, MAX_NAME_LENGTH, msg->name, msg->id);
+	make_name(name, MAX_NAME_LENGTH, msg->name, msg->id, copts);
 	return fprintf(c, "\tdbcc_time_stamp_t %s_time_stamp_rx;\n", name);
 }
 
@@ -685,7 +700,7 @@ static int msg2c(can_msg_t *msg, FILE *c, dbc2c_options_t *copts, char *god)
 	assert(copts);
 	assert(god);
 	char name[MAX_NAME_LENGTH] = {0};
-	make_name(name, MAX_NAME_LENGTH, msg->name, msg->id);
+	make_name(name, MAX_NAME_LENGTH, msg->name, msg->id, copts);
 	bool motorola_used = false;
 	bool intel_used = false;
 
@@ -730,7 +745,7 @@ static int msg2h(can_msg_t *msg, FILE *h, dbc2c_options_t *copts, const char *go
 	assert(copts);
 	assert(god);
 	char name[MAX_NAME_LENGTH] = {0};
-	make_name(name, MAX_NAME_LENGTH, msg->name, msg->id);
+	make_name(name, MAX_NAME_LENGTH, msg->name, msg->id, copts);
 
 	for (size_t i = 0; i < msg->signal_count; i++) {
 		if (copts->generate_unpack)
@@ -781,7 +796,7 @@ static int signal_compare_function(const void *a, const void *b)
 }
 
 static int switch_function(FILE *c, dbc_t *dbc, char *function, bool unpack,
-		bool prototype, const char *datatype, bool dlc, const char *god, const dbc2c_options_t *copts)
+		bool prototype, const char *datatype, bool dlc, const char *god, dbc2c_options_t *copts)
 {
 	assert(c);
 	assert(dbc);
@@ -805,7 +820,7 @@ static int switch_function(FILE *c, dbc_t *dbc, char *function, bool unpack,
 	for (size_t i = 0; i < dbc->message_count; i++) {
 		can_msg_t *msg = dbc->messages[i];
 		char name[MAX_NAME_LENGTH] = {0};
-		make_name(name, MAX_NAME_LENGTH, msg->name, msg->id);
+		make_name(name, MAX_NAME_LENGTH, msg->name, msg->id, copts);
 		fprintf(c, "\tcase 0x%03lx: return %s_%s(o, data%s);\n",
 				msg->id,
 				function,
@@ -836,22 +851,23 @@ static int switch_function_print(FILE *c, dbc_t *dbc, bool prototype, const char
 	for (size_t i = 0; i < dbc->message_count; i++) {
 		can_msg_t *msg = dbc->messages[i];
 		char name[MAX_NAME_LENGTH] = {0};
-		make_name(name, MAX_NAME_LENGTH, msg->name, msg->id);
+		make_name(name, MAX_NAME_LENGTH, msg->name, msg->id, copts);
 		fprintf(c, "\tcase 0x%03lx: return print_%s(o, output);\n", msg->id, name);
 	}
 	fprintf(c, "\tdefault: break; \n\t}\n");
 	return fprintf(c, "\treturn -1; \n}\n\n");
 }
 
-static int msg2h_types(dbc_t *dbc, FILE *h)
+static int msg2h_types(dbc_t *dbc, FILE *h, dbc2c_options_t *copts)
 {
 	assert(h);
 	assert(dbc);
+	assert(copts);
 
 	for (size_t i = 0; i < dbc->message_count; i++) {
 		can_msg_t *msg = dbc->messages[i];
 		char name[MAX_NAME_LENGTH] = {0};
-		make_name(name, MAX_NAME_LENGTH, msg->name, msg->id);
+		make_name(name, MAX_NAME_LENGTH, msg->name, msg->id, copts);
 
 		if (msg->comment)
 			fprintf(h, "/* %s */\n", msg->comment);
@@ -865,23 +881,24 @@ static int msg2h_types(dbc_t *dbc, FILE *h)
 	return 0;
 }
 
-static char *msg2h_god_object(dbc_t *dbc, FILE *h, const char *name)
+static char *msg2h_god_object(dbc_t *dbc, FILE *h, const char *name, dbc2c_options_t *copts)
 {
 	assert(h);
 	assert(dbc);
+	assert(copts);
 	char *object_name = duplicate(name);
 	const size_t object_name_len = strlen(object_name);
 	for (size_t i = 0; i < object_name_len; i++)
 		object_name[i] = (isalnum(object_name[i])) ?  tolower(object_name[i]) : '_';
 	fprintf(h, "typedef PREPACK struct {\n");
 	for (size_t i = 0; i < dbc->message_count; i++)
-		if (msg_data_type_time_stamp(h, dbc->messages[i]) < 0)
+		if (msg_data_type_time_stamp(h, dbc->messages[i], copts) < 0)
 			goto fail;
 	for (size_t i = 0; i < dbc->message_count; i++)
-		if (msg_data_type_bitfields(h, dbc->messages[i]) < 0)
+		if (msg_data_type_bitfields(h, dbc->messages[i], copts) < 0)
 			goto fail;
 	for (size_t i = 0; i < dbc->message_count; i++)
-		if (msg_data_type(h, dbc->messages[i], false) < 0)
+		if (msg_data_type(h, dbc->messages[i], false, copts) < 0)
 			goto fail;
 	fprintf(h, "} POSTPACK can_obj_%s_t;\n\n", object_name);
 	return object_name;
@@ -960,12 +977,12 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, dbc2c_options_t *copts
 	fprintf(h, "} dbcc_signal_status_e;\n");
 	fprintf(h, "#endif\n\n");
 
-	if (msg2h_types(dbc, h) < 0) {
+	if (msg2h_types(dbc, h, copts) < 0) {
 		rv = -1;
 		goto fail;
 	}
 
-	god = msg2h_god_object(dbc, h, name);
+	god = msg2h_god_object(dbc, h, name, copts);
 	if (!god) {
 		rv = -1;
 		goto fail;

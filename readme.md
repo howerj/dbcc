@@ -165,6 +165,9 @@ program.
 
 ## Bugs / To Do
 
+* Make definitions for message-ids and Data-Length-Codes so the user
+does not have to make them as either an enumeration or a define.
+* Make the bit-fields more useful
 * The floating point conversion routines assume your platform is using
 [IEEE-754][] floats. If it does not, then tough.
 * A lot of the DBC file format is not dealt with:

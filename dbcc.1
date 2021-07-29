@@ -4,7 +4,7 @@
 .SH NAME
 dbcc \- Compile DBC files into C code
 .SH SYNOPSIS
-dbcc [-] [-h] [-v] [-g] [-t] [-x] [-j] [-C] [-D] [-o dir] file*
+dbcc [-] [-h] [-v] [-g] [-t] [-x] [-j] [-C] [-N] [-D] [-o dir] file*
 .SH DESCRIPTION
 Given a DBC file containing descriptions of CAN messages this program will parse
 that file and generate C functions that can serialize and deserialize those
@@ -45,6 +45,11 @@ Produce a JSON file instead of a C code and header file.
 .TP
 .B -C
 Produce a CSV file instead of a C code and header file.
+
+.TP
+.B -N
+When generating C code, do not include the CAN ID within the name
+of generated code.
 
 .TP
 .B -b     

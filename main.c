@@ -151,6 +151,7 @@ int main(int argc, char **argv)
 	conversion_type_e convert = CONVERT_TO_C;
 	const char *outdir = NULL;
 	dbc2c_options_t copts = {
+		.use_id_in_name            =  true,
 		.use_time_stamps           =  false,
 		.use_doubles_for_encoding  =  false,
 		.generate_print            =  false,
@@ -160,7 +161,7 @@ int main(int argc, char **argv)
 	};
 	int opt = 0;
 
-	while ((opt = dbcc_getopt(argc, argv, "hvbjgxCtDpukso:")) != -1) {
+	while ((opt = dbcc_getopt(argc, argv, "hvbjgxCNtDpukso:")) != -1) {
 		switch (opt) {
 		case 'h':
 			usage(argv[0]);
@@ -183,6 +184,9 @@ int main(int argc, char **argv)
 			break;
 		case 'C':
 			convert = CONVERT_TO_CSV;
+			break;
+		case 'N':
+			copts.use_id_in_name = false;
 			break;
 		case 't':
 			copts.use_time_stamps = true;

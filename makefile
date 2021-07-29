@@ -36,7 +36,7 @@ ${TARGET}: ${OBJECTS}
 	${CC} ${CFLAGS} $^ ${LDFLAGS} -o $@
 
 ${OUTDIR}/%.c: %.dbc ${TARGET}
-	./${TARGET} ${DBCCFLAGS} -o ${OUTDIR} $<
+	./${TARGET} -N ${DBCCFLAGS} -o ${OUTDIR} $<
 
 ${OUTDIR}/%.xml: %.dbc ${TARGET}
 	./${TARGET} ${DBCCFLAGS} -x -o ${OUTDIR} $<
