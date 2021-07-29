@@ -87,7 +87,7 @@ static double unpack754(const uint64_t i, const unsigned bits, const unsigned ex
 	if ((i & expset) == expset) { /* NaN or +/-Infinity */\n\
 		if (i & ((1uLL << (bits - expbits - 1)) - 1uLL)) /* Non zero Mantissa means NaN */\n\
 			return NAN;\n\
-		return i & (1uLL << (bits - 1)) ? -INFINITY : INFINITY;\n\
+		return (i & (1uLL << (bits - 1))) ? -INFINITY : INFINITY;\n\
 	}\n\
 \n\
 	/* pull the significand */\n\
@@ -102,7 +102,7 @@ static double unpack754(const uint64_t i, const unsigned bits, const unsigned ex
 	while (shift > 0) { result *= 2.0; shift--; }\n\
 	while (shift < 0) { result /= 2.0; shift++; }\n\
 	\n\
-	return (i >> (bits - 1)) & 1? -result: result; /* sign it, and return */\n\
+	return ((i >> (bits - 1)) & 1) ? -result : result; /* sign it, and return */\n\
 }\n\
 \n\
 static inline float    unpack754_32(uint32_t i) { return unpack754(i, 32, 8); }\n\
@@ -204,7 +204,7 @@ static int signal2deserializer(signal_t *sig, const char *msg_name, FILE *o, con
 		if (length <= 8)
 			negative &= 0xFF;
 		if (negative)
-			fprintf(o, "%sx = x & 0x%"PRIx64" ? x | 0x%"PRIx64" : x; \n", indent, top, negative);
+			fprintf(o, "%sx = (x & 0x%"PRIx64") ? (x | 0x%"PRIx64") : x; \n", indent, top, negative);
 	}
 
 	fprintf(o, "%so->%s.%s = x;\n", indent, msg_name, sig->name);
