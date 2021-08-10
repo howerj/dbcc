@@ -161,11 +161,14 @@ int main(int argc, char **argv)
 	};
 	int opt = 0;
 
-	while ((opt = dbcc_getopt(argc, argv, "hvbjgxCNtDpukso:")) != -1) {
+	while ((opt = dbcc_getopt(argc, argv, "hVvbjgxCNtDpukso:")) != -1) {
 		switch (opt) {
 		case 'h':
 			usage(argv[0]);
 			help();
+			break;
+		case 'V':
+			fprintf(stderr, "%s\n", DBCC_VERSION);
 			break;
 		case 'v':
 			set_log_level(++log_level);

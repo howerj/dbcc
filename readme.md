@@ -3,6 +3,14 @@
 
 This program turns a [DBC][] file into a number of different formats.
 
+**CAN-FD IS CURRENTLY NOT SUPPORTED**.
+
+As you can see by the big note above, CAN-FD is currently not supported,
+and likely will not (for a while). The problem is that CAN-FD allows for
+messages above 64-bits in length and this project and the code generated
+from it makes the assumption that 8-bits is all that the Lord (or Satan if
+your project is dealing with AUTOSAR) intended a CAN message to have in it.
+
 ## Introduction
 
 **dbcc** is a program for converting a [DBC][] file primarily into into [C][]
@@ -128,6 +136,9 @@ Some other notes:
 * An option to force the encode/decode function to only use the double width
 floating point type has been added, so different function types do not have to be
 dealt with by the programmer.
+* You can remove the message number from the functions and values generated,
+which is useful if your message numbers are changing a lot, however the names
+for each message and signal must then be unique.
 
 ## DBC file specification
 
@@ -165,6 +176,11 @@ program.
 
 ## Bugs / To Do
 
+* Generated manual page from this markdown "readme.md" file.
+* For versions going forward, especially versions that break the generated C
+code, it might be nice to have an option to generate previous versions of the
+code.
+* Support CAN-FD (big task).
 * Make definitions for message-ids and Data-Length-Codes so the user
 does not have to make them as either an enumeration or a define.
 * Make the bit-fields more useful
@@ -180,7 +196,9 @@ does not have to make them as either an enumeration or a define.
 should be packed/unpacked correctly, however the encode/decode and printing
 functions will not as they use doubles for calculations (pack/unpack do not).
 This affects numbers larger than 2^53. 
-* FYI AUTOSAR sucks.
+* FYI AUTOSAR sucks. See this message for a perfect description as to why:
+ <https://old.reddit.com/r/embedded/comments/leq366/how_much_of_a_modern_carbuilt_from_the_year_2000/gmiq6d0/>,
+ I wish I had wrote it. 
 * There are two pieces of information that are useful to any CAN stack for
 received messages; the time stamp of the received message, and the status
 (error CRC/timeout, message okay, or message never set). This information could
@@ -192,7 +210,6 @@ means decoded/encoded values do not need to recalculated.
 It would be possible to generate nice (ASCII ART) images that show how a message is
 structured, which helps in understanding the message in question, and is useful
 for documentation purposes, for example, something like:
-
 
 
 	Message Name: Example-1

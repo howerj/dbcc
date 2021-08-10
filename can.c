@@ -127,6 +127,7 @@ static signal_t *ast2signal(mpc_ast_t *top, mpc_ast_t *ast, unsigned can_id)
 	sig->name = duplicate(name->contents);
 	sig->val_list = NULL;
 	r = sscanf(start->contents, "%u", &sig->start_bit);
+	/* BUG: Minor bug, an error should be returned here instead */
 	assert(r == 1 && sig->start_bit <= 64);
 	r = sscanf(length->contents, "%u", &sig->bit_length);
 	assert(r == 1 && sig->bit_length <= 64);

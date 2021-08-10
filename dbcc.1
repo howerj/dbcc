@@ -1,14 +1,16 @@
 .\" Manpage for dbcc
 .\" Contact howe.r.j.89@gmail.com to correct errors or typos.
-.TH dbcc 1 "30 May 2019" "1.0.0" "dbcc man page"
+.TH dbcc 1 "10 Aug 2021" "1.0.3" "dbcc man page"
 .SH NAME
 dbcc \- Compile DBC files into C code
 .SH SYNOPSIS
-dbcc [-] [-h] [-v] [-g] [-t] [-x] [-j] [-C] [-N] [-D] [-o dir] file*
+dbcc [-] [-h] [-V] [-v] [-g] [-t] [-x] [-j] [-C] [-N] [-D] [-o dir] file*
 .SH DESCRIPTION
 Given a DBC file containing descriptions of CAN messages this program will parse
 that file and generate C functions that can serialize and deserialize those
 messages. Optionally it can produce XML, JSON, or a CSV file, instead of C.
+
+.B **CAN FD IS CURRENTLY NOT SUPPORTED**.
 
 .SH OPTIONS
 
@@ -19,6 +21,11 @@ Stop processing command line arguments
 .TP
 .B -h
 Print a help message to stderr(3) and exit the program unsuccessfully.
+
+.TP
+.B -V
+Print the version information in semver format, well, semver plus a 'v'
+prefix.
 
 .TP
 .B -v
