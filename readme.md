@@ -203,6 +203,21 @@ This affects numbers larger than 2^53.
 received messages; the time stamp of the received message, and the status
 (error CRC/timeout, message okay, or message never set). This information could
 be included in the generated C code.
+* A mechanism for callbacks for custom code for floating point encoding and
+decoding, and other callbacks in general, could be added. Packing and unpacking
+floats is done in what should be a portable, but not fast, way.
+* A mechanism and system for error handling should be added, that is, a simple
+communications manager that does the following:
+  - Each signal should have three values associated with it; Unknown (the
+    signal has never been set), Valid, and Error (for *any* error).
+  - If the time out for a message goes out, or a CRC check fails, then
+    all of the messages child messages should get invalidated and set the
+    error state.
+  - If the signal contains an invalid value, it gets set to an Error state.
+  - All signal access functions should check the Unknown/Error value, returning
+    success only on a Valid signal.
+There are a few other details that would need to be sorted out, like how
+CRC and time outs could be calculated.
 * The code generator makes code for packing/encoding and unpacking/decoding,
 this could be done in one step to simplify the code and data structures, it
 means decoded/encoded values do not need to recalculated.
