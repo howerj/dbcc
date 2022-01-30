@@ -864,6 +864,16 @@ static int msg2h_types(dbc_t *dbc, FILE *h, dbc2c_options_t *copts)
 	assert(dbc);
 	assert(copts);
 
+	for (size_t i = 0; i < dbc->val_count; i++) {
+		val_list_t *list = dbc->vals[i];
+		fprintf(h, "typedef enum {\n");
+		for (size_t j = 0; j < list->val_list_item_count; j++) {
+			val_list_item_t *item = list->val_list_items[j];
+			fprintf(h, "\t%s_%s_e = %d,\n", list->name, item->name, item->value);
+		}
+		fprintf(h, "} %s_e;\n\n", list->name);
+	}
+
 	for (size_t i = 0; i < dbc->message_count; i++) {
 		can_msg_t *msg = dbc->messages[i];
 		char name[MAX_NAME_LENGTH] = {0};

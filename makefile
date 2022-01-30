@@ -56,6 +56,9 @@ run: ${XMLS} ${CODECS} ${XHTMLS}
 
 TESTS=${OUTDIR}/ex1.c \
       ${OUTDIR}/ex2.c \
+      ${OUTDIR}/double_signal.c \
+      ${OUTDIR}/float_signal.c \
+      ${OUTDIR}/enum.c \
       ${OUTDIR}/ex1.xml \
       ${OUTDIR}/ex2.xml \
       ${OUTDIR}/ex1.csv \

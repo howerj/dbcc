@@ -203,6 +203,9 @@ This affects numbers larger than 2^53.
 received messages; the time stamp of the received message, and the status
 (error CRC/timeout, message okay, or message never set). This information could
 be included in the generated C code.
+* Enumeration values could be checked for and only correct values should
+be decoded, and encoded. There is more stuff that can be done with the
+enumeration values, along with command line options to enumeration generation.
 * A mechanism for callbacks for custom code for floating point encoding and
 decoding, and other callbacks in general, could be added. Packing and unpacking
 floats is done in what should be a portable, but not fast, way.
