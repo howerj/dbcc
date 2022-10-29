@@ -9,6 +9,7 @@ PDFS    := ${MDS:%.md=%.pdf}
 MANS    := ${MDS:%.md=%.1}
 DBCS    := ${wildcard *.dbc}
 OBJECTS := ${SOURCES:%.c=%.o}
+LIBOBJS := $(filter-out main.o, $(OBJECTS))
 DEPS    := ${SOURCES:%.c=%.d}
 XMLS    := ${DBCS:%.dbc=${OUTDIR}/%.xml}
 XHTMLS  := ${XMLS:%.xml=%.xhtml}
@@ -31,6 +32,10 @@ all: ${TARGET}
 
 %.pdf: %.md
 	pandoc -o $@ $<
+
+lib${TARGET}.a: ${OBJECTS}
+	ar rcs $@ ${OBJECTS}
+	ranlib $@
 
 ${TARGET}: ${OBJECTS}
 	${CC} ${CFLAGS} $^ ${LDFLAGS} -o $@

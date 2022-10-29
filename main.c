@@ -69,7 +69,7 @@ static char *replace_file_type(const char *file, const char *suffix)
 	assert(suffix);
 	char *name = duplicate(file);
 	char *dot = strrchr(name, '.');
-	if(*dot)
+	if (*dot)
 		*dot = '\0';
 	size_t name_size = strlen(name) + strlen(suffix) + 2;
 	name = reallocator(name, name_size); /* + 1 for '.', + 1 for '\0' */
@@ -236,17 +236,17 @@ int main(int argc, char **argv)
 	for(int i = dbcc_optind; i < argc; i++) {
 		debug("reading => %s", argv[i]);
 		mpc_ast_t *ast = parse_dbc_file_by_name(argv[i]);
-		if(!ast) {
+		if (!ast) {
 			warning("could not parse file '%s'", argv[i]);
 			continue;
 		}
-		if(verbose(LOG_DEBUG))
+		if (verbose(LOG_DEBUG))
 			mpc_ast_print(ast);
 
 		dbc_t *dbc = ast2dbc(ast);
 
 		char *outpath = dbcc_basename(argv[i]);
-		if(outdir) {
+		if (outdir) {
 			outpath = allocate(strlen(outpath) + strlen(outdir) + 2 /* '/' + '\0'*/);
 			strcat(outpath, outdir);
 			strcat(outpath, "/");
@@ -262,7 +262,7 @@ int main(int argc, char **argv)
 			r = dbc2xmlWrapper(dbc, outpath, copts.use_time_stamps);
 			break;
 		case CONVERT_TO_CSV:
-			if(copts.use_time_stamps)
+			if (copts.use_time_stamps)
 				error("Cannot use time stamps when specifying CSV option");
 			r = dbc2csvWrapper(dbc, outpath);
 			break;
@@ -275,10 +275,10 @@ int main(int argc, char **argv)
 		default:
 			error("invalid conversion type: %d", convert);
 		}
-		if(r < 0)
+		if (r < 0)
 			warning("conversion process failed: %u/%u", r, convert);
 
-		if(outdir)
+		if (outdir)
 			free(outpath);
 		dbc_delete(dbc);
 		mpc_ast_delete(ast);
