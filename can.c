@@ -18,7 +18,7 @@ static signal_t *signal_new(void)
 
 static void signal_delete(signal_t *signal)
 {
-	if(!signal)
+	if (!signal)
 		return;
 	for(size_t i = 0; i < signal->ecu_count; i++)
 		free(signal->ecus[i]);
@@ -36,7 +36,7 @@ static can_msg_t *can_msg_new(void)
 
 static void can_msg_delete(can_msg_t *msg)
 {
-	if(!msg)
+	if (!msg)
 		return;
 	for(size_t i = 0; i < msg->signal_count; i++)
 		signal_delete(msg->sigs[i]);
@@ -49,7 +49,7 @@ static void can_msg_delete(can_msg_t *msg)
 
 static void val_delete(val_list_t *val)
 {
-	if(!val)
+	if (!val)
 		return;
 	for(size_t i = 0; i < val->val_list_item_count; i++) {
 		free(val->val_list_items[i]->name);
@@ -93,7 +93,7 @@ static int sigval(mpc_ast_t *top, unsigned id, const char *signal)
 	assert(signal);
 	for(int i = 0; i >= 0;) {
 		i = mpc_ast_get_index_lb(top, "sigval|>", i);
-		if(i >= 0) {
+		if (i >= 0) {
 			mpc_ast_t *sv = mpc_ast_get_child_lb(top, "sigval|>", i);
 			mpc_ast_t *name   = mpc_ast_get_child(sv, "name|ident|regex");
 			mpc_ast_t *svid = mpc_ast_get_child(sv,   "id|integer|regex");
@@ -101,7 +101,7 @@ static int sigval(mpc_ast_t *top, unsigned id, const char *signal)
 			assert(svid);
 			unsigned svidd = 0;
 			sscanf(svid->contents, "%u", &svidd);
-			if(id == svidd && !strcmp(signal, name->contents)) {
+			if (id == svidd && !strcmp(signal, name->contents)) {
 				unsigned typed = 0;
 				mpc_ast_t *type = mpc_ast_get_child(sv, "sigtype|integer|regex");
 				sscanf(type->contents, "%u", &typed);
@@ -147,18 +147,18 @@ static signal_t *ast2signal(mpc_ast_t *top, mpc_ast_t *ast, unsigned can_id)
 
 	/* process multiplexed values, if present */
 	mpc_ast_t *multiplex = mpc_ast_get_child(ast, "multiplexor|>");
-	if(multiplex) {
+	if (multiplex) {
 		sig->is_multiplexed = true;
 		sig->switchval = atol(multiplex->children[1]->contents);
 	}
 
-	if(mpc_ast_get_child(ast, "multiplexor|char")) {
+	if (mpc_ast_get_child(ast, "multiplexor|char")) {
 		assert(!sig->is_multiplexed);
 		sig->is_multiplexor = true;
 	}
 
 	sig->sigval = sigval(top, can_id, sig->name);
-	if(sig->sigval == 1 || sig->sigval == 2)
+	if (sig->sigval == 1 || sig->sigval == 2)
 		sig->is_floating = true;
 
 	debug("\tname => %s; start %u length %u %s %s %s",
@@ -185,7 +185,7 @@ static val_list_t *ast2val(mpc_ast_t *top, mpc_ast_t *ast)
 	int j = 0;
 	for(int i = 0; i >= 0;) {
 		i = mpc_ast_get_index_lb(ast, "val_item|>", i);
-		if(i >= 0) {
+		if (i >= 0) {
 			val_list_item_t *item = allocate(sizeof(val_list_item_t));
 			mpc_ast_t *val_item_ast = mpc_ast_get_child_lb(ast, "val_item|>", i);
 
@@ -243,7 +243,7 @@ static can_msg_t *ast2msg(mpc_ast_t *top, mpc_ast_t *ast, dbc_t *dbc)
 	size_t len = 1, j = 0;
 	for(int i = 0; i >= 0;) {
 		i = mpc_ast_get_index_lb(ast, "signal|>", i);
-		if(i >= 0) {
+		if (i >= 0) {
 			mpc_ast_t *sig_ast = mpc_ast_get_child_lb(ast, "signal|>", i);
 			signal_s = reallocator(signal_s, sizeof(*signal_s)*++len);
 			signal_s[j++] = ast2signal(top, sig_ast, c->id);
@@ -290,7 +290,7 @@ dbc_t *dbc_new(void)
 
 void dbc_delete(dbc_t *dbc)
 {
-	if(!dbc)
+	if (!dbc)
 		return;
 	for (size_t i = 0; i < dbc->message_count; i++)
 		can_msg_delete(dbc->messages[i]);
@@ -339,7 +339,7 @@ dbc_t *ast2dbc(mpc_ast_t *ast)
 			int j = 0;
 			for(int i = 0; i >= 0;) {
 				i = mpc_ast_get_index_lb(vals_ast, "val|>", i);
-				if(i >= 0) {
+				if (i >= 0) {
 					mpc_ast_t *val_ast = mpc_ast_get_child_lb(vals_ast, "val|>", i);
 					d->vals[j++] = ast2val(ast, val_ast);
 					i++;
@@ -350,13 +350,13 @@ dbc_t *ast2dbc(mpc_ast_t *ast)
 
 	int index     = mpc_ast_get_index_lb(ast, "messages|>", 0);
 	mpc_ast_t *msgs_ast = mpc_ast_get_child_lb(ast, "messages|>", 0);
-	if(index < 0) {
+	if (index < 0) {
 		warning("no messages found");
 		return NULL;
 	}
 
 	int n = msgs_ast->children_num;
-	if(n <= 0) {
+	if (n <= 0) {
 		warning("messages has no children");
 		return NULL;
 	}
@@ -365,7 +365,7 @@ dbc_t *ast2dbc(mpc_ast_t *ast)
 	int j = 0;
 	for(int i = 0; i >= 0;) {
 		i = mpc_ast_get_index_lb(msgs_ast, "message|>", i);
-		if(i >= 0) {
+		if (i >= 0) {
 			mpc_ast_t *msg_ast = mpc_ast_get_child_lb(msgs_ast, "message|>", i);
 			r[j++] = ast2msg(ast, msg_ast, d);
 			i++;
@@ -384,7 +384,7 @@ dbc_t *ast2dbc(mpc_ast_t *ast)
 	if (comments_ast && comments_ast->children_num) {
 		for(int i = 0; i >= 0;) {
 			i = mpc_ast_get_index_lb(comments_ast, "comment|>", i);
-			if(i >= 0) {
+			if (i >= 0) {
 				mpc_ast_t *comment_ast = mpc_ast_get_child_lb(comments_ast, "comment|>", i);
 				if (comments_ast && comments_ast->children_num > 3) {
 					bool to_message = strcmp(comment_ast->children[2]->contents, "BO_") == 0;
