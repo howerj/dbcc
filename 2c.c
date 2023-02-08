@@ -608,7 +608,7 @@ static int msg_pack(can_msg_t *msg, FILE *c, const char *name, bool motorola_use
 			intel_used ? "(i)" : "");
 	}
 	fprintf(c, "\to->%s_tx = 1;\n", name);
-	fprintf(c, "\treturn 0;\n}\n\n");
+	fprintf(c, "\treturn %d;\n}\n\n", msg->dlc);
 	return 0;
 }
 
@@ -643,7 +643,7 @@ static int msg_unpack(can_msg_t *msg, FILE *c, const char *name, bool motorola_u
 			return -1;
 	fprintf(c, "\to->%s_rx = 1;\n", name);
 	fprintf(c, "\to->%s_time_stamp_rx = time_stamp;\n", name);
-	fprintf(c, "\treturn 0;\n}\n\n");
+	fprintf(c, "\treturn %d;\n}\n\n", msg->dlc);
 	return 0;
 }
 

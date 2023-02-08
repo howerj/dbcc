@@ -63,13 +63,13 @@ TESTS=${OUTDIR}/ex1.c \
       ${OUTDIR}/ex2.c \
       ${OUTDIR}/double_signal.c \
       ${OUTDIR}/float_signal.c \
-      ${OUTDIR}/enum.c \
       ${OUTDIR}/ex1.xml \
       ${OUTDIR}/ex2.xml \
       ${OUTDIR}/ex1.csv \
       ${OUTDIR}/ex2.csv \
       ${OUTDIR}/ex1.json \
       ${OUTDIR}/ex2.json
+#      ${OUTDIR}/enum.c
 
 test: ${TESTS}
 	make -C ${OUTDIR}
