@@ -748,6 +748,7 @@ static int msg2h(can_msg_t *msg, FILE *h, dbc2c_options_t *copts, const char *go
 	make_name(name, MAX_NAME_LENGTH, msg->name, msg->id, copts);
 
 	for (size_t i = 0; i < msg->signal_count; i++) {
+
 		if (copts->generate_unpack)
 			if (signal2scaling(name, msg->id, msg->sigs[i], h, true, true, god, copts) < 0)
 				return -1;
@@ -858,21 +859,26 @@ static int switch_function_print(FILE *c, dbc_t *dbc, bool prototype, const char
 	return fprintf(c, "\treturn -1; \n}\n\n");
 }
 
+static void msg2h_define_can_ids(dbc_t *dbc, FILE *h) {
+	for (size_t i = 0; i < dbc->message_count; i++) {
+		char* name = duplicate(dbc->messages[i]->name);
+
+		for (size_t i = 0; name[i] != 0; i++)
+			name[i] = toupper(name[i]);
+
+		fprintf(h, "#define CAN_ID_%s %lu\n", name, dbc->messages[i]->id);
+
+		free(name);
+	}
+
+	fprintf(h, "\n");
+}
+
 static int msg2h_types(dbc_t *dbc, FILE *h, dbc2c_options_t *copts)
 {
 	assert(h);
 	assert(dbc);
 	assert(copts);
-
-	for (size_t i = 0; i < dbc->val_count; i++) {
-		val_list_t *list = dbc->vals[i];
-		fprintf(h, "typedef enum {\n");
-		for (size_t j = 0; j < list->val_list_item_count; j++) {
-			val_list_item_t *item = list->val_list_items[j];
-			fprintf(h, "\t%s_%s_e = %d,\n", list->name, item->name, item->value);
-		}
-		fprintf(h, "} %s_e;\n\n", list->name);
-	}
 
 	for (size_t i = 0; i < dbc->message_count; i++) {
 		can_msg_t *msg = dbc->messages[i];
@@ -887,7 +893,30 @@ static int msg2h_types(dbc_t *dbc, FILE *h, dbc2c_options_t *copts)
 			if (signal2type(msg->sigs[i], h) < 0)
 				return -1;
 		fprintf(h, "} POSTPACK %s_t;\n\n", name);
+
+		for (size_t i = 0; i < msg->signal_count; i++) {
+			signal_t* signal = msg->sigs[i];
+			val_list_t *list = signal->val_list;
+
+			if(list == NULL)
+				continue;
+
+			fprintf(h, "typedef enum {\n");
+			for (size_t j = 0; j < list->val_list_item_count; j++) {
+				val_list_item_t *item = list->val_list_items[j];
+
+				char enum_value_name[MAX_NAME_LENGTH] = {0};
+				snprintf(enum_value_name, MAX_NAME_LENGTH-1, "%s_%s_%s", name, list->name, item->name);
+
+				for(int i = 0;enum_value_name[i] != 0;i++) 
+					enum_value_name[i] = toupper(enum_value_name[i]);
+
+				fprintf(h, "\t%s = %d,\n", enum_value_name, item->value);
+			}
+			fprintf(h, "} %s_%s_e;\n\n", name, list->name);
+		}
 	}
+
 	return 0;
 }
 
@@ -986,6 +1015,8 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, dbc2c_options_t *copts
 	fprintf(h, "\tDBCC_SIG_STAT_ERROR_E         = 2, /* Encode/Decode/Timestamp/Any error */\n");
 	fprintf(h, "} dbcc_signal_status_e;\n");
 	fprintf(h, "#endif\n\n");
+
+	msg2h_define_can_ids(dbc, h);
 
 	if (msg2h_types(dbc, h, copts) < 0) {
 		rv = -1;
