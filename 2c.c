@@ -315,12 +315,15 @@ static int signal2scaling_encode(const char *msgname, unsigned id, signal_t *sig
 	assert(o);
 	assert(copts);
 	const char *type = determine_type(sig->bit_length, sig->is_signed, sig->is_floating);
+	
 	if (sig->scaling != 1.0 || sig->offset != 0.0)
 		type = "double";
 	if (copts->use_id_in_name)
 		fprintf(o, "int encode_can_0x%03x_%s(can_obj_%s_t *o, %s in)", id, sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
-	else
+	else if(copts->version == 2)
 		fprintf(o, "int encode_can_%s_%s(can_obj_%s_t *o, %s in)", msgname, sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
+	else
+		fprintf(o, "int encode_can_%s(can_obj_%s_t *o, %s in)", sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
 
 	if (header)
 		return fputs(";\n", o);
@@ -373,8 +376,11 @@ static int signal2scaling_decode(const char *msgname, unsigned id, signal_t *sig
 		type = "double";
 	if (copts->use_id_in_name)
 		fprintf(o, "int decode_can_0x%03x_%s(const can_obj_%s_t *o, %s *out)", id, sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
-	else
+	else if(copts->version == 2)
 		fprintf(o, "int decode_can_%s_%s(const can_obj_%s_t *o, %s *out)", msgname, sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
+	else
+		fprintf(o, "int decode_can_%s(const can_obj_%s_t *o, %s *out)", sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
+
 	if (header)
 		return fputs(";\n", o);
 	fputs(" {\n", o);
@@ -906,14 +912,22 @@ static int msg2h_types(dbc_t *dbc, FILE *h, dbc2c_options_t *copts)
 				val_list_item_t *item = list->val_list_items[j];
 
 				char enum_value_name[MAX_NAME_LENGTH] = {0};
-				snprintf(enum_value_name, MAX_NAME_LENGTH-1, "%s_%s_%s", name, list->name, item->name);
+
+				if(copts->version == 2)
+					snprintf(enum_value_name, MAX_NAME_LENGTH-1, "%s_%s_%s", name, list->name, item->name);
+				else
+					fprintf(h, "\t%s_%s_e = %d,\n", list->name, item->name, item->value);
 
 				for(int i = 0;enum_value_name[i] != 0;i++) 
 					enum_value_name[i] = toupper(enum_value_name[i]);
 
 				fprintf(h, "\t%s = %d,\n", enum_value_name, item->value);
 			}
-			fprintf(h, "} %s_%s_e;\n\n", name, list->name);
+
+			if(copts->version == 2)
+				fprintf(h, "} %s_%s_e;\n\n", name, list->name);
+			else
+				fprintf(h, "} %s_e;\n\n", list->name);
 		}
 	}
 
