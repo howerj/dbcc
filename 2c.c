@@ -321,7 +321,7 @@ static int signal2scaling_encode(const char *msgname, unsigned id, signal_t *sig
 	if (copts->use_id_in_name)
 		fprintf(o, "int encode_can_0x%03x_%s(can_obj_%s_t *o, %s in)", id, sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
 	else if(copts->version == 2)
-		fprintf(o, "int encode_can_%s_%s(can_obj_%s_t *o, %s in)", msgname, sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
+		fprintf(o, "int encode_%s_%s(can_obj_%s_t *o, %s in)", msgname, sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
 	else
 		fprintf(o, "int encode_can_%s(can_obj_%s_t *o, %s in)", sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
 
@@ -377,7 +377,7 @@ static int signal2scaling_decode(const char *msgname, unsigned id, signal_t *sig
 	if (copts->use_id_in_name)
 		fprintf(o, "int decode_can_0x%03x_%s(const can_obj_%s_t *o, %s *out)", id, sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
 	else if(copts->version == 2)
-		fprintf(o, "int decode_can_%s_%s(const can_obj_%s_t *o, %s *out)", msgname, sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
+		fprintf(o, "int decode_%s_%s(const can_obj_%s_t *o, %s *out)", msgname, sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
 	else
 		fprintf(o, "int decode_can_%s(const can_obj_%s_t *o, %s *out)", sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
 
