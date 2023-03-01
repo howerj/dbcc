@@ -4,7 +4,7 @@
 .SH NAME
 dbcc \- Compile DBC files into C code
 .SH SYNOPSIS
-dbcc [-] [-h] [-V] [-v] [-g] [-t] [-x] [-j] [-C] [-N] [-D] [-o dir] file*
+dbcc [-] [-h] [-V] [-v] [-g] [-t] [-x] [-j] [-C] [-N] [-D] [-o dir] [-n version] file*
 .SH DESCRIPTION
 Given a DBC file containing descriptions of CAN messages this program will parse
 that file and generate C functions that can serialize and deserialize those
@@ -95,6 +95,10 @@ This option only affects C code generation.
 In lieu of generics, you can make all of the encode/decode functions use double
 width floating point types instead of the smallest typed needed for that
 signal. 
+
+.TP
+.B -n version
+Specify the output version to use. When not specified, the latest will be used.
 
 .TP
 .B file

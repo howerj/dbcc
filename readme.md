@@ -54,8 +54,27 @@ written in pure [C][].
 
 * If you want a specific format in the generated code, integrate [indent][]
 into you toolchain instead of trying to change the code generator.
-* The output of the generated code is not stable, it may change from commit to
+* The output of the generated code is generally not stable, it may change from commit to
 commit, download and maintain a specific version if you want stability.
+* That said, the `-n` option can be used to specify the output version which might give you access
+  to previous behaviour if backwards compatibility has been implemented.
+
+## Generated output versions
+
+You can specify the version to use on a command line with the `-n` option.
+The latest version will be used by default.
+
+**Version 1:**
+
+Legacy/original behaviour. Note that this still won't provide a stable output, but will have
+a better chance of not having breaking changes.
+
+**Version 2:**
+
+- Latest version
+
+- Enum names are qualified with the CAN message name
+- encode/decode function names are also qualified with the message name
 
 ## How to use the generated code
 
