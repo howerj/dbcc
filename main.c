@@ -163,7 +163,7 @@ int main(int argc, char **argv)
 	};
 	int opt = 0;
 
-	while ((opt = dbcc_getopt(argc, argv, "hVvbjgxCNtDpukson:")) != -1) {
+	while ((opt = dbcc_getopt(argc, argv, "hVvbjgxCNtDpukso:n:")) != -1) {
 		switch (opt) {
 		case 'h':
 			usage(argv[0]);
