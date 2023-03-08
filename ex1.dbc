@@ -28,7 +28,7 @@ BS_:
 BU_:
 
 
-BO_ 33 MagicCanNode1RHeartbeat: 2 Vector__XXX
+BO_ 213909870  MagicCanNode1RHeartbeat: 2 Vector__XXX
  SG_ MagicNode1Flags : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
 
 BO_ 35 MagicCanNode2Heartbeat: 2 Vector__XXX
