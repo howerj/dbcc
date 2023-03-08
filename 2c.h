@@ -14,6 +14,7 @@ typedef struct {
 	bool use_doubles_for_encoding;
 	bool generate_print, generate_pack, generate_unpack;
 	bool generate_asserts;
+	int version;
 } dbc2c_options_t;
 
 int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, dbc2c_options_t *copts);

@@ -50,6 +50,7 @@ Options:\n\
 \t-k     generate only pack code\n\
 \t-u     generate only unpack code\n\
 \t-s     disable assert generation\n\
+\t-n [version] specify the version of the generated output. Defaults to the latest.\n\
 \tfile   process a DBC file\n\
 \n\
 Files must come after the arguments have been processed.\n\
@@ -158,10 +159,11 @@ int main(int argc, char **argv)
 		.generate_pack             =  false,
 		.generate_unpack           =  false,
 		.generate_asserts          =  true,
+		.version 				   =  2
 	};
 	int opt = 0;
 
-	while ((opt = dbcc_getopt(argc, argv, "hVvbjgxCNtDpukso:")) != -1) {
+	while ((opt = dbcc_getopt(argc, argv, "hVvbjgxCNtDpukso:n:")) != -1) {
 		switch (opt) {
 		case 'h':
 			usage(argv[0]);
@@ -217,7 +219,16 @@ int main(int argc, char **argv)
 			break;
 		case 's':
 			copts.generate_asserts = false;
-			debug("asserts disabled - apparently you think silent corruption is a good thing", outdir);
+			debug("asserts disabled - apparently you think silent corruption is a good thing");
+			break;
+		case 'n':
+			copts.version = strtol(dbcc_optarg, NULL, 10);
+
+			if(errno == ERANGE)
+				error("Couldnt parse version string: %s", dbcc_optarg);
+
+			if(copts.version < 1 || copts.version > 2)
+				error("Invalid version requested: %i. Version should be greater than 1 and less than 2.", copts.version);
 			break;
 		default:
 			fprintf(stderr, "invalid options\n");
@@ -226,6 +237,8 @@ int main(int argc, char **argv)
 			break;
 		}
 	}
+
+	debug("using version %i of output", copts.version);
 
 	if (!copts.generate_unpack && !copts.generate_pack && !copts.generate_print) {
 		copts.generate_print  = true;
