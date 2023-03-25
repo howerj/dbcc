@@ -49,7 +49,7 @@ const char *emsg(void)
 static void logmsg(log_level_e ll, const char *prefix, const char *fmt, va_list ap)
 {
 	assert(prefix && fmt && ll < LOG_ALL_MESSAGES);
-	if(!verbose(ll))
+	if (!verbose(ll))
 		return;
 	fputs(prefix , stderr);
 	vfprintf(stderr, fmt, ap);
@@ -63,7 +63,7 @@ static void logmsg(log_level_e ll, const char *prefix, const char *fmt, va_list 
 		va_start(args, fmt);\
 		logmsg((LEVEL), (PREFIX), (FMT), args);\
 		va_end(args);\
-	} while(0);
+	} while (0);
 
 
 void error(const char *fmt, ...)
@@ -96,7 +96,7 @@ FILE *fopen_or_die(const char *name, const char *mode)
 	assert(name && mode);
 	errno = 0;
 	FILE *r = fopen(name, mode);
-	if(!r)
+	if (!r)
 		error("open '%s' (mode '%s'): %s", name, mode, emsg());
 	return r;
 }
@@ -105,7 +105,7 @@ void *allocate(size_t sz)
 {
 	errno = 0;
 	void *r = calloc(sz, 1);
-	if(!r)
+	if (!r)
 		error("allocate failed: %s", emsg());
 	return r;
 }
@@ -113,7 +113,7 @@ void *allocate(size_t sz)
 void *reallocator(void *p, size_t n)
 {
 	void *r = realloc(p, n);
-	if(!r)
+	if (!r)
 		error("reallocator failed: %s", emsg());
 	return r;
 }
@@ -134,17 +134,17 @@ char *slurp(FILE *f)
 	long length = 0, r = 0;
 	char *b = NULL;
 	errno = 0;
-	if((r = fseek(f, 0, SEEK_END)) < 0)
+	if ((r = fseek(f, 0, SEEK_END)) < 0)
 		goto fail;
 	errno = 0;
-	if((r = length = ftell(f)) < 0)
+	if ((r = length = ftell(f)) < 0)
 		goto fail;
 	errno = 0;
-	if((r = fseek(f, 0, SEEK_SET)) < 0)
+	if ((r = fseek(f, 0, SEEK_SET)) < 0)
 		goto fail;
 	b = allocate(length + 1);
 	errno = 0;
-	if((unsigned long)length != fread(b, 1, length, f))
+	if ((unsigned long)length != fread(b, 1, length, f))
 		goto fail;
 	return b;
 fail:

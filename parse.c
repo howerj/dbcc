@@ -118,11 +118,11 @@ mpc_ast_t *parse_dbc_file_by_name(const char *name)
 	assert(name);
 	mpc_ast_t *ast = NULL;
 	FILE *input = fopen(name, "rb");
-	if(!input)
+	if (!input)
 		goto end;
 	ast = _parse_dbc_file_by_handle(name, input);
 end:
-	if(input)
+	if (input)
 		fclose(input);
 	return ast;
 }
@@ -139,7 +139,7 @@ static mpc_ast_t *_parse_dbc_file_by_handle(const char *name, FILE *handle)
 	assert(handle);
 	mpc_ast_t *ast = NULL;
 	char *istring = NULL;
-	if(!(istring = slurp(handle)))
+	if (!(istring = slurp(handle)))
 		goto end;
 	ast = _parse_dbc_string(name, istring);
 end:

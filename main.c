@@ -224,10 +224,10 @@ int main(int argc, char **argv)
 		case 'n':
 			copts.version = strtol(dbcc_optarg, NULL, 10);
 
-			if(errno == ERANGE)
+			if (errno == ERANGE)
 				error("Couldnt parse version string: %s", dbcc_optarg);
 
-			if(copts.version < 1 || copts.version > 2)
+			if (copts.version < 1 || copts.version > 2)
 				error("Invalid version requested: %i. Version should be greater than 1 and less than 2.", copts.version);
 			break;
 		default:
@@ -246,7 +246,7 @@ int main(int argc, char **argv)
 		copts.generate_unpack = true;
 	}
 
-	for(int i = dbcc_optind; i < argc; i++) {
+	for (int i = dbcc_optind; i < argc; i++) {
 		debug("reading => %s", argv[i]);
 		mpc_ast_t *ast = parse_dbc_file_by_name(argv[i]);
 		if (!ast) {
