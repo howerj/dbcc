@@ -21,7 +21,7 @@ static int print_escaped(FILE *o, const char *string)
 	assert(string);
 	char c;
 	int r = 0;
-	while((c = *(string)++)) {
+	while ((c = *(string)++)) {
 		switch(c) {
 		case '"':  r = fputs("&quot;", o); break;
 		case '\'': r = fputs("&apos;", o); break;
@@ -31,7 +31,7 @@ static int print_escaped(FILE *o, const char *string)
 		default:
 			   r = fputc(c, o);
 		}
-		if(r < 0)
+		if (r < 0)
 			return -1;
 	}
 	return 0;
@@ -40,8 +40,8 @@ static int print_escaped(FILE *o, const char *string)
 static int indent(FILE *o, unsigned depth)
 {
 	assert(o);
-	while(depth--)
-		if(fputc('\t', o) != '\t')
+	while (depth--)
+		if (fputc('\t', o) != '\t')
 			return -1;
 	return 0;
 }
@@ -54,17 +54,17 @@ static int pnode(FILE *o, unsigned depth, const char *node, const char *fmt, ...
 	va_list args;
 	assert(o && node && fmt);
 	errno = 0;
-	if(indent(o, depth) < 0)
+	if (indent(o, depth) < 0)
 		goto warn;
-	if(fprintf(o, "<%s>", node) < 0)
+	if (fprintf(o, "<%s>", node) < 0)
 		goto warn;
 	assert(fmt);
 	va_start(args, fmt);
 	int r = vfprintf(o, fmt, args);
 	va_end(args);
-	if(r < 0)
+	if (r < 0)
 		goto warn;
-	if(fprintf(o, "</%s>\n", node) < 0)
+	if (fprintf(o, "</%s>\n", node) < 0)
 		goto warn;
 	return 0;
 warn:
@@ -79,17 +79,17 @@ static int comment(FILE *o, unsigned depth, const char *fmt, ...)
 	va_list args;
 	assert(o && fmt);
 	errno = 0;
-	if(indent(o, depth) < 0)
+	if (indent(o, depth) < 0)
 		goto warn;
-	if(fputs("<!-- ", o) < 0)
+	if (fputs("<!-- ", o) < 0)
 		goto warn;
 	assert(fmt);
 	va_start(args, fmt);
 	int r = vfprintf(o, fmt, args);
 	va_end(args);
-	if(r < 0)
+	if (r < 0)
 		goto warn;
-	if(fputs(" -->\n", o) < 0)
+	if (fputs(" -->\n", o) < 0)
 		goto warn;
 	return 0;
 warn:
@@ -122,7 +122,7 @@ static int signal2xml(signal_t *sig, FILE *o, unsigned depth)
 	fprintf(o, "</units>\n");
 
 	indent(o, depth);
-	if(fprintf(o, "</signal>\n") < 0)
+	if (fprintf(o, "</signal>\n") < 0)
 		return -1;
 	return 0;
 }
@@ -138,40 +138,40 @@ static int msg2xml(can_msg_t *msg, FILE *o, unsigned depth)
 	pnode(o, depth+1, "dlc",  "%u", msg->dlc);
 
 	signal_t *multiplexor = NULL;
-	for(size_t i = 0; i < msg->signal_count; i++) {
+	for (size_t i = 0; i < msg->signal_count; i++) {
 		signal_t *sig = msg->sigs[i];
-		if(sig->is_multiplexor) {
-			if(multiplexor) {
+		if (sig->is_multiplexor) {
+			if (multiplexor) {
 				error("multiple multiplexor values detected (only one per CAN msg is allowed) for %s", msg->name);
 				return -1;
 			}
 			multiplexor = sig;
 			continue;
 		}
-		if(sig->is_multiplexed)
+		if (sig->is_multiplexed)
 			continue;
-		if(signal2xml(sig, o, depth+1) < 0)
+		if (signal2xml(sig, o, depth+1) < 0)
 			return -1;
 	}
 
-	if(multiplexor) {
+	if (multiplexor) {
 		indent(o, depth+1);
 		fprintf(o, "<multiplexor-group>\n");
 		indent(o, depth+2);
 		fprintf(o, "<multiplexor>\n");
-		if(signal2xml(multiplexor, o, depth+2) < 0)
+		if (signal2xml(multiplexor, o, depth+2) < 0)
 			return -1;
 		indent(o, depth+2);
 		fprintf(o, "</multiplexor>\n");
 
-		for(size_t i = 0; i < msg->signal_count; i++) {
+		for (size_t i = 0; i < msg->signal_count; i++) {
 			signal_t *sig = msg->sigs[i];
-			if(!(sig->is_multiplexed))
+			if (!(sig->is_multiplexed))
 				continue;
 			indent(o, depth+2);
 			fprintf(o, "<multiplexed>\n");
 			pnode(o, depth+3, "multiplexed-on", "%u",  sig->switchval);
-			if(signal2xml(sig, o, depth+3) < 0)
+			if (signal2xml(sig, o, depth+3) < 0)
 				return -1;
 			indent(o, depth+2);
 			fprintf(o, "</multiplexed>\n");
@@ -181,7 +181,7 @@ static int msg2xml(can_msg_t *msg, FILE *o, unsigned depth)
 	}
 
 	indent(o, depth);
-	if(fprintf(o, "</message>\n") < 0)
+	if (fprintf(o, "</message>\n") < 0)
 		return -1;
 	return 0;
 }
@@ -203,9 +203,9 @@ int dbc2xml(dbc_t *dbc, FILE *output, bool use_time_stamps)
 
 	fprintf(output, "<candb>\n");
 	for (size_t i = 0; i < dbc->message_count; i++)
-		if(msg2xml(dbc->messages[i], output, 1) < 0)
+		if (msg2xml(dbc->messages[i], output, 1) < 0)
 			return -1;
-	if(fprintf(output, "</candb>\n") < 0)
+	if (fprintf(output, "</candb>\n") < 0)
 		return -1;
 	return 0;
 }

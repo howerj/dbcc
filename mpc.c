@@ -2405,7 +2405,7 @@ mpc_parser_t *mpc_re_mode(const char *re, int mode) {
   mpc_optimise(Base);
   mpc_optimise(Range);
 
-  if(!mpc_parse("<mpc_re_compiler>", re, RegexEnclose, &r)) {
+  if (!mpc_parse("<mpc_re_compiler>", re, RegexEnclose, &r)) {
     err_msg = mpc_err_string(r.error);
     err_out = mpc_failf("Invalid Regex: %s", err_msg);
     mpc_err_delete(r.error);
@@ -2779,7 +2779,7 @@ static void mpc_print_unretained(mpc_parser_t *p, int force) {
 
   if (p->type == MPC_TYPE_OR) {
     printf("(");
-    for(i = 0; i < p->data.or.n-1; i++) {
+    for (i = 0; i < p->data.or.n-1; i++) {
       mpc_print_unretained(p->data.or.xs[i], 0);
       printf(" | ");
     }
@@ -2789,7 +2789,7 @@ static void mpc_print_unretained(mpc_parser_t *p, int force) {
 
   if (p->type == MPC_TYPE_AND) {
     printf("(");
-    for(i = 0; i < p->data.and.n-1; i++) {
+    for (i = 0; i < p->data.and.n-1; i++) {
       mpc_print_unretained(p->data.and.xs[i], 0);
       printf(" ");
     }
@@ -3048,8 +3048,8 @@ int mpc_ast_get_index(mpc_ast_t *ast, const char *tag) {
 int mpc_ast_get_index_lb(mpc_ast_t *ast, const char *tag, int lb) {
   int i;
 
-  for(i=lb; i<ast->children_num; i++) {
-    if(strcmp(ast->children[i]->tag, tag) == 0) {
+  for (i=lb; i<ast->children_num; i++) {
+    if (strcmp(ast->children[i]->tag, tag) == 0) {
       return i;
     }
   }
@@ -3064,8 +3064,8 @@ mpc_ast_t *mpc_ast_get_child(mpc_ast_t *ast, const char *tag) {
 mpc_ast_t *mpc_ast_get_child_lb(mpc_ast_t *ast, const char *tag, int lb) {
   int i;
 
-  for(i=lb; i<ast->children_num; i++) {
-    if(strcmp(ast->children[i]->tag, tag) == 0) {
+  for (i=lb; i<ast->children_num; i++) {
+    if (strcmp(ast->children[i]->tag, tag) == 0) {
       return ast->children[i];
     }
   }
@@ -3093,7 +3093,7 @@ mpc_ast_trav_t *mpc_ast_traverse_start(mpc_ast_t *ast,
       break;
 
     case mpc_ast_trav_order_post:
-      while(cnode->children_num > 0) {
+      while (cnode->children_num > 0) {
         cnode = cnode->children[0];
 
         n_trav = malloc(sizeof(mpc_ast_trav_t));
@@ -3121,14 +3121,14 @@ mpc_ast_t *mpc_ast_traverse_next(mpc_ast_trav_t **trav) {
   int cchild;
 
   /* The end of traversal was reached */
-  if(*trav == NULL) return NULL;
+  if (*trav == NULL) return NULL;
 
   switch((*trav)->order) {
     case mpc_ast_trav_order_pre:
       ret = (*trav)->curr_node;
 
       /* If there aren't any more children, go up */
-      while(*trav != NULL &&
+      while (*trav != NULL &&
         (*trav)->curr_child >= (*trav)->curr_node->children_num)
       {
         to_free = *trav;
@@ -3137,7 +3137,7 @@ mpc_ast_t *mpc_ast_traverse_next(mpc_ast_trav_t **trav) {
       }
 
       /* If trav is NULL, the end was reached */
-      if(*trav == NULL) {
+      if (*trav == NULL) {
         break;
       }
 
@@ -3165,20 +3165,20 @@ mpc_ast_t *mpc_ast_traverse_next(mpc_ast_trav_t **trav) {
       *trav = (*trav)->parent;
       free(to_free);
 
-      if(*trav == NULL)
+      if (*trav == NULL)
         break;
 
       /* Next child */
       (*trav)->curr_child++;
 
       /* If there aren't any more children, this is the next node */
-      if((*trav)->curr_child >= (*trav)->curr_node->children_num) {
+      if ((*trav)->curr_child >= (*trav)->curr_node->children_num) {
         break;
       }
 
       /* If there are still more children, find the leftmost child from this
        * node */
-      while((*trav)->curr_node->children_num > 0) {
+      while ((*trav)->curr_node->children_num > 0) {
         n_trav = malloc(sizeof(mpc_ast_trav_t));
 
         cchild = (*trav)->curr_child;
@@ -3202,7 +3202,7 @@ void mpc_ast_traverse_free(mpc_ast_trav_t **trav) {
   mpc_ast_trav_t *n_trav;
 
   /* Go through parents until all are free */
-  while(*trav != NULL) {
+  while (*trav != NULL) {
       n_trav = (*trav)->parent;
       free(*trav);
       *trav = n_trav;
@@ -3569,7 +3569,7 @@ mpc_parser_t *mpca_grammar_st(const char *grammar, mpca_grammar_st_t *st) {
   mpc_optimise(Term);
   mpc_optimise(Base);
 
-  if(!mpc_parse("<mpc_grammar_compiler>", grammar, GrammarTotal, &r)) {
+  if (!mpc_parse("<mpc_grammar_compiler>", grammar, GrammarTotal, &r)) {
     err_msg = mpc_err_string(r.error);
     err_out = mpc_failf("Invalid Grammar: %s", err_msg);
     mpc_err_delete(r.error);
@@ -3637,7 +3637,7 @@ static void mpca_stmt_list_delete(mpc_val_t *x) {
 
   mpca_stmt_t **stmts = x;
 
-  while(*stmts) {
+  while (*stmts) {
     mpca_stmt_t *stmt = *stmts;
     free(stmt->ident);
     free(stmt->name);
@@ -3656,7 +3656,7 @@ static mpc_val_t *mpca_stmt_list_apply_to(mpc_val_t *x, void *s) {
   mpca_stmt_t **stmts = x;
   mpc_parser_t *left;
 
-  while(*stmts) {
+  while (*stmts) {
     stmt = *stmts;
     left = mpca_grammar_find_parser(stmt->ident, st);
     if (st->flags & MPCA_LANG_PREDICTIVE) { stmt->grammar = mpc_predictive(stmt->grammar); }
@@ -3868,7 +3868,7 @@ static int mpc_nodecount_unretained(mpc_parser_t* p, int force) {
 
   if (p->type == MPC_TYPE_OR) {
     total = 1;
-    for(i = 0; i < p->data.or.n; i++) {
+    for (i = 0; i < p->data.or.n; i++) {
       total += mpc_nodecount_unretained(p->data.or.xs[i], 0);
     }
     return total;
@@ -3876,7 +3876,7 @@ static int mpc_nodecount_unretained(mpc_parser_t* p, int force) {
 
   if (p->type == MPC_TYPE_AND) {
     total = 1;
-    for(i = 0; i < p->data.and.n; i++) {
+    for (i = 0; i < p->data.and.n; i++) {
       total += mpc_nodecount_unretained(p->data.and.xs[i], 0);
     }
     return total;
@@ -3914,13 +3914,13 @@ static void mpc_optimise_unretained(mpc_parser_t *p, int force) {
   if (p->type == MPC_TYPE_COUNT)      { mpc_optimise_unretained(p->data.repeat.x, 0); }
 
   if (p->type == MPC_TYPE_OR) {
-    for(i = 0; i < p->data.or.n; i++) {
+    for (i = 0; i < p->data.or.n; i++) {
       mpc_optimise_unretained(p->data.or.xs[i], 0);
     }
   }
 
   if (p->type == MPC_TYPE_AND) {
-    for(i = 0; i < p->data.and.n; i++) {
+    for (i = 0; i < p->data.and.n; i++) {
       mpc_optimise_unretained(p->data.and.xs[i], 0);
     }
   }

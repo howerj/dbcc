@@ -15,18 +15,18 @@ static int msg2csv(can_msg_t *msg, FILE *o)
 	assert(o);
 
 	signal_t *multiplexor = NULL;
-	for(size_t i = 0; i < msg->signal_count; i++) {
+	for (size_t i = 0; i < msg->signal_count; i++) {
 		char sv[64];
 		const char *multi = "N/A";
 		signal_t *sig = msg->sigs[i];
-		if(sig->is_multiplexor) {
-			if(multiplexor) {
+		if (sig->is_multiplexor) {
+			if (multiplexor) {
 				error("multiple multiplexor values detected (only one per CAN msg is allowed) for %s", msg->name);
 				return -1;
 			}
 			multi = "multiplexor";
 		}
-		if(sig->is_multiplexed) {
+		if (sig->is_multiplexed) {
 			sprintf(sv, "%d", sig->switchval);
 			multi = sv;
 		}
@@ -44,10 +44,10 @@ static int msg2csv(can_msg_t *msg, FILE *o)
 		fprintf(o, "%s, ", sig->is_signed ? "true" : "false");
 		bool have_units = false;
 		const char *units = sig->units;
-		for(size_t i = 0; units[i]; i++)
-			if(!isspace(units[i]))
+		for (size_t i = 0; units[i]; i++)
+			if (!isspace(units[i]))
 				have_units = true;
-		if(!have_units)
+		if (!have_units)
 			units = "none";
 		fprintf(o, "%s, ", units);
 		fprintf(o, "%s, ", multi);
@@ -71,7 +71,7 @@ int dbc2csv(dbc_t *dbc, FILE *output)
 	assert(output);
 	fprintf(output, "MSG, ID, DLC, Signal, Start, Length, Endianess, Scaling, Offset, Minimum, Maximum, Signed, Units, Multiplexed, Floating,\n");
 	for (size_t i = 0; i < dbc->message_count; i++)
-		if(msg2csv(dbc->messages[i], output) < 0)
+		if (msg2csv(dbc->messages[i], output) < 0)
 			return -1;
 	return 0;
 }
