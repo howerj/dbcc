@@ -14,6 +14,7 @@ typedef struct {
 	bool use_doubles_for_encoding;
 	bool generate_print, generate_pack, generate_unpack;
 	bool generate_asserts;
+	bool generate_enum_can_ids;
 	int version;
 } dbc2c_options_t;
 

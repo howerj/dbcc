@@ -16,6 +16,7 @@
             <th>Message</th>
             <th>Id. (decimal)</th>
             <th>DLC</th>
+            <th>Extended</th>
             <th>Signals</th>
           </tr>
           <xsl:apply-templates select="message">
@@ -48,6 +49,7 @@
       <td> <xsl:value-of select="name"/> </td>
       <td> <xsl:value-of select="id"/> </td>
       <td> <xsl:value-of select="dlc"/> </td>
+      <td> <xsl:value-of select="extended"/> </td>
       <td>
         <xsl:apply-templates select="signal" mode="signal-name">
           <xsl:sort select="name"/>

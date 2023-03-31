@@ -239,6 +239,19 @@ static can_msg_t *ast2msg(mpc_ast_t *top, mpc_ast_t *ast, dbc_t *dbc)
 	r = sscanf(id->contents,  "%lu", &c->id);
 	assert(r == 1);
 
+	/* Extended CAN messages use the top most bit (which should
+	 * not normally be set) to indicate that they are extended
+	 * and not normal messages. */
+
+	// TODO: Handle version generation
+	//if (copt->version >= 3 || copt->feature_mask_ids) {
+		const uint32_t msk = 0x80000000u;
+		if (c->id & 0x80000000u) {
+			c->is_extended = true;
+			c->id &= ~msk;
+		}
+	//}
+
 	signal_t **signal_s = allocate(sizeof(*signal_s));
 	size_t len = 1, j = 0;
 	for (int i = 0; i >= 0;) {

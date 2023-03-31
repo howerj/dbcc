@@ -104,9 +104,10 @@ static int msg2json(can_msg_t *msg, FILE *o, unsigned depth)
 	assert(o);
 	indent(o, depth);
 	fprintf(o, "{\n");
-	pfield(o, depth+1, false, STRING, "name", "%s", msg->name);
-	pfield(o, depth+1, false, INT,    "id",   "%u", msg->id);
-	pfield(o, depth+1, false, INT,    "dlc",  "%u", msg->dlc);
+	pfield(o, depth+1, false, STRING, "name",      "%s", msg->name);
+	pfield(o, depth+1, false, INT,    "id",        "%u", msg->id);
+	pfield(o, depth+1, false, BOOL,   "extended",  "%s", msg->is_extended ? "true" : "false");
+	pfield(o, depth+1, false, INT,    "dlc",       "%u", msg->dlc);
 
 	signal_t *multiplexor = NULL;
 	indent(o, depth+1);

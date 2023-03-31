@@ -30,6 +30,7 @@
         <xs:element name="id" type="can-id"/>
         <!-- 11 or 29 bit CAN ID -->
         <xs:element name="dlc" type="dlc"/>
+        <xs:element maxOccurs="1" minOccurs="0" name="extended" type="intBool"/>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="signal"/>
         <xs:element maxOccurs="1" minOccurs="0" ref="multiplexor-group"/>
       </xs:sequence>
@@ -129,6 +130,12 @@
     <xs:restriction base="xs:integer">
       <xs:minInclusive value="0"/>
       <xs:maxInclusive value="64"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="intBool">
+    <xs:restriction base="xs:integer">
+      <xs:minInclusive value="0"/>
+      <xs:maxInclusive value="1"/>
     </xs:restriction>
   </xs:simpleType>
 </xs:schema>

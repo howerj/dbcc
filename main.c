@@ -15,6 +15,10 @@
 #include "2json.h"
 #include "options.h"
 
+#ifndef NELEMS
+#define NELEMS(X) (sizeof(X) / sizeof((X)[0]))
+#endif
+
 typedef enum {
 	CONVERT_TO_C,
 	CONVERT_TO_XML,
@@ -63,6 +67,7 @@ dbcc itself is licensed under the MIT license, Copyright (c) 2016, Richard\n\
 Howe. (see https://github.com/howerj/dbcc for the full program source).\n";
 	fputs(msg, stderr);
 }
+// TODO: More option processing, allow key=val to be specified
 
 static char *replace_file_type(const char *file, const char *suffix)
 {
@@ -146,11 +151,51 @@ static int dbc2jsonWrapper(dbc_t *dbc, const char *dbc_file, bool use_time_stamp
 	return r;
 }
 
+
+static int flag(const char *v) { /* really should be case insensitive */
+	static char *y[] = { "yes", "on", "true", };
+	static char *n[] = { "no",  "off", "false", };
+
+	for (size_t i = 0; i < NELEMS(y); i++) {
+		if (!strcmp(y[i], v))
+			return 1;
+		if (!strcmp(n[i], v))
+			return 0;
+	}
+	return -1;
+}
+
+static int set_option(dbc2c_options_t *s, char *kv) {
+	assert(s);
+	assert(kv);
+	char *k = kv, *v = NULL;
+	if ((v = strchr(kv, '=')) == NULL || *v == '\0') {
+		return -1;
+	}
+	*v++ = '\0';
+
+	int r = flag(v);
+	if (r < 0) return -1;
+
+	if (!strcmp(k, "use-id-in-name"))        { s->use_id_in_name           = r; }
+	else if (!strcmp(k, "use-time-stamps"))  { s->use_time_stamps          = r; }
+	else if (!strcmp(k, "use-doubles"))      { s->use_doubles_for_encoding = r; }
+	else if (!strcmp(k, "generate-print"))   { s->generate_print           = r; }
+	else if (!strcmp(k, "generate-pack"))    { s->generate_pack            = r; }
+	else if (!strcmp(k, "generate-unpack"))  { s->generate_unpack          = r; }
+	else if (!strcmp(k, "generate-asserts")) { s->generate_asserts         = r; }
+	else { return -2; }
+	return 0;
+}
+
+// TODO: Formatting, new printing functions
 int main(int argc, char **argv)
 {
 	log_level_e log_level = get_log_level();
 	conversion_type_e convert = CONVERT_TO_C;
 	const char *outdir = NULL;
+	// TODO: Copy copts to dbc_t, use that version threaded throughout
+	// system instead.
 	dbc2c_options_t copts = {
 		.use_id_in_name            =  true,
 		.use_time_stamps           =  false,
@@ -159,11 +204,11 @@ int main(int argc, char **argv)
 		.generate_pack             =  false,
 		.generate_unpack           =  false,
 		.generate_asserts          =  true,
-		.version 				   =  2
+		.version                   =  3,
 	};
 	int opt = 0;
 
-	while ((opt = dbcc_getopt(argc, argv, "hVvbjgxCNtDpukso:n:")) != -1) {
+	while ((opt = dbcc_getopt(argc, argv, "hVvbjgxCNtDpukso:n:O:")) != -1) {
 		switch (opt) {
 		case 'h':
 			usage(argv[0]);
@@ -217,19 +262,24 @@ int main(int argc, char **argv)
 			outdir = dbcc_optarg;
 			debug("output directory: %s", outdir);
 			break;
+		case 'O':
+			if (set_option(&copts, dbcc_optarg) < 0)
+				error("Invalid -O option setting: %s", dbcc_optarg);
+			break;
 		case 's':
 			copts.generate_asserts = false;
 			debug("asserts disabled - apparently you think silent corruption is a good thing");
 			break;
-		case 'n':
+		case 'n': {
 			copts.version = strtol(dbcc_optarg, NULL, 10);
-
 			if (errno == ERANGE)
-				error("Couldnt parse version string: %s", dbcc_optarg);
+				error("Could not parse version string: %s", dbcc_optarg);
 
-			if (copts.version < 1 || copts.version > 2)
-				error("Invalid version requested: %i. Version should be greater than 1 and less than 2.", copts.version);
+			const int min = 1, max = 3;
+			if (copts.version < min || copts.version > max)
+				error("Invalid version requested: %d. Version should be greater than %d and less than %d.", copts.version, min, max);
 			break;
+		}
 		default:
 			fprintf(stderr, "invalid options\n");
 			usage(argv[0]);
@@ -238,7 +288,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	debug("using version %i of output", copts.version);
+	debug("using version %d of output", copts.version);
 
 	if (!copts.generate_unpack && !copts.generate_pack && !copts.generate_print) {
 		copts.generate_print  = true;
@@ -257,6 +307,7 @@ int main(int argc, char **argv)
 			mpc_ast_print(ast);
 
 		dbc_t *dbc = ast2dbc(ast);
+		dbc->version = copts.version;
 
 		char *outpath = dbcc_basename(argv[i]);
 		if (outdir) {
@@ -267,7 +318,7 @@ int main(int argc, char **argv)
 		}
 
 		int r = 0;
-		switch(convert) {
+		switch (convert) {
 		case CONVERT_TO_C:
 			r = dbc2cWrapper(dbc, outpath, dbcc_basename(argv[i]), &copts);
 			break;
@@ -299,4 +350,5 @@ int main(int argc, char **argv)
 
 	return 0;
 }
+
 

@@ -32,7 +32,7 @@ static int msg2csv(can_msg_t *msg, FILE *o)
 		}
 
 		/* "MSG, ID, DLC, Signal, Start, Length, Endianess, Scaling, Offset, Minimum, Maximum, Signed, Units, Multiplexed */
-		fprintf(o, "%s, %lu, %u, ", msg->name, msg->id, msg->dlc);
+		fprintf(o, "%s, %lu, %u, ", msg->name, msg->id | ((unsigned long)msg->is_extended << 31) , msg->dlc);
 		fprintf(o, "%s, ", sig->name);
 		fprintf(o, "%u, ", sig->start_bit);
 		fprintf(o, "%u, ", sig->bit_length);

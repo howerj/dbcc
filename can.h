@@ -64,6 +64,7 @@ typedef struct {
 	size_t signal_count; /**< number of signals */
 	unsigned dlc;        /**< length of CAN message 0-8 bytes */
 	unsigned long id;    /**< identifier, 11 or 29 bit */
+	bool is_extended;    /**< is extended mode message (29bit) */
 	char *comment;
 } can_msg_t;
 
@@ -73,6 +74,7 @@ typedef struct {
 	can_msg_t **messages; /**< list of messages */
 	size_t val_count;     /**< count of vals */
 	val_list_t **vals;    /**< value list; used for enumerations in DBC file */
+	int version;          /**< version information used for generating files (not just C) */
 } dbc_t;
 
 dbc_t *ast2dbc(mpc_ast_t *ast);

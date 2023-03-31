@@ -136,6 +136,7 @@ static int msg2xml(can_msg_t *msg, FILE *o, unsigned depth)
 	pnode(o, depth+1, "name", "%s", msg->name);
 	pnode(o, depth+1, "id",   "%u", msg->id);
 	pnode(o, depth+1, "dlc",  "%u", msg->dlc);
+	pnode(o, depth+1, "extended",  "%d", (int)msg->is_extended);
 
 	signal_t *multiplexor = NULL;
 	for (size_t i = 0; i < msg->signal_count; i++) {

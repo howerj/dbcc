@@ -862,19 +862,63 @@ static int switch_function_print(FILE *c, dbc_t *dbc, bool prototype, const char
 	return fprintf(c, "\treturn -1; \n}\n\n");
 }
 
-static void msg2h_define_can_ids(dbc_t *dbc, FILE *h) {
+// TODO: Define enums as well/instead of.
+/* NB. We should really use these enum names instead of the msg->id */
+static void msg2h_define_can_ids(dbc_t *dbc, FILE *h, dbc2c_options_t *copts) {
+	assert(dbc);
+	assert(h);
+	assert(copts);
+
+	if (dbc->message_count == 0)
+		return;
+
+	const int ens = copts->generate_enum_can_ids;
+
+	if (ens) {
+		fprintf(h, "enum {\n"); // TODO: Typedef
+	}
 	for (size_t i = 0; i < dbc->message_count; i++) {
-		char* name = duplicate(dbc->messages[i]->name);
+		can_msg_t *msg = dbc->messages[i];
+		char *name = duplicate(msg->name);
 
 		for (size_t i = 0; name[i] != 0; i++)
 			name[i] = toupper(name[i]);
-
-		fprintf(h, "#define CAN_ID_%s %lu\n", name, dbc->messages[i]->id);
+		if (ens) {
+			fprintf(h, "\tCAN_ID_%s = %lu, /* 0x%lx */\n", name, msg->id, msg->id);
+		} else {
+			fprintf(h, "#define CAN_ID_%s (%lu) /* 0x%lx */\n", name, msg->id, msg->id);
+		}
 
 		free(name);
 	}
+	if (ens) {
+		fprintf(h, "};\n");
+	}
 
 	fprintf(h, "\n");
+}
+
+static char *escape_string(const char *s, int upper) {
+	const size_t max_char_len = 4;
+	const size_t l = strlen(s) * max_char_len + 1;
+	char *n = allocate(l);
+	int ch = 0;
+	for (size_t i = 0, j = 0; (ch = s[i]); i++) {
+		assert(j < l);
+		ch = ch == ' ' ? '_' : ch;
+		if (!isalnum(ch) && ch != '_') {
+
+			sprintf(&n[j], "_%02x_", ch);
+			j += max_char_len;
+		} else {
+			if (upper > 0)
+				ch = toupper(ch);
+			if (upper < 0)
+				ch = tolower(ch);
+			n[j++] = ch;
+		}
+	}
+	return n;
 }
 
 static int msg2h_types(dbc_t *dbc, FILE *h, dbc2c_options_t *copts)
@@ -901,24 +945,32 @@ static int msg2h_types(dbc_t *dbc, FILE *h, dbc2c_options_t *copts)
 			signal_t* signal = msg->sigs[i];
 			val_list_t *list = signal->val_list;
 
-			if (list == NULL)
+			if (!list)
 				continue;
 
+			/* We really should use enum values in generated C codes/as types */
 			fprintf(h, "typedef enum {\n");
 			for (size_t j = 0; j < list->val_list_item_count; j++) {
 				val_list_item_t *item = list->val_list_items[j];
 
-				char enum_value_name[MAX_NAME_LENGTH] = {0};
+				int r = 0;
 
-				if (copts->version >= 2)
-					snprintf(enum_value_name, MAX_NAME_LENGTH-1, "%s_%s_%s", name, list->name, item->name);
-				else
-					fprintf(h, "\t%s_%s_e = %d,\n", list->name, item->name, item->value);
+				if (copts->version >= 2) {
+					char *ename = escape_string(item->name, 0);
+					if (strlen(ename) != strlen(item->name))
+						warning("Non C-Ident characters in enumeration generation: '%s' -> '%s'", item->name, ename);
+					char enum_value_name[MAX_NAME_LENGTH] = { 0, };
+					r = snprintf(enum_value_name, MAX_NAME_LENGTH-1, "%s_%s_%s", name, list->name, ename);
+					for (int i = 0; enum_value_name[i]; i++) 
+						enum_value_name[i] = toupper(enum_value_name[i]);
+					fprintf(h, "\t%s = %d,\n", enum_value_name, item->value);
+					free(ename);
+				} else {
+					r = fprintf(h, "\t%s_%s_e = %d,\n", list->name, item->name, item->value);
+				}
+				if (r < 0)
+					error("output failed");
 
-				for (int i = 0;enum_value_name[i] != 0;i++) 
-					enum_value_name[i] = toupper(enum_value_name[i]);
-
-				fprintf(h, "\t%s = %d,\n", enum_value_name, item->value);
 			}
 
 			if (copts->version >= 2)
@@ -999,7 +1051,7 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, dbc2c_options_t *copts
 		"/* If the contents of this file have caused breaking changes for you, you could try using\n"
 		"   an older version of the generator. You can specify this on the command line with\n"
 		"   the -n option. */\n"
-		"#define DBCC_GENERATOR_VERSION %i\n\n"
+		"#define DBCC_GENERATOR_VERSION (%d)\n\n"
 		"#include <stdint.h>\n"
 		"%s\n\n"
 		"#ifdef __cplusplus\n"
@@ -1032,7 +1084,7 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, dbc2c_options_t *copts
 	fprintf(h, "} dbcc_signal_status_e;\n");
 	fprintf(h, "#endif\n\n");
 
-	msg2h_define_can_ids(dbc, h);
+	msg2h_define_can_ids(dbc, h, copts);
 
 	if (msg2h_types(dbc, h, copts) < 0) {
 		rv = -1;
