@@ -50,6 +50,7 @@ static mpc_ast_t *_parse_dbc_file_by_handle(const char *name, FILE *handle);
 	X(comment_string,       "comment_string")\
 	X(dbc,                  "dbc")
 
+/* TODO: Be more lax in what is acceptable */
 static const char *dbc_grammar =
 " s                    : /[ \\t]/ ; \n"
 " n                    : /\\r?\\n/ ; \n"
