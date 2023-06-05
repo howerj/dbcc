@@ -207,7 +207,8 @@ static int signal2deserializer(signal_t *sig, const char *msg_name, FILE *o, con
 			fprintf(o, "%sx = (x & 0x%"PRIx64") ? (x | 0x%"PRIx64") : x; \n", indent, top, negative);
 	}
 
-	fprintf(o, "%so->%s.%s = x;\n", indent, msg_name, sig->name);
+	const char * type = determine_type(sig->bit_length, sig->is_signed, sig->is_floating);
+	fprintf(o, "%so->%s.%s = (%s)x;\n", indent, msg_name, sig->name, type);
 	return 0;
 }
 
@@ -314,7 +315,8 @@ static int signal2scaling_encode(const char *msgname, unsigned id, signal_t *sig
 	assert(sig);
 	assert(o);
 	assert(copts);
-	const char *type = determine_type(sig->bit_length, sig->is_signed, sig->is_floating);
+	const char *cast_type = determine_type(sig->bit_length, sig->is_signed, sig->is_floating);
+	const char *type = cast_type;
 	if (sig->scaling != 1.0 || sig->offset != 0.0)
 		type = "double";
 	if (copts->use_id_in_name)
@@ -347,7 +349,7 @@ static int signal2scaling_encode(const char *msgname, unsigned id, signal_t *sig
 		}
 
 		if (gmin || gmax)
-			fprintf(o, "\to->%s.%s = 0;\n", msgname, sig->name); // cast!
+			fprintf(o, "\to->%s.%s = (%s)0;\n", msgname, sig->name, cast_type);
 		if (gmin)
 			fprintf(o, "\tif (in < %g)\n\t\treturn -1;\n", sig->minimum);
 		if (gmax)
@@ -360,7 +362,12 @@ static int signal2scaling_encode(const char *msgname, unsigned id, signal_t *sig
 		fprintf(o, "\tin += %g;\n", -1.0 * sig->offset);
 	if (sig->scaling != 1.0)
 		fprintf(o, "\tin *= %g;\n", 1.0 / sig->scaling);
-	fprintf(o, "\to->%s.%s = in;\n", msgname, sig->name); // cast!
+
+	if (!copts->use_doubles_for_encoding && strcmp(type, cast_type) == 0)
+		fprintf(o, "\to->%s.%s = in;\n", msgname, sig->name);
+	else
+		fprintf(o, "\to->%s.%s = (%s)in;\n", msgname, sig->name, cast_type);
+
 	return fputs("\treturn 0;\n}\n\n", o);
 }
 
