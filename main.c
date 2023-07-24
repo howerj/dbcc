@@ -307,6 +307,9 @@ int main(int argc, char **argv)
 			mpc_ast_print(ast);
 
 		dbc_t *dbc = ast2dbc(ast);
+		if (!dbc) {
+			return 1;
+		}
 		dbc->version = copts.version;
 
 		char *outpath = dbcc_basename(argv[i]);

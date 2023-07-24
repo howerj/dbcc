@@ -1,0 +1,81 @@
+VERSION ""
+
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: Destination IVT_30_Node
+
+
+BO_ 2147483938 IVT_SleepAck: 1 IVT_30_Node
+ SG_ IVT_SleepAck : 0|4@1- (1,0) [0|0] ""  Destination
+
+BO_ 3 IVT_Ctrl: 8 Destination
+ SG_ IVT_Ctrl_Fuse_State : 13|1@1+ (1,0) [0|0] ""  IVT_30_Node
+
+BO_ 1 enum1: 8 Destination
+ SG_ state : 0|4@1+ (1,0) [0|0] ""  A_node
+
+BO_ 4 enum2: 8 Destination
+ SG_ state : 0|4@1+ (1,0) [0|0] ""  A_node
+
+
+CM_ BO_ 2147483938 "Control message 1.";
+CM_ SG_ 2147483938 IVT_SleepAck "cm 1";
+CM_ BO_ 3 "Control message 2.";
+CM_ SG_ 3 IVT_Ctrl_Fuse_State "cm 1";
+BA_DEF_  "Version" STRING ;
+BA_DEF_  "SyncJumpWidthMin" INT 1 4;
+BA_DEF_  "SyncJumpWidthMax" INT 1 4;
+BA_DEF_  "SamplePointMin" INT 1 100;
+BA_DEF_  "SamplePointMax" INT 1 100;
+BA_DEF_ SG_  "GenSigStartValue" INT -2147483648 2147483647;
+BA_DEF_  "Baudrate" INT 250000 1000000;
+BA_DEF_  "BusType" STRING ;
+BA_DEF_ BO_  "GenMsgCycleTime" INT 0 65535;
+BA_DEF_DEF_  "Version" "1_1_0_Released";
+BA_DEF_DEF_  "SyncJumpWidthMin" 1;
+BA_DEF_DEF_  "SyncJumpWidthMax" 1;
+BA_DEF_DEF_  "SamplePointMin" 1;
+BA_DEF_DEF_  "SamplePointMax" 1;
+BA_DEF_DEF_  "GenSigStartValue" 0;
+BA_DEF_DEF_  "Baudrate" 500000;
+BA_DEF_DEF_  "BusType" "CAN";
+BA_DEF_DEF_  "GenMsgCycleTime" 0;
+BA_ "SyncJumpWidthMin" 2;
+BA_ "SyncJumpWidthMax" 4;
+BA_ "SamplePointMin" 80;
+BA_ "SamplePointMax" 84;
+BA_ "Baudrate" 500000;
+BA_ "BusType" "CAN";
+BA_ "GenMsgCycleTime" BO_ 3 100;
+VAL_ 1 state 0 "Inactive" 1 "Active";

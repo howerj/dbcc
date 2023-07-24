@@ -342,8 +342,8 @@ dbc_t *ast2dbc(mpc_ast_t *ast)
 {
 	dbc_t *d = dbc_new();
 
-	// find and store the vals into the dbc: they will be assigned to
-	// signals later
+	/* find and store the vals into the dbc: they will be assigned to
+	signals later */
 	mpc_ast_t *vals_ast = mpc_ast_get_child_lb(ast, "vals|>", 0);
 	if (vals_ast) {
 		d->val_count = vals_ast->children_num;
@@ -358,6 +358,13 @@ dbc_t *ast2dbc(mpc_ast_t *ast)
 					i++;
 				}
 			}
+		}
+	} else {
+		mpc_ast_t *val_ast = mpc_ast_get_child_lb(ast, "val|>", 0);
+		if (val_ast) {
+			d->vals = allocate(sizeof(*d->vals) * (d->val_count+1));
+			d->val_count = 1;
+			d->vals[0] = ast2val(ast, val_ast);
 		}
 	}
 
