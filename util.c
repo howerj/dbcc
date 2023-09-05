@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <float.h>
 
 static log_level_e log_level = LOG_NOTES;
 
@@ -12,7 +13,7 @@ bool is_integer(double i)
 {
 	double integral = 0, fractional = 0;
 	fractional = modf(i, &integral);
-	return fabs(fractional) < 0.000001; /*is the fractional bit zero?*/
+	return fabs(fractional) < DBL_EPSILON; /*is the fractional bit zero?*/
 }
 
 bool is_power_of_two(uint64_t n)
