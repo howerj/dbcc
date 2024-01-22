@@ -96,7 +96,7 @@ static const char *dbc_grammar =
 " attribute_definition : \"BA_DEF_\" (<whatever>|<s>|',')* ';' <n> ; \n"
 " attribute_value      : \"BA_\" (<whatever>|<s>|',')* ';' <n> ; \n"
 " val_item             : (<s>+ <integer> <s>+ <string>) ; \n"
-" val                  : \"VAL_\" <s>+ <id> <s>+ <name> <val_item>* ';' <n> ; \n"
+" val                  : \"VAL_\" <s>+ <id> <s>+ <name> <val_item>* <s>* ';' <n> ; \n"
 " vals                 : <val>* ; \n"
 " mul_val     : \"SG_MUL_VAL_\" <s>+ <id> <s>+ <name> <s>+ <name> <s>+ <integer> '-' <integer> ';' <n> ; \n"
 " mul_vals     : <mul_val>* ; \n"
