@@ -37,6 +37,13 @@ static void help(void)
 {
 	static const char *msg = "\
 dbcc - compile CAN DBC files to C code\n\
+Author: Richard James Howe\n\
+License: MIT\n\
+Email: hello.operator.co.uk@gmail.com\n\
+Repo: https://github.com/howerj/dbcc\n\
+\n\
+Please consider donating to the project, if you require paid support\n\
+then please email \"hello.operator.co.uk@gmail.com\" to raise an inquiry.\n\
 \n\
 Options:\n\
 \t-      stop processing command line arguments\n\
@@ -63,7 +70,7 @@ The parser combinator library (mpc) used in this program is licensed from\n\
 Daniel Holden, Copyright (c) 2013, under the BSD3 license\n\
 (see https://github.com/orangeduck/mpc/).\n\
 \n\
-dbcc itself is licensed under the MIT license, Copyright (c) 2016, Richard\n\
+dbcc itself is licensed under the MIT license, Copyright (c) 2024, Richard\n\
 Howe. (see https://github.com/howerj/dbcc for the full program source).\n";
 	fputs(msg, stderr);
 }
@@ -215,7 +222,7 @@ int main(int argc, char **argv)
 			help();
 			break;
 		case 'V':
-			fprintf(stderr, "%s\n", DBCC_VERSION);
+			if (fprintf(stderr, "%s\n", DBCC_VERSION) < 0) return 1;
 			break;
 		case 'v':
 			set_log_level(++log_level);
@@ -281,7 +288,7 @@ int main(int argc, char **argv)
 			break;
 		}
 		default:
-			fprintf(stderr, "invalid options\n");
+			if (fprintf(stderr, "invalid options\n") < 0) return 1;
 			usage(argv[0]);
 			help();
 			break;

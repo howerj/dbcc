@@ -5,11 +5,15 @@ This program turns a [DBC][] file into a number of different formats.
 
 **CAN-FD IS CURRENTLY NOT SUPPORTED**.
 
+**Please consider donating to the project if you find it useful. This
+project requires your support to continue. If you require paid support 
+please contact <mailto:hello.operator.co.uk@gmail.com>.**
+
 As you can see by the big note above, CAN-FD is currently not supported,
 and likely will not (for a while). The problem is that CAN-FD allows for
 messages above 64-bits in length and this project and the code generated
-from it makes the assumption that 8-bits is all that the Lord (or Satan if
-your project is dealing with AUTOSAR) intended a CAN message to have in it.
+from it makes the assumption that 8-bits is all is intended a CAN message 
+to have in it.
 
 ## Introduction
 
@@ -215,9 +219,6 @@ does not have to make them as either an enumeration or a define.
 should be packed/unpacked correctly, however the encode/decode and printing
 functions will not as they use doubles for calculations (pack/unpack do not).
 This affects numbers larger than 2^53. 
-* FYI AUTOSAR sucks. See this message for a perfect description as to why:
- <https://old.reddit.com/r/embedded/comments/leq366/how_much_of_a_modern_carbuilt_from_the_year_2000/gmiq6d0/>,
- I wish I had wrote it. 
 * There are two pieces of information that are useful to any CAN stack for
 received messages; the time stamp of the received message, and the status
 (error CRC/timeout, message okay, or message never set). This information could
