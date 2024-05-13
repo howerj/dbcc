@@ -865,6 +865,29 @@ static int switch_function_print(FILE *c, dbc_t *dbc, bool prototype, const char
 	return fprintf(c, "\treturn -1; \n}\n\n");
 }
 
+static int switch_message_dlc(FILE *c, dbc_t *dbc, bool prototype, dbc2c_options_t *copts)
+{
+	assert(c);
+	assert(dbc);
+	assert(copts);
+	fprintf(c, "int message_dlc(const unsigned long id)");
+	if (prototype)
+		return fprintf(c, ";\n");
+	fprintf(c, " {\n");
+	if (copts->generate_asserts)
+		fprintf(c, "\tassert(id < (1ul << 29)); /* 29-bit CAN ID is largest possible */\n");
+
+	fprintf(c, "\tswitch (id) {\n");
+	for (size_t i = 0; i < dbc->message_count; i++) {
+		can_msg_t *msg = dbc->messages[i];
+		char name[MAX_NAME_LENGTH] = {0};
+		make_name(name, MAX_NAME_LENGTH, msg->name, msg->id, copts);
+		fprintf(c, "\tcase 0x%03lx: return %d;\n", msg->id, msg->dlc);
+	}
+	fprintf(c, "\tdefault: break; \n\t}\n");
+	return fprintf(c, "\treturn -1; \n}\n\n");
+}
+
 // TODO: Define enums as well/instead of.
 /* NB. We should really use these enum names instead of the msg->id */
 static void msg2h_define_can_ids(dbc_t *dbc, FILE *h, dbc2c_options_t *copts) {
@@ -1108,8 +1131,10 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, dbc2c_options_t *copts
 	if (copts->generate_unpack)
 		switch_function(h, dbc, "unpack", true, true, "uint64_t", true, god, copts);
 
-	if (copts->generate_pack)
+	if (copts->generate_pack) {
 		switch_function(h, dbc, "pack", false, true, "uint64_t", false, god, copts);
+		switch_message_dlc(h, dbc, true, copts);
+	}
 
 	if (copts->generate_print)
 		switch_function_print(h, dbc, true, god, copts);
@@ -1165,8 +1190,10 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, dbc2c_options_t *copts
 	if (copts->generate_unpack)
 		switch_function(c, dbc, "unpack", true, false, "uint64_t", true, god, copts);
 
-	if (copts->generate_pack)
+	if (copts->generate_pack) {
 		switch_function(c, dbc, "pack", false, false, "uint64_t", false, god, copts);
+		switch_message_dlc(c, dbc, false, copts);
+	}
 
 	if (copts->generate_print)
 		switch_function_print(c, dbc, false, god, copts);
