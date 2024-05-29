@@ -56,6 +56,7 @@ Options:\n\
 \t-b     convert output to BSM (beSTORM) instead of the default C code\n\
 \t-j     convert output to JSON instead of the default C code\n\
 \t-D     use 'double' for the encode/decode type messages\n\
+\t-F     use 'float' in the encode/decode functions instead of 'double'\n\
 \t-o dir set the output directory\n\
 \t-p     generate only print code\n\
 \t-k     generate only pack code\n\
@@ -187,6 +188,7 @@ static int set_option(dbc2c_options_t *s, char *kv) {
 	if (!strcmp(k, "use-id-in-name"))        { s->use_id_in_name           = r; }
 	else if (!strcmp(k, "use-time-stamps"))  { s->use_time_stamps          = r; }
 	else if (!strcmp(k, "use-doubles"))      { s->use_doubles_for_encoding = r; }
+	else if (!strcmp(k, "use-float-en-dec")) { s->use_float_for_encode_decode = r; }
 	else if (!strcmp(k, "generate-print"))   { s->generate_print           = r; }
 	else if (!strcmp(k, "generate-pack"))    { s->generate_pack            = r; }
 	else if (!strcmp(k, "generate-unpack"))  { s->generate_unpack          = r; }
@@ -207,6 +209,7 @@ int main(int argc, char **argv)
 		.use_id_in_name            =  true,
 		.use_time_stamps           =  false,
 		.use_doubles_for_encoding  =  false,
+		.use_float_for_encode_decode=  false,
 		.generate_print            =  false,
 		.generate_pack             =  false,
 		.generate_unpack           =  false,
@@ -215,7 +218,7 @@ int main(int argc, char **argv)
 	};
 	int opt = 0;
 
-	while ((opt = dbcc_getopt(argc, argv, "hVvbjgxCNtDpukso:n:O:")) != -1) {
+	while ((opt = dbcc_getopt(argc, argv, "hVvbjgxCNtDFpukso:n:O:")) != -1) {
 		switch (opt) {
 		case 'h':
 			usage(argv[0]);
@@ -252,6 +255,10 @@ int main(int argc, char **argv)
 		case 'D':
 			copts.use_doubles_for_encoding = true;
 			debug("using doubles for encoding");
+			break;
+		case 'F':
+			copts.use_float_for_encode_decode = true;
+			debug("using float in encode / decode functions");
 			break;
 		case 'p':
 			copts.generate_print = true;

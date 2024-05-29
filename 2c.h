@@ -12,6 +12,7 @@ typedef struct {
 	bool use_id_in_name;
 	bool use_time_stamps;
 	bool use_doubles_for_encoding;
+	bool use_float_for_encode_decode;
 	bool generate_print, generate_pack, generate_unpack;
 	bool generate_asserts;
 	bool generate_enum_can_ids;
