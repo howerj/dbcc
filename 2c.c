@@ -147,7 +147,7 @@ static const char *determine_signed_type(unsigned length)
 static const char *determine_type(unsigned length, bool is_signed, bool is_floating)
 {
 	if (is_floating)
-		return length == 64 ? "double" : "float";
+		return length == 64 ? "dbcc_double_t" : "dbcc_float_t";
 	return is_signed ?
 		determine_signed_type(length) :
 		determine_unsigned_type(length);
@@ -274,12 +274,12 @@ static int signal2type(signal_t *sig, FILE *o)
 
 	if (sig->comment) {
 		fprintf(o, "\t/* %s: %s */\n", sig->name, sig->comment);
-		return fprintf(o, "\t/* scaling %.1f, offset %.1f, units %s %s */\n\t%s %s;\n",
+		return fprintf(o, "\t/* scaling %.1f, offset %.1f, units %s%s */\n\t%s %s;\n",
 				sig->scaling, sig->offset, sig->units[0] ? sig->units : "none",
 				sig->is_floating ? ", floating" : "",
 				type, sig->name);
 	} else {
-		return fprintf(o, "\t%s %s; /* scaling %.1f, offset %.1f, units %s %s */\n",
+		return fprintf(o, "\t%s %s; /* scaling %.1f, offset %.1f, units %s%s */\n",
 				type, sig->name, sig->scaling, sig->offset, sig->units[0] ? sig->units : "none",
 				sig->is_floating ? ", floating" : "");
 	}
@@ -323,13 +323,13 @@ static int signal2scaling_encode(const char *msgname, unsigned id, signal_t *sig
 	assert(copts);
 	const char *type = determine_type(sig->bit_length, sig->is_signed, sig->is_floating);
 	if (sig->scaling != 1.0 || sig->offset != 0.0)
-		type = "double";
+		type = "dbcc_double_t";
 	if (copts->use_id_in_name)
-		fprintf(o, "int encode_can_0x%03x_%s(can_obj_%s_t *o, %s in)", id, sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
+		fprintf(o, "int encode_can_0x%03x_%s(can_obj_%s_t *o, %s in)", id, sig->name, god, copts->use_doubles_for_encoding ? "dbcc_double_t" : type);
 	else if (copts->version >= 2)
-		fprintf(o, "int encode_%s_%s(can_obj_%s_t *o, %s in)", msgname, sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
+		fprintf(o, "int encode_%s_%s(can_obj_%s_t *o, %s in)", msgname, sig->name, god, copts->use_doubles_for_encoding ? "dbcc_double_t" : type);
 	else
-		fprintf(o, "int encode_can_%s(can_obj_%s_t *o, %s in)", sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
+		fprintf(o, "int encode_can_%s(can_obj_%s_t *o, %s in)", sig->name, god, copts->use_doubles_for_encoding ? "dbcc_double_t" : type);
 
 	if (header)
 		return fputs(";\n", o);
@@ -379,13 +379,13 @@ static int signal2scaling_decode(const char *msgname, unsigned id, signal_t *sig
 	assert(copts);
 	const char *type = determine_type(sig->bit_length, sig->is_signed, sig->is_floating);
 	if (sig->scaling != 1.0 || sig->offset != 0.0)
-		type = "double";
+		type = "dbcc_double_t";
 	if (copts->use_id_in_name)
-		fprintf(o, "int decode_can_0x%03x_%s(const can_obj_%s_t *o, %s *out)", id, sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
+		fprintf(o, "int decode_can_0x%03x_%s(const can_obj_%s_t *o, %s *out)", id, sig->name, god, copts->use_doubles_for_encoding ? "dbcc_double_t" : type);
 	else if (copts->version >= 2)
-		fprintf(o, "int decode_%s_%s(const can_obj_%s_t *o, %s *out)", msgname, sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
+		fprintf(o, "int decode_%s_%s(const can_obj_%s_t *o, %s *out)", msgname, sig->name, god, copts->use_doubles_for_encoding ? "dbcc_double_t" : type);
 	else
-		fprintf(o, "int decode_can_%s(const can_obj_%s_t *o, %s *out)", sig->name, god, copts->use_doubles_for_encoding ? "double" : type);
+		fprintf(o, "int decode_can_%s(const can_obj_%s_t *o, %s *out)", sig->name, god, copts->use_doubles_for_encoding ? "dbcc_double_t" : type);
 	if (header)
 		return fputs(";\n", o);
 	fputs(" {\n", o);
@@ -1099,6 +1099,17 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, dbc2c_options_t *copts
 
 	fprintf(h, "#ifndef POSTPACK\n");
 	fprintf(h, "#define POSTPACK\n");
+	fprintf(h, "#endif\n\n");
+
+
+	fprintf(h, "#ifndef DBCC_DOUBLE_TYPE\n");
+	fprintf(h, "#define DBCC_DOUBLE_TYPE\n");
+	fprintf(h, "typedef double dbcc_double_t;\n");
+	fprintf(h, "#endif\n\n");
+
+	fprintf(h, "#ifndef DBCC_FLOAT_TYPE\n");
+	fprintf(h, "#define DBCC_FLOAT_TYPE\n");
+	fprintf(h, "typedef float dbcc_float_t;\n");
 	fprintf(h, "#endif\n\n");
 
 	fprintf(h, "#ifndef DBCC_TIME_STAMP\n");
