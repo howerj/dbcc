@@ -483,14 +483,38 @@ static signal_t *find_multiplexor(can_msg_t *msg) {
 	for (size_t i = 0; i < msg->signal_count; i++) {
 		signal_t *sig = msg->sigs[i];
 		if (sig->is_multiplexor) {
-			if (multiplexor)
-				error("multiple multiplexor values detected (only one per CAN msg is allowed) for %s", msg->name);
 			multiplexor = sig;
 		}
 		if (sig->is_multiplexed)
 			continue;
 	}
 	return multiplexor;
+}
+
+static void recursively_process_multiplexed(signal_t *sig, FILE *c, const char *name, bool serialize) {
+	if ((serialize ? signal2serializer(sig, name, c, "\t") : signal2deserializer(sig, name, c, "\t")) < 0) {
+		error("%s failed", serialize ? "serialization" : "deserialization");
+	}
+
+	for (size_t i = 0; i < sig->mul_num; i++) {
+		if (i == 0)
+			fprintf(c, "\tbool wrong_value_%s = true;\n",sig->name);
+		mul_val_list_t *mul_val = sig->mux_vals[i];
+		if (mul_val->min_value == mul_val->max_value) {
+			fprintf(c, "\tif (o->%s.%s == %u) {\n", name, sig->name, mul_val->min_value);
+		} else {
+			fprintf(c, "\tif (o->%s.%s >= %u && o->%s.%s <= %u) {\n", name, sig->name, mul_val->min_value,name, sig->name, mul_val->max_value);
+		}
+		fprintf(c,"\twrong_value_%s = false;\n",sig->name);
+		recursively_process_multiplexed(sig->muxed[i], c, name, serialize);
+		fprintf(c,"\t}\n");
+	}
+
+	if(sig->mul_num == 0) {
+		return;
+	}
+
+	fprintf(c, "\tif(wrong_value_%s) {\n\t\treturn -1;\n\t}\n",sig->name);
 }
 
 static signal_t *process_signals_and_find_multiplexer(can_msg_t *msg, FILE *c, const char *name, bool serialize)
@@ -502,13 +526,16 @@ static signal_t *process_signals_and_find_multiplexer(can_msg_t *msg, FILE *c, c
 
 	for (size_t i = 0; i < msg->signal_count; i++) {
 		signal_t *sig = msg->sigs[i];
-		if (sig->is_multiplexor) {
+		if (sig->is_multiplexed)
+			continue;
+		if (sig->muxed) {
+			recursively_process_multiplexed(sig, c, name, serialize);
+			continue;
+		} else if (sig->is_multiplexor) {
 			if (multiplexor)
 				error("multiple multiplexor values detected (only one per CAN msg is allowed) for %s", name);
 			multiplexor = sig;
 		}
-		if (sig->is_multiplexed)
-			continue;
 		if ((serialize ? signal2serializer(sig, name, c, "\t") : signal2deserializer(sig, name, c, "\t")) < 0)
 			error("%s failed", serialize ? "serialization" : "deserialization");
 	}

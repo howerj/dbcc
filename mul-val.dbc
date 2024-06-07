@@ -1,0 +1,50 @@
+VERSION ""
+
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: Vector__XXX
+
+
+BO_ 1682 extended_multiplex: 8 Vector__XXX
+ SG_ sig1 : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ sig2 : 2|2@1+ (-1,4) [0|4] "" Vector__XXX
+ SG_ sig3 : 4|4@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ simple_muxer M : 8|16@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ muxed_muxer m9216M : 24|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ muxed1 m1 : 32|32@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ muxed2 m4 : 32|32@1+ (1,0) [0|0] "" Vector__XXX
+
+SG_MUL_VAL_ 1682 muxed_muxer simple_muxer 9216-9216;
+SG_MUL_VAL_ 1682 muxed1 muxed_muxer 1-1;
+SG_MUL_VAL_ 1682 muxed2 muxed_muxer 4-4;
