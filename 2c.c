@@ -491,30 +491,36 @@ static signal_t *find_multiplexor(can_msg_t *msg) {
 	return multiplexor;
 }
 
-static void recursively_process_multiplexed(signal_t *sig, FILE *c, const char *name, bool serialize) {
-	if ((serialize ? signal2serializer(sig, name, c, "\t") : signal2deserializer(sig, name, c, "\t")) < 0) {
+static void recursively_process_multiplexed(signal_t *sig, FILE *c, const char *name, bool serialize, size_t indent_level) {
+	char* indent = malloc((indent_level + 1) * sizeof(char));
+	memset(indent, '\t', indent_level);
+	indent[indent_level] = '\0';
+
+	if ((serialize ? signal2serializer(sig, name, c, indent) : signal2deserializer(sig, name, c, indent)) < 0) {
 		error("%s failed", serialize ? "serialization" : "deserialization");
 	}
 
 	for (size_t i = 0; i < sig->mul_num; i++) {
 		if (i == 0)
-			fprintf(c, "\tbool wrong_value_%s = true;\n",sig->name);
+			fprintf(c, "%sbool wrong_value_%s = true;\n", indent, sig->name);
 		mul_val_list_t *mul_val = sig->mux_vals[i];
 		if (mul_val->min_value == mul_val->max_value) {
-			fprintf(c, "\tif (o->%s.%s == %u) {\n", name, sig->name, mul_val->min_value);
+			fprintf(c, "%sif (o->%s.%s == %u) {\n", indent, name, sig->name, mul_val->min_value);
 		} else {
-			fprintf(c, "\tif (o->%s.%s >= %u && o->%s.%s <= %u) {\n", name, sig->name, mul_val->min_value,name, sig->name, mul_val->max_value);
+			fprintf(c, "%sif (o->%s.%s >= %u && o->%s.%s <= %u) {\n", indent, name, sig->name, mul_val->min_value,name, sig->name, mul_val->max_value);
 		}
-		fprintf(c,"\twrong_value_%s = false;\n",sig->name);
-		recursively_process_multiplexed(sig->muxed[i], c, name, serialize);
-		fprintf(c,"\t}\n");
+		fprintf(c,"\t%swrong_value_%s = false;\n", indent, sig->name);
+		recursively_process_multiplexed(sig->muxed[i], c, name, serialize, indent_level + 1);
+		fprintf(c,"%s}\n", indent);
 	}
 
 	if(sig->mul_num == 0) {
+		free(indent);
 		return;
 	}
 
-	fprintf(c, "\tif(wrong_value_%s) {\n\t\treturn -1;\n\t}\n",sig->name);
+	fprintf(c, "%sif(wrong_value_%s) {\n\t%sreturn -1;\n%s}\n", indent, sig->name, indent, indent);
+	free(indent);
 }
 
 static signal_t *process_signals_and_find_multiplexer(can_msg_t *msg, FILE *c, const char *name, bool serialize)
@@ -529,7 +535,7 @@ static signal_t *process_signals_and_find_multiplexer(can_msg_t *msg, FILE *c, c
 		if (sig->is_multiplexed)
 			continue;
 		if (sig->muxed) {
-			recursively_process_multiplexed(sig, c, name, serialize);
+			recursively_process_multiplexed(sig, c, name, serialize, 1);
 			continue;
 		} else if (sig->is_multiplexor) {
 			if (multiplexor)
