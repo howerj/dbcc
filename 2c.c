@@ -501,25 +501,24 @@ static void recursively_process_multiplexed(signal_t *sig, FILE *c, const char *
 	}
 
 	for (size_t i = 0; i < sig->mul_num; i++) {
-		if (i == 0)
-			fprintf(c, "%sbool wrong_value_%s = true;\n", indent, sig->name);
+		fprintf(c, "%s", indent);
+
+		if (i != 0) {
+			fprintf(c, "} else ");
+		}
 		mul_val_list_t *mul_val = sig->mux_vals[i];
 		if (mul_val->min_value == mul_val->max_value) {
-			fprintf(c, "%sif (o->%s.%s == %u) {\n", indent, name, sig->name, mul_val->min_value);
+			fprintf(c, "if (o->%s.%s == %u) {\n", name, sig->name, mul_val->min_value);
 		} else {
-			fprintf(c, "%sif (o->%s.%s >= %u && o->%s.%s <= %u) {\n", indent, name, sig->name, mul_val->min_value,name, sig->name, mul_val->max_value);
+			fprintf(c, "if (o->%s.%s >= %u && o->%s.%s <= %u) {\n", name, sig->name, mul_val->min_value, name, sig->name, mul_val->max_value);
 		}
-		fprintf(c,"\t%swrong_value_%s = false;\n", indent, sig->name);
 		recursively_process_multiplexed(sig->muxed[i], c, name, serialize, indent_level + 1);
-		fprintf(c,"%s}\n", indent);
 	}
 
-	if(sig->mul_num == 0) {
-		free(indent);
-		return;
+	if(sig->mul_num != 0) {
+		fprintf(c, "%s} else {\n%s\treturn -1;\n%s}\n", indent, indent, indent);
 	}
 
-	fprintf(c, "%sif(wrong_value_%s) {\n\t%sreturn -1;\n%s}\n", indent, sig->name, indent, indent);
 	free(indent);
 }
 
