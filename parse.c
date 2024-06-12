@@ -43,6 +43,8 @@ static mpc_ast_t *_parse_dbc_file_by_handle(const char *name, FILE *handle);
 	X(val_item,             "val_item")\
 	X(val,                  "val")\
 	X(vals,                 "vals")\
+	X(mul_val,              "mul_val")\
+	X(mul_vals,             "mul_vals")\
 	X(attribute_definition, "attribute_definition")\
 	X(attribute_value,      "attribute_value")\
 	X(comment,              "comment")\
@@ -73,7 +75,7 @@ static const char *dbc_grammar =
 " ecu                  : <ident> ; \n"
 " dlc                  : <integer> ; \n"
 " id                   : <integer> ; \n"
-" multiplexor          : 'M' | 'm' <s>* <integer> ; \n"
+" multiplexor          : 'm' <integer> 'M' | 'M' | 'm' <s>* <integer> ; \n"
 " signal               : <s>* \"SG_\" <s>+ <name> <s>* <multiplexor>? <s>* ':' <s>* <startbit> <s>* '|' <s>* \n"
 "                        <length> <s>* '@' <s>* <endianess> <s>* <sign> <s>* <y_mx_c> <s>* \n"
 "                        <range> <s>* <unit> <s>* <nodes> <s>* <n> ; \n"
@@ -94,8 +96,10 @@ static const char *dbc_grammar =
 " attribute_definition : \"BA_DEF_\" (<whatever>|<s>|',')* ';' <n> ; \n"
 " attribute_value      : \"BA_\" (<whatever>|<s>|',')* ';' <n> ; \n"
 " val_item             : (<s>+ <integer> <s>+ <string>) ; \n"
-" val                  : \"VAL_\" <s>+ <id> <s>+ <name> <val_item>* ';' <n> ; \n"
+" val                  : \"VAL_\" <s>+ <id> <s>+ <name> <val_item>* <s>* ';' <n> ; \n"
 " vals                 : <val>* ; \n"
+" mul_val     : \"SG_MUL_VAL_\" <s>+ <id> <s>+ <name> <s>+ <name> <s>+ <integer> '-' <integer> ';' <n> ; \n"
+" mul_vals     : <mul_val>* ; \n"
 " env_var_name         : <ident> ; \n"
 " comment_string       : <string> ; \n"
 " comment              : \"CM_\" <s>+ "
@@ -107,7 +111,7 @@ static const char *dbc_grammar =
 "                        |    <comment_string> "
 "                        ) <s>* ';' <n> ;\n "
 " comments              : <comment>* ; "
-" dbc       : <version> <symbols> <bs> <ecus> <values>* <n>* <messages> <comments> <sigval>* <attribute_definition>* <attribute_value>* <vals>  ; \n" ;
+" dbc       : <version> <symbols> <bs> <ecus> <values>* <n>* <messages> <comments> <sigval>* <attribute_definition>* <attribute_value>* <vals> <mul_vals>  ; \n" ;
 
 const char *parse_get_grammar(void)
 {
