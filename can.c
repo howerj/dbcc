@@ -25,6 +25,8 @@ static void signal_delete(signal_t *signal)
 	free(signal->name);
 	free(signal->ecus);
 	free(signal->units);
+	free(signal->muxed);
+	free(signal->mux_vals);
 	free(signal->comment);
 	free(signal);
 }
@@ -56,6 +58,15 @@ static void val_delete(val_list_t *val)
 		free(val->val_list_items[i]);
 	}
 	free(val);
+}
+
+static void mul_val_delete(mul_val_list_t *mul_val)
+{
+	if (!mul_val)
+		return;
+	free(mul_val->multiplexed);
+	free(mul_val->multiplexor);
+	free(mul_val);
 }
 
 static void y_mx_c(mpc_ast_t *ast, signal_t *sig)
@@ -146,10 +157,17 @@ static signal_t *ast2signal(mpc_ast_t *top, mpc_ast_t *ast, unsigned can_id)
 	/*nodes(mpc_ast_get_child(ast, "nodes|node|ident|regex|>"), sig);*/
 
 	/* process multiplexed values, if present */
+	sig->mul_num = 0;
+	sig->muxed = NULL;
+	sig->mux_vals = NULL;
 	mpc_ast_t *multiplex = mpc_ast_get_child(ast, "multiplexor|>");
 	if (multiplex) {
 		sig->is_multiplexed = true;
 		sig->switchval = atol(multiplex->children[1]->contents);
+		mpc_ast_t *elem = mpc_ast_get_child_lb(multiplex, "char", 1);
+		if(elem && *elem->contents == 'M') {
+			sig->is_multiplexor = true;
+		}
 	}
 
 	if (mpc_ast_get_child(ast, "multiplexor|char")) {
@@ -223,6 +241,43 @@ static val_list_t *ast2val(mpc_ast_t *top, mpc_ast_t *ast)
 	return val;
 }
 
+static mul_val_list_t *ast2mul_val(mpc_ast_t *top, mpc_ast_t *ast)
+{
+	assert(top);
+	assert(ast);
+	mul_val_list_t *mul_val = allocate(sizeof(mul_val_list_t));
+
+	mpc_ast_t *id   = mpc_ast_get_child(ast, "id|integer|regex");
+	int r = sscanf(id->contents,  "%u",  &mul_val->id);
+	assert(r == 1);
+
+	int i =0;
+	i = mpc_ast_get_index_lb(ast, "name|ident|regex", i);
+	mpc_ast_t *multiplexed = mpc_ast_get_child_lb(ast, "name|ident|regex", i);
+	mul_val->multiplexed = duplicate(multiplexed->contents);
+
+	mpc_ast_t *multiplexor = mpc_ast_get_child_lb(ast, "name|ident|regex", i+1);
+	mul_val->multiplexor = duplicate(multiplexor->contents);
+
+	i = mpc_ast_get_index_lb(ast, "integer|regex", i);
+	mpc_ast_t *first_value = mpc_ast_get_child_lb(ast, "integer|regex", i);
+	r = sscanf(first_value->contents,  "%u",  &mul_val->min_value);
+	assert(r == 1);
+
+	mpc_ast_t *second_value = mpc_ast_get_child_lb(ast, "integer|regex", i+1);
+	r = sscanf(second_value->contents,  "%u",  &mul_val->max_value);
+	assert(r == 1);
+
+	// swap inverted values
+	if (mul_val->min_value > mul_val->max_value) {
+		int tmp = mul_val->min_value;
+		mul_val->min_value = mul_val->max_value;
+		mul_val->max_value = tmp;
+	}
+
+	return mul_val;
+}
+
 static can_msg_t *ast2msg(mpc_ast_t *top, mpc_ast_t *ast, dbc_t *dbc)
 {
 	assert(top);
@@ -277,6 +332,29 @@ static can_msg_t *ast2msg(mpc_ast_t *top, mpc_ast_t *ast, dbc_t *dbc)
 		}
 	}
 
+	// assign multiplexed signals to multiplexors
+	for (size_t i = 0; i < c->signal_count; i++) {
+		for (size_t j = 0; j<dbc->mul_val_count; j++) {
+			if (dbc->mul_vals[j]->id == (c->id | (unsigned long)c->is_extended << 31) && strcmp(dbc->mul_vals[j]->multiplexed, c->sigs[i]->name) == 0) {
+				if (c->sigs[i]->switchval > dbc->mul_vals[j]->max_value || c->sigs[i]->switchval < dbc->mul_vals[j]->min_value)
+					error("The multiplex value is wrong on message %s for signal %s (fix your DBC file)", c->name, c->sigs[i]->name);
+
+				c->sigs[i]->is_multiplexed = true;
+
+				for(size_t k = 0; k < c->signal_count; k++) {
+					if (strcmp(c->sigs[k]->name, dbc->mul_vals[j]->multiplexor) == 0) {
+						size_t last = c->sigs[k]->mul_num++;
+						c->sigs[k]->muxed = reallocator(c->sigs[k]->muxed, sizeof(signal_t*) * c->sigs[k]->mul_num);
+						c->sigs[k]->mux_vals = reallocator(c->sigs[k]->mux_vals, sizeof(mul_val_list_t*) * c->sigs[k]->mul_num);
+						c->sigs[k]->muxed[last] = c->sigs[i];
+						c->sigs[k]->mux_vals[last] = dbc->mul_vals[j];
+						break; // I assume a signal can be multiplexed by only one signal
+					}
+				}
+			}
+		}
+	}
+
 	if (c->signal_count > 1) { // Lets sort the signals so that their start_bit is asc (lowest number first)
 		bool bFlip = false;
 		do {
@@ -310,6 +388,9 @@ void dbc_delete(dbc_t *dbc)
 
 	for (size_t i = 0; i < dbc->val_count; i++)
 		val_delete(dbc->vals[i]);
+
+	for (size_t i = 0; i < dbc->mul_val_count; i++)
+		mul_val_delete(dbc->mul_vals[i]);
 
 	free(dbc);
 }
@@ -360,11 +441,37 @@ dbc_t *ast2dbc(mpc_ast_t *ast)
 			}
 		}
 	} else {
-		mpc_ast_t *val_ast = mpc_ast_get_child_lb(ast, "val|>", 0);
+		mpc_ast_t *val_ast = mpc_ast_get_child_lb(ast, "vals|val|>", 0);
 		if (val_ast) {
 			d->vals = allocate(sizeof(*d->vals) * (d->val_count+1));
 			d->val_count = 1;
 			d->vals[0] = ast2val(ast, val_ast);
+		}
+	}
+
+	/* find and store the multiplexed vals into the dbc: they will be assigned
+	to signals later */
+	mpc_ast_t *mul_vals_ast = mpc_ast_get_child_lb(ast, "mul_vals|>", 0);
+	if (mul_vals_ast) {
+		d->mul_val_count = mul_vals_ast->children_num;
+		d->mul_vals = allocate(sizeof(*d->mul_vals) * (d->mul_val_count));
+		if (d->mul_val_count) {
+			int j = 0;
+			for (int i = 0; i >= 0;) {
+				i = mpc_ast_get_index_lb(mul_vals_ast, "mul_val|>", i);
+				if (i >= 0) {
+					mpc_ast_t *mul_val_ast = mpc_ast_get_child_lb(mul_vals_ast, "mul_val|>", i);
+					d->mul_vals[j++] = ast2mul_val(ast, mul_val_ast);
+					i++;
+				}
+			}
+		}
+	} else {
+		mpc_ast_t *mul_val_ast = mpc_ast_get_child_lb(ast, "mul_vals|mul_val|>", 0);
+		if (mul_val_ast) {
+			d->mul_val_count = 1;
+			d->mul_vals = allocate(sizeof(*d->mul_vals));
+			d->mul_vals[0] = ast2mul_val(ast, mul_val_ast);
 		}
 	}
 

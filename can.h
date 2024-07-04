@@ -34,6 +34,16 @@ typedef struct {
 } val_list_t;
 
 typedef struct {
+	char *multiplexed;
+	char *multiplexor;
+	unsigned min_value;
+	unsigned max_value;
+	unsigned id;   /**< identifier, 11 or 29 bit */
+} mul_val_list_t;
+
+typedef struct signal_t signal_t;
+
+struct signal_t {
 	size_t ecu_count;    /**< ECU count */
 	char *units;         /**< units used */
 	char **ecus;         /**< ECUs sending/receiving */
@@ -51,10 +61,13 @@ typedef struct {
 	bool is_multiplexor; /**< true if this is a multiplexor */
 	bool is_multiplexed; /**< true if this is a multiplexed signal */
 	unsigned switchval;  /**< if is_multiplexed, this will contain the
-			       value that decodes this signal for the multiplexor */
+				   value that decodes this signal for the multiplexor */
 	val_list_t *val_list;
+	size_t mul_num;      /**< number of multiplexed signals */
+	signal_t **muxed;    /**< list of multiplexed signals */
+	mul_val_list_t **mux_vals; /**< list of mux_vals relative to signals */
 	char *comment;
-} signal_t;
+};
 
 typedef struct {
 	char *name;          /**< can message name */
@@ -74,6 +87,8 @@ typedef struct {
 	can_msg_t **messages; /**< list of messages */
 	size_t val_count;     /**< count of vals */
 	val_list_t **vals;    /**< value list; used for enumerations in DBC file */
+	size_t mul_val_count; /**< count of mul_vals*/
+	mul_val_list_t **mul_vals; /**< multiplexed value list; used for multiplexed signals in DBC file */
 	int version;          /**< version information used for generating files (not just C) */
 } dbc_t;
 
