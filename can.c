@@ -325,7 +325,7 @@ static can_msg_t *ast2msg(mpc_ast_t *top, mpc_ast_t *ast, dbc_t *dbc)
 	// assign val-s to the signals
 	for (size_t i = 0; i < c->signal_count; i++) {
 		for (size_t j = 0; j<dbc->val_count; j++) {
-			if (dbc->vals[j]->id == c->id && strcmp(dbc->vals[j]->name, c->sigs[i]->name) == 0) {
+			if (dbc->vals[j]->id == (c->id | (unsigned long)c->is_extended << 31) && strcmp(dbc->vals[j]->name, c->sigs[i]->name) == 0) {
 				c->sigs[i]->val_list = dbc->vals[j];
 				break;
 			}
