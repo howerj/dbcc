@@ -7,6 +7,12 @@
 #include <math.h>
 #include <float.h>
 
+#ifdef _WIN32
+int path_sep = '\\';
+#else 
+int path_sep = '/';
+#endif
+
 static log_level_e log_level = LOG_NOTES;
 
 bool is_integer(double i)
@@ -186,9 +192,7 @@ char *dbcc_basename(char *s)
 	size_t i;
 	if (!s || !*s) return ".";
 	i = strlen(s)-1;
-	for (; i&&(s[i]=='/'||s[i]=='\\'); i--) s[i] = 0;
-	for (; i&&s[i-1]!='/'&&s[i-1]!='\\'; i--);
-	return s + i;
+	for (; i&&s[i]==path_sep; i--) s[i] = 0;
+	for (; i&&s[i-1]!=path_sep; i--);
+	return s+i;
 }
-
-
