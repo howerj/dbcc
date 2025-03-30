@@ -383,6 +383,8 @@ void dbc_delete(dbc_t *dbc)
 {
 	if (!dbc)
 		return;
+	if (dbc->dbc_version)
+		free(dbc->dbc_version);
 	for (size_t i = 0; i < dbc->message_count; i++)
 		can_msg_delete(dbc->messages[i]);
 
@@ -422,6 +424,26 @@ void assign_comment_to_message(dbc_t *dbc, const char *comment, unsigned message
 dbc_t *ast2dbc(mpc_ast_t *ast)
 {
 	dbc_t *d = dbc_new();
+
+	d->dbc_version = NULL;
+
+	/* Find and extract DBC version information from the AST structure.
+ 	* The version string is located in the 'version|>' node and may be 
+ 	* wrapped in quotes which are stripped during processing. */
+	mpc_ast_t *version_ast = mpc_ast_get_child_lb(ast, "version|>", 0);
+    if (version_ast) {
+        mpc_ast_t *string_node = mpc_ast_get_child(version_ast, "string|>");
+        if (string_node) {
+            mpc_ast_t *str_content = mpc_ast_get_child_lb(string_node, "regex", 1);
+            if (str_content) {
+                d->dbc_version = duplicate(str_content->contents);
+                if (d->dbc_version[0] == '"' && d->dbc_version[strlen(d->dbc_version)-1] == '"') {
+                    memmove(d->dbc_version, d->dbc_version+1, strlen(d->dbc_version)-2);
+                    d->dbc_version[strlen(d->dbc_version)-2] = '\0';
+                }
+            }
+        }
+    }
 
 	/* find and store the vals into the dbc: they will be assigned to
 	signals later */

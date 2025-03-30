@@ -90,6 +90,7 @@ typedef struct {
 	size_t mul_val_count; /**< count of mul_vals*/
 	mul_val_list_t **mul_vals; /**< multiplexed value list; used for multiplexed signals in DBC file */
 	int version;          /**< version information used for generating files (not just C) */
+	char *dbc_version;    /**< Raw version string from DBC file's "VERSION" line (e.g. "1.0"), may be NULL if undefined */
 } dbc_t;
 
 dbc_t *ast2dbc(mpc_ast_t *ast);

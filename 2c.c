@@ -1113,6 +1113,7 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, dbc2c_options_t *copts
 		"/* If the contents of this file have caused breaking changes for you, you could try using\n"
 		"   an older version of the generator. You can specify this on the command line with\n"
 		"   the -n option. */\n"
+		"\n//DBC Version: `Version(\"%s\")`\n\n"
 		"#define DBCC_GENERATOR_VERSION (%d)\n\n"
 		"#include <stdint.h>\n"
 		"%s\n\n"
@@ -1121,6 +1122,7 @@ int dbc2c(dbc_t *dbc, FILE *c, FILE *h, const char *name, dbc2c_options_t *copts
 		"#endif\n\n",
 		file_guard,
 		file_guard,
+		dbc->dbc_version ? dbc->dbc_version : "",
 		copts->version,
 		copts->generate_print   ? "#include <stdio.h>"  : "") < 0)
 			return -1;
