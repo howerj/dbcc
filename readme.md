@@ -3,17 +3,12 @@
 
 This program turns a [DBC][] file into a number of different formats.
 
-**CAN-FD IS CURRENTLY NOT SUPPORTED**.
+For the professional version of DBCC visit:
 
-**Please consider donating to the project if you find it useful. This
-project requires your support to continue. If you require paid support 
-please contact <mailto:hello.operator.co.uk@gmail.com>.**
+<https://subleq.co.uk/>
 
-As you can see by the big note above, CAN-FD is currently not supported,
-and likely will not (for a while). The problem is that CAN-FD allows for
-messages above 64-bits in length and this project and the code generated
-from it makes the assumption that 8-bits is all is intended a CAN message 
-to have in it.
+For pricing and contact information. The professional version includes support
+for CAN-FD, as well as other languages, and better MISRA-C support.
 
 ## Introduction
 
