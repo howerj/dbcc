@@ -1,5 +1,5 @@
 LDFLAGS  = -lm
-CFLAGS   = -std=c99 -Wall -Wextra -g -O2 -pedantic -fwrapv -DDBCC_VERSION="\"v1.2.2\""
+CFLAGS   = -std=c99 -Wall -Wextra -g -O2 -pedantic -fwrapv -DDBCC_VERSION="\"v1.2.3\""
 RM      := rm
 OUTDIR  := out
 SOURCES := ${wildcard *.c}

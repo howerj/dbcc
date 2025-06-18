@@ -1,6 +1,6 @@
 /**@file main.c
  * @brief dbcc - produce serialization and deserialization code for CAN DBC files
- * @copyright Richard James Howe
+ * @copyright Richard James Howe, SUBLEQ LTD (2025)
  * @license MIT */
 #include <assert.h>
 #include <stdint.h>

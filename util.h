@@ -1,3 +1,5 @@
+/* @copyright SUBLEQ LTD (2025)
+ * @license MIT */
 #ifndef UTIL_H
 #define UTIL_H
 

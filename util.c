@@ -1,3 +1,5 @@
+/* @copyright SUBLEQ LTD.
+ * @license MIT */
 #include "util.h"
 #include <assert.h>
 #include <errno.h>

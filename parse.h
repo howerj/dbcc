@@ -1,3 +1,5 @@
+/* @copyright SUBLEQ LTD (2025)
+ * @license MIT */
 #ifndef PARSE_H
 #define PARSE_H
 

@@ -1,3 +1,5 @@
+/* @copyright SUBLEQ LTD. (2025) 
+ * @license MIT */
 #include "parse.h"
 #include "util.h"
 #include <assert.h>

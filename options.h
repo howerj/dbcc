@@ -1,3 +1,5 @@
+/* @copyright SUBLEQ LTD. (2025)
+ * @license MIT */
 #ifndef OPTIONS_H
 #define OPTIONS_H
 

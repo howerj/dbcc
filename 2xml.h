@@ -1,3 +1,5 @@
+/* @copyright SUBLEQ LTD. (2025)
+ * @license MIT */
 #ifndef _2XML_H
 #define _2XML_H
 

@@ -1,3 +1,5 @@
+/* @copyright SUBLEQ LTD. (2025)
+ * @license MIT */
 #ifndef CAN_H
 #define CAN_H
 

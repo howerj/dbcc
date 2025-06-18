@@ -1,4 +1,7 @@
-/**@note Error checking is not done in this file, or if it is done it should be
+/**
+ * @copyright SUBLEQ LTD (2025)
+ * @license MIT
+ * @note Error checking is not done in this file, or if it is done it should be
  * done with assertions, the parser does the validation and processing of the
  * input, if a returned object is not checked it is because it *must* exist (or
  * there is a bug in the grammar).
