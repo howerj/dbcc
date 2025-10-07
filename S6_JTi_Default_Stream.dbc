@@ -1,0 +1,139 @@
+VERSION ""
+
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_:
+
+
+BO_ 1552 SyvecsS6_17_610h: 8 Vector__XXX
+ SG_ sensorWarningLevel : 55|16@0+ (1,0) [0|3] "" Vector__XXX
+ SG_ ccp1 : 39|16@0- (0.1,0) [0|110] "kPa" Vector__XXX
+ SG_ ecp : 23|16@0- (0.1,0) [0|1000] "kPa" Vector__XXX
+
+BO_ 1555 SyvecsS6_20_613h: 8 Vector__XXX
+ SG_ cyl08KnockIgnRtd : 55|16@0- (0.3125,0) [0|50] "deg" Vector__XXX
+ SG_ cyl07KnockIgnRtd : 39|16@0- (0.3125,0) [0|50] "deg" Vector__XXX
+ SG_ cyl06KnockIgnRtd : 23|16@0- (0.3125,0) [0|50] "deg" Vector__XXX
+ SG_ cyl05KnockIgnRtd : 7|16@0- (0.3125,0) [0|50] "deg" Vector__XXX
+
+BO_ 1536 SyvecsS6_01_600h: 8 Vector__XXX
+ SG_ vBat : 39|16@0+ (0.001,0) [0|65.535] "V" Vector__XXX
+ SG_ turboSpeed1 : 23|16@0+ (0.01,0) [0|65535] "" Vector__XXX
+ SG_ rpm : 7|16@0- (1,0) [0|10000] "rpm" Vector__XXX
+
+BO_ 1537 SyvecsS6_02_601h: 8 Vector__XXX
+ SG_ vehicleSpeed : 39|16@0- (0.036,0) [0|500] "km/h" Vector__XXX
+ SG_ map1 : 7|16@0- (1,0) [-1000|1000] "" Vector__XXX
+
+BO_ 1538 SyvecsS6_03_602h: 8 Vector__XXX
+ SG_ runMode : 55|16@0+ (1,0) [0|4] "" Vector__XXX
+
+BO_ 1539 SyvecsS6_04_603h: 8 Vector__XXX
+ SG_ fuelFinalPri1 : 55|16@0+ (0.0244141,0) [0|100] "%" Vector__XXX
+ SG_ ft1 : 39|16@0- (0.1,0) [-25|125] "C" Vector__XXX
+ SG_ lam1 : 23|16@0- (0.001,0) [500|1500] "LA" Vector__XXX
+ SG_ relFp1 : 7|16@0- (0.1,0) [0|1000] "kPa" Vector__XXX
+
+BO_ 1540 SyvecsS6_05_604h: 8 Vector__XXX
+ SG_ tps1 : 55|16@0- (0.012207,0) [0|100] "" Vector__XXX
+ SG_ fuelMltCll1 : 39|16@0- (0.000244141,0) [0.5|1.5] "Factor" Vector__XXX
+ SG_ lam2 : 23|16@0- (0.001,0) [500|1500] "LA" Vector__XXX
+ SG_ ignFinalPri1 : 7|16@0- (0.0322581,0) [-10|50] "deg" Vector__XXX
+
+BO_ 1541 SyvecsS6_06_605h: 8 Vector__XXX
+ SG_ wgFinalDuty : 55|16@0+ (0.012,0) [0|65535] "" Vector__XXX
+ SG_ egt1 : 39|16@0- (0.1,0) [0|1250] "C" Vector__XXX
+ SG_ ect1 : 23|16@0- (0.1,0) [-25|125] "C" Vector__XXX
+ SG_ act1 : 7|16@0- (0.1,0) [-25|100] "C" Vector__XXX
+
+BO_ 1542 SyvecsS6_07_606h: 8 Vector__XXX
+ SG_ egt2 : 39|16@0- (0.1,0) [0|1250] "C" Vector__XXX
+
+BO_ 1544 SyvecsS6_09_608h: 8 Vector__XXX
+ SG_ eop : 7|16@0- (0.1,0) [0|1000] "kPa" Vector__XXX
+
+BO_ 1545 SyvecsS6_10_609h: 8 Vector__XXX
+ SG_ bap : 39|16@0+ (0.1,0) [700|1100] "kPa" Vector__XXX
+ SG_ n20p : 55|16@0+ (0.01,0) [0|65535] "" Vector__XXX
+ SG_ Fp1 : 23|16@0- (0.1,0) [0|1000] "kPa" Vector__XXX
+ SG_ eot : 7|16@0- (0.1,0) [25|150] "C" Vector__XXX
+
+BO_ 1546 SyvecsS6_11_60Ah: 8 Vector__XXX
+ SG_ flvlA : 39|16@0+ (0.012207,0) [0|100] "%" Vector__XXX
+ SG_ calSelect : 23|16@0- (1,0) [0|11] "" Vector__XXX
+ SG_ tcSelect : 7|16@0- (1,0) [0|11] "" Vector__XXX
+
+BO_ 1547 SyvecsS6_12_60Bh: 8 Vector__XXX
+ SG_ limpMode : 39|16@0+ (1,0) [0|113] "" Vector__XXX
+ SG_ launchSwitch : 23|16@0+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 1548 SyvecsS6_13_60Ch: 8 Vector__XXX
+ SG_ launchState : 55|16@0+ (1,0) [0|100] "" Vector__XXX
+ SG_ alsState : 39|16@0+ (1,0) [0|100] "" Vector__XXX
+
+BO_ 1550 SyvecsS6_15_60Eh: 8 Vector__XXX
+ SG_ fuelComp : 39|16@0- (0.1,0) [0|100] "%" Vector__XXX
+ SG_ gear : 23|16@0- (1,0) [0|10] "" Vector__XXX
+
+BO_ 1554 SyvecsS6_19_612h: 8 Vector__XXX
+ SG_ cyl04KnockIgnRtd : 55|16@0- (0.3125,0) [0|50] "deg" Vector__XXX
+ SG_ cyl03KnockIgnRtd : 39|16@0- (0.3125,0) [0|50] "deg" Vector__XXX
+ SG_ cyl02KnockIgnRtd : 23|16@0- (0.3125,0) [0|50] "deg" Vector__XXX
+ SG_ cyl01KnockIgnRtd : 7|16@0- (0.3125,0) [0|50] "deg" Vector__XXX
+
+
+
+BA_DEF_ SG_  "SignalType" STRING ;
+BA_DEF_ BO_  "GenMsgCycleTime" INT 0 0;
+BA_DEF_DEF_  "SignalType" "";
+BA_DEF_DEF_  "GenMsgCycleTime" 0;
+BA_ "SignalType" SG_ 1552 sensorWarningLevel "ENM";
+BA_ "SignalType" SG_ 1538 runMode "ENM";
+BA_ "SignalType" SG_ 1546 calSelect "ENM";
+BA_ "SignalType" SG_ 1546 tcSelect "ENM";
+BA_ "SignalType" SG_ 1547 limpMode "ENM";
+BA_ "SignalType" SG_ 1547 launchSwitch "ENM";
+BA_ "SignalType" SG_ 1548 launchState "ENM";
+BA_ "SignalType" SG_ 1548 alsState "ENM";
+BA_ "SignalType" SG_ 1550 gear "ENM";
+VAL_ 1552 sensorWarningLevel 0 "OK" 1 "Minor" 2 "Moderate" 3 "Critical" ;
+VAL_ 1538 runMode 0 "Intial" 1 "Preinject" 2 "Stop" 3 "Crank" 4 "Run" ;
+VAL_ 1546 calSelect 0 "Cal1" 1 "Cal2" 2 "Cal3" 3 "Cal4" 4 "Cal5" 5 "Cal6" 6 "Cal7" 7 "Cal8" 8 "Cal9" 9 "Cal10" 10 "Cal11" 11 "Cal12" ;
+VAL_ 1546 tcSelect 0 "TC1" 1 "TC2" 2 "TC3" 3 "TC4" 4 "TC5" 5 "TC6" 6 "TC7" 7 "TC8" 8 "TC9" 9 "TC10" 10 "TC11" 11 "TC12" ;
+VAL_ 1547 limpMode 0 "Off" 1 "Limp Switch On" 2 "Ect Cold" 3 "EOT Cold" 4 "Sensor Warning Level" 5 "Auto Trans" 100 "EOP Trip" 101 "CCP Trip" 102 "Knock Shutdown" 103 "EOT Trip" 104 "ECT Trip" 105 "FP Trip" 106 "PreIgn Shutdown" 107 "Time On Load Trip" 108 "Trq Lim Trip" 109 "VVT Fail" 110 "Vbat Trip" 111 "Lean Trip" 112 "ACT Trip" 113 "ECP Trip" ;
+VAL_ 1547 launchSwitch 0 "Off" 1 "On" ;
+VAL_ 1548 launchState 100 "DISABLED" 0 "OFF" 1 "ON" 2 "CLEARING" ;
+VAL_ 1548 alsState 100 "DISABLED" 0 "OFF" 1 "START" 2 "ON" 3 "SD1" 4 "SD2" 5 "TIMEOUT" ;
+VAL_ 1550 gear 0 "Unknown " 1 "Reverse" 2 "Neutral" 3 "First" 4 "Second" 5 "Third" 6 "Fourth" 7 "Fifth" 8 "Six" 9 "Seventh" 10 "Eigth" ;
+
